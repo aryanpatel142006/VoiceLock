@@ -1,0 +1,16 @@
+/* Device pickers + level meter (devices.js), shared by /judge and /simple. */
+.devices { --dev-good: #2ecc71; --dev-warn: #f5a524; --dev-bad: #ef4444; --dev-dim: #9aa5b3;
+  display: grid; gap: 6px; margin: 8px 0; }
+.devices label { display: grid; gap: 2px; font-size: 13px; color: var(--dev-dim); }
+.devices select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid #2c3540; background: #1b2028; color: #e8ecf1; max-width: 100%; }
+.dev-meter { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--dev-dim); }
+.dev-bar { flex: 1 1 140px; height: 10px; border-radius: 5px; background: #222a33; overflow: hidden; }
+.dev-bar i { display: block; height: 100%; width: 0; background: var(--dev-dim); }
+.dev-meter[data-band="good"] .dev-bar i { background: var(--dev-good); }
+.dev-meter[data-band="quiet"] .dev-bar i { background: var(--dev-warn); }
+.dev-meter[data-band="clipping"] .dev-bar i { background: var(--dev-bad); }
+.dev-meter[data-band="good"] b { color: var(--dev-good); }
+.dev-meter[data-band="quiet"] b { color: var(--dev-warn); }
+.dev-meter[data-band="clipping"] b { color: var(--dev-bad); }
+.dev-bt { margin: 0; padding: 4px 8px; border-radius: 8px; background: #3a3014; color: #ffe2a3; font-size: 13px; }
+.dev-bt[hidden] { display: none; }

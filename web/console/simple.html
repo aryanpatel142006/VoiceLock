@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0f1216">
+  <title>Hearing · try it</title>
+  <link rel="stylesheet" href="simple.css">
+  <link rel="stylesheet" href="devices.css">
+  <script type="module" src="simple.js"></script>
+</head>
+<body>
+  <header class="top">
+    <p class="conn" id="conn" data-state="connecting">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="conn-text">Connecting…</span>
+    </p>
+    <a class="full" href="./">Full console</a>
+    <button class="start" id="start" type="button" aria-pressed="false">Start<span class="long"> mic and camera</span></button>
+    <button class="start" id="replay" type="button">Replay clip</button>
+    <strong id="replay-badge" hidden style="color:#ffbb55">REPLAY</strong>
+  </header>
+
+  <div class="warn" id="headphones" role="note">
+    <p>Use wired headphones: speakers feed back into the mic, Bluetooth adds ~200&nbsp;ms.</p>
+    <button type="button" id="headphones-ok" aria-label="Dismiss the headphones note">OK</button>
+  </div>
+  <div class="alert" id="banner" role="alert" hidden>
+    <p id="banner-text"></p>
+    <button type="button" id="banner-retry">Reconnect now</button>
+  </div>
+
+  <main>
+    <section class="look" aria-label="Camera and captions">
+      <div class="view" id="view">
+        <video id="video" muted playsinline></video>
+        <img id="replay-preview" hidden alt="Prerecorded replay frames" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill">
+        <canvas id="overlay"></canvas>
+        <p class="placeholder" id="camera-placeholder">Press Start to turn on the mic and camera. Tap a face to lock it as the target.</p>
+        <div class="captions" id="captions-box" hidden>
+          <div class="voice" id="voice-box" hidden>
+            <p id="voice-chip">Voice: neutral (default)</p>
+            <label class="change">
+              <span>Change</span>
+              <select id="voice-override">
+                <option value="">Automatic</option>
+                <option value="neutral">Neutral</option>
+                <option value="female_young">Female, young</option>
+                <option value="female_adult">Female, adult</option>
+                <option value="female_older">Female, older</option>
+                <option value="male_young">Male, young</option>
+                <option value="male_adult">Male, adult</option>
+                <option value="male_older">Male, older</option>
+              </select>
+            </label>
+          </div>
+          <div class="caption-log" id="captions" aria-live="polite" aria-label="Captions">
+            <p class="empty">What the target says shows up here.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="status" id="status" aria-live="off">
+        <span id="st-mode">—</span>
+        <span class="sep" aria-hidden="true">/</span>
+        <span id="st-tier" class="tier">—</span>
+        <span id="acquisition" class="acquisition" role="status">Waiting for engine</span>
+        <span class="lat"><b id="st-latency">—</b> ms <span id="st-latency-kind">server estimate</span></span>
+      </p>
+
+    </section>
+
+    <section class="controls" aria-label="Controls">
+      <div id="devices" aria-label="Audio devices"></div>
+      <div class="ab" id="ab" role="group" aria-label="What you hear">
+        <button type="button" data-ab="raw" aria-pressed="false"><b>Raw</b><span>The room, as is</span></button>
+        <button type="button" data-ab="processed" aria-pressed="true"><b>Selective hearing</b><span>Only your target</span></button>
+        <kbd class="ab-key" aria-hidden="true">Space</kbd>
+      </div>
+
+      <div class="modes" id="modes" role="group" aria-label="Mode">
+        <button type="button" data-mode="natural" aria-pressed="false"><b>Natural</b><span>Their real voice, room turned down</span></button>
+        <button type="button" data-mode="focus_hq" aria-pressed="false"><b>Focus HQ</b><span>Cleanest voice, ~1.5&nbsp;s behind</span></button>
+        <button type="button" data-mode="synthetic" aria-pressed="false"><b>Synthetic</b><span>Their words in a clear voice</span></button>
+        <button type="button" data-mode="text" aria-pressed="false"><b>Text</b><span>Captions only, no sound</span></button>
+        <button type="button" data-mode="quiet" aria-pressed="false"><b>Quiet</b><span>Silence</span></button>
+        <button type="button" data-mode="auto" aria-pressed="false"><b>Auto</b><span id="auto-hint">Picks a mode for the room</span></button>
+        <button type="button" data-mode="name_call" aria-pressed="false"><b>Name Call</b><span>Whoever says your name, no camera</span></button>
+      </div>
+      <div class="namecall" id="namecall-box" hidden>
+        <label for="namecall-name">Your name</label>
+        <input id="namecall-name" type="text" maxlength="64" placeholder="Aryan, Ary" autocomplete="off">
+        <select id="namecall-match" aria-label="Name match" title="strict: exactly your name or an alias; normal: close spellings, never a common other name like Ryan; loose: any close spelling">
+          <option value="strict">strict</option><option value="normal" selected>normal</option><option value="loose">loose</option>
+        </select>
+        <input id="namecall-exclude" type="text" maxlength="200" placeholder="not: Ryan" aria-label="Words that are not your name (commas)" autocomplete="off">
+        <button type="button" id="namecall-release">Release</button>
+        <p class="namecall-pill" id="namecall-pill" role="status" aria-live="polite" data-state="look">Listening</p>
+      </div>
+
+      <div class="slider" id="slider-box">
+        <div class="slider-head">
+          <label for="suppression">Suppression</label>
+          <output id="suppression-out" for="suppression">50</output>
+        </div>
+        <input id="suppression" type="range" min="0" max="100" step="1" value="50"
+               aria-describedby="suppression-ends">
+        <p class="ends" id="suppression-ends"><span>Whole room</span><span>Only the target</span></p>
+      </div>
+
+      <div class="runs-on" id="hq-backend">
+        <p class="runs-label" id="hq-backend-label">Runs on</p>
+        <div class="seg" role="radiogroup" aria-labelledby="hq-backend-label">
+          <label><input type="radio" name="hq-backend" value="local"><span>Local</span></label>
+          <label><input type="radio" name="hq-backend" value="remote"><span>GPU</span></label>
+          <label><input type="radio" name="hq-backend" value="auto"><span>Auto</span></label>
+        </div>
+        <output id="hq-active" data-active="" data-fallback="false">—</output>
+      </div>
+
+      <div class="runs-on" id="latency-preset">
+        <p class="runs-label" id="latency-preset-label">Delay</p>
+        <div class="seg" role="radiogroup" aria-labelledby="latency-preset-label">
+          <label><input type="radio" name="latency-preset" value="speed"><span>Speed</span></label>
+          <label><input type="radio" name="latency-preset" value="balanced" checked><span>Balanced</span></label>
+          <label><input type="radio" name="latency-preset" value="accuracy"><span>Accuracy</span></label>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="server-info"><small id="server-info">Server identity unavailable</small></footer>
+</body>
+</html>

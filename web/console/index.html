@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Hearing console</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <h1>Hearing console</h1>
+    <p class="conn" id="conn" data-state="connecting">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="conn-text">Connecting…</span>
+    </p>
+    <span id="acquisition" class="acquisition" role="status">Waiting for engine</span>
+    <form class="server" id="server-form">
+      <label for="ws-url">Session</label>
+      <input id="ws-url" name="ws" type="url" spellcheck="false" autocomplete="off">
+      <button type="submit">Connect</button>
+    </form>
+    <button class="start" id="start" type="button" aria-pressed="false">Start mic and camera</button>
+    <select id="replay-clip" aria-label="Replay clip" title="Clips in eval/fixtures/demo"><option value="grid-two-face.mp4">grid-two-face</option></select>
+    <button class="start" id="replay" type="button">Replay clip</button>
+    <strong id="replay-badge" hidden style="color:#ffbb55">REPLAY</strong>
+  </header>
+
+  <div class="banner" id="banner" role="alert" hidden>
+    <p id="banner-text"></p>
+    <button type="button" id="banner-retry">Reconnect now</button>
+  </div>
+
+  <main>
+    <section class="numbers" aria-labelledby="numbers-h">
+      <h2 id="numbers-h" class="sr-only">Latency and status</h2>
+      <div class="headline">
+        <p class="big"><span id="total">—</span><span class="unit">ms</span></p>
+        <p class="big-label" id="total-label">Server latency, waiting for telemetry</p>
+      </div>
+      <div class="budget">
+        <div class="bar-track" id="budget-bar" role="img" aria-label="Latency breakdown">
+          <div class="segments" id="segments"></div>
+          <span class="mark" style="--at: 70" data-label="aim 70"></span>
+          <span class="mark" style="--at: 100" data-label="target 100"></span>
+        </div>
+        <ul class="legend" id="legend"></ul>
+      </div>
+      <dl class="facts">
+        <div><dt>Tier</dt><dd><span class="tier" id="tier">—</span></dd></div>
+        <div><dt>Device</dt><dd id="device">—</dd></div>
+        <div><dt>Mode</dt><dd id="server-mode">—</dd></div>
+        <div class="wide"><dt>Vision</dt><dd id="vision">—</dd></div>
+        <div class="wide"><dt>Compute headroom</dt><dd id="headroom">—</dd></div>
+        <div class="wide"><dt>Focus HQ ladder</dt><dd><ol class="ladder" id="ladder"><li class="empty">Off. Turn on Focus HQ to see the tiers.</li></ol></dd></div>
+        <div class="wide"><dt>Pipeline</dt><dd class="code" id="pipeline">—</dd></div>
+        <div class="wide"><dt>Stage compute per 10 ms hop</dt><dd id="stages">—</dd></div>
+        <div><dt>Audio</dt><dd id="audio-rate">off</dd></div>
+        <div><dt>Frames out / back</dt><dd id="frames">0 / 0</dd></div>
+        <div><dt>Underruns / dropped</dt><dd id="glitches">0 / 0 ms</dd></div>
+      </dl>
+    </section>
+
+    <section class="stage" aria-labelledby="camera-h">
+      <h2 id="camera-h" class="sr-only">Camera</h2>
+      <div class="view" id="view">
+        <video id="video" muted playsinline></video>
+        <img id="replay-preview" hidden alt="Prerecorded replay frames" style="position:absolute;inset:0;width:100%;height:100%;object-fit:fill">
+        <canvas id="overlay"></canvas>
+        <p class="placeholder" id="camera-placeholder">Camera starts with the microphone.</p>
+        <p class="tier view-tier" id="view-tier" hidden></p>
+      </div>
+      <div class="target-row">
+        <p id="target">No target yet. Click a face box to lock it.</p>
+        <button type="button" id="unlock" hidden>Release lock</button>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Controls">
+      <div class="ab" id="ab" role="group" aria-label="What you hear">
+        <button type="button" data-ab="raw" aria-pressed="false"><b>Raw</b><span>The room, as is</span></button>
+        <button type="button" data-ab="processed" aria-pressed="true"><b>Selective hearing</b><span>Only your target</span></button>
+        <kbd class="ab-key" aria-hidden="true">Space</kbd>
+      </div>
+
+      <div class="ab" id="attention" role="group" aria-label="Attention">
+        <button type="button" data-attention="glance" aria-pressed="false"><b>Glance</b><span>Follows quickly</span></button>
+        <button type="button" data-attention="normal" aria-pressed="true"><b>Normal</b><span>Balanced</span></button>
+        <button type="button" data-attention="sticky" aria-pressed="false"><b>Sticky</b><span>Ignores glances</span></button>
+      </div>
+
+      <fieldset class="modes">
+        <legend>Mode</legend>
+        <div class="mode-grid" id="modes"></div>
+      </fieldset>
+
+      <div class="focus" id="focus-box">
+        <button type="button" class="focus-toggle" id="focus-hq" aria-pressed="false"
+                aria-describedby="focus-hint">Focus HQ <kbd>F</kbd></button>
+        <fieldset class="hq-backend" id="hq-backend" aria-describedby="hq-active">
+          <legend>Runs on</legend>
+          <div class="seg-group">
+            <label><input type="radio" name="hq-backend" value="local"><span>Local</span></label>
+            <label><input type="radio" name="hq-backend" value="remote"><span>GPU</span></label>
+            <label><input type="radio" name="hq-backend" value="auto"><span>Auto</span></label>
+          </div>
+          <output id="hq-active" data-active="">—</output>
+        </fieldset>
+        <fieldset class="hq-backend" id="latency-preset">
+          <legend>Delay</legend>
+          <div class="seg-group">
+            <label><input type="radio" name="latency-preset" value="speed"><span>Speed</span></label>
+            <label><input type="radio" name="latency-preset" value="balanced" checked><span>Balanced</span></label>
+            <label><input type="radio" name="latency-preset" value="accuracy"><span>Accuracy</span></label>
+          </div>
+        </fieldset>
+        <p class="hint" id="focus-hint">Pulls the target's voice out of the room with the camera. Adds about 1.5 s of delay.</p>
+      </div>
+
+      <div class="slider" id="slider-box">
+        <div class="slider-head">
+          <label for="suppression">Suppression</label>
+          <output id="suppression-out" for="suppression">50</output>
+        </div>
+        <input id="suppression" type="range" min="0" max="100" step="1" value="50"
+               aria-describedby="suppression-hint">
+        <p class="hint" id="suppression-hint">0 leaves the room untouched, 100 keeps only the target.</p>
+      </div>
+
+      <div class="voice">
+        <p id="voice-chip">Voice: neutral (default)</p>
+        <label class="change">
+          <span>Change</span>
+          <select id="voice-override">
+            <option value="">Automatic</option>
+            <option value="neutral">Neutral</option>
+            <option value="female_young">Female, young</option>
+            <option value="female_adult">Female, adult</option>
+            <option value="female_older">Female, older</option>
+            <option value="male_young">Male, young</option>
+            <option value="male_adult">Male, adult</option>
+            <option value="male_older">Male, older</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="output">
+        <label class="check"><input type="checkbox" id="play" checked> Play processed audio</label>
+        <p class="hint">Use wired headphones: speakers feed back into the microphone.</p>
+        <div class="meters">
+          <span>In</span><meter id="level-in" min="-60" max="0" low="-20" high="-6" optimum="-30" value="-60"></meter>
+          <span>Out</span><meter id="level-out" min="-60" max="0" low="-20" high="-6" optimum="-30" value="-60"></meter>
+        </div>
+      </div>
+
+      <dl class="room" id="room">
+        <div><dt>Noise</dt><dd id="noise">—</dd></div>
+        <div><dt>SNR</dt><dd id="snr">—</dd></div>
+        <div><dt>Speakers</dt><dd id="speakers">—</dd></div>
+        <div><dt>Overlap</dt><dd id="overlap">—</dd></div>
+        <div><dt>Target</dt><dd id="target-conf">—</dd></div>
+      </dl>
+    </section>
+
+    <section class="captions" aria-labelledby="captions-h">
+      <h2 id="captions-h">Captions</h2>
+      <div class="caption-log" id="captions" aria-live="polite">
+        <p class="empty">Captions appear here in Synthetic and Text modes.</p>
+      </div>
+    </section>
+
+    <section class="errors" aria-labelledby="errors-h">
+      <h2 id="errors-h">Server errors</h2>
+      <ol id="errors"><li class="empty">None this session.</li></ol>
+    </section>
+  </main>
+  <footer class="server-info"><small id="server-info">Server identity unavailable</small></footer>
+
+  <div class="toast" id="toast" role="status" hidden>
+    <p id="toast-text"></p>
+    <button type="button" id="toast-accept">Switch</button>
+    <button type="button" id="toast-dismiss" class="quiet">Dismiss</button>
+  </div>
+</body>
+</html>

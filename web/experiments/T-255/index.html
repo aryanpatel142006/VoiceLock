@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>A/B listening · experiment comparison (T-255 prototype)</title>
+  <link rel="stylesheet" href="ab.css">
+</head>
+<body>
+  <main class="stage">
+    <header>
+      <h1>Blind A/B listening</h1>
+      <p class="dim" id="session-line">Load a trials manifest to begin.</p>
+      <div class="progress" id="progress" hidden>
+        <div class="bar" id="progressbar"></div>
+        <span id="progresstext"></span>
+      </div>
+    </header>
+
+    <section id="loader">
+      <label class="filebtn">Load trials.json
+        <input type="file" id="manifest" accept=".json" hidden>
+      </label>
+      <button type="button" id="demobtn" class="ghost">Use example manifest</button>
+      <p class="dim small">Manifest format: see trials.example.json. Clips are
+      shown as randomized X/Y labels — conditions stay blind until export.</p>
+    </section>
+
+    <section id="trial" hidden>
+      <p class="prompt" id="prompt"></p>
+      <p class="dim small" id="inputref"></p>
+      <div class="clips" id="clips"></div>
+
+      <form id="rateform">
+        <fieldset>
+          <legend>Which is better?</legend>
+          <label><input type="radio" name="choice" value="X" required> X</label>
+          <label><input type="radio" name="choice" value="Y"> Y</label>
+          <label><input type="radio" name="choice" value="tie"> Tie</label>
+        </fieldset>
+        <fieldset class="dims">
+          <legend>Rate each (1–5, optional)</legend>
+          <div class="dimrow" data-clip="X">
+            <strong>X</strong>
+            <label>Clarity <input type="number" name="x_clarity" min="1" max="5"></label>
+            <label>Leak suppression <input type="number" name="x_leak" min="1" max="5"></label>
+            <label>Naturalness <input type="number" name="x_natural" min="1" max="5"></label>
+          </div>
+          <div class="dimrow" data-clip="Y">
+            <strong>Y</strong>
+            <label>Clarity <input type="number" name="y_clarity" min="1" max="5"></label>
+            <label>Leak suppression <input type="number" name="y_leak" min="1" max="5"></label>
+            <label>Naturalness <input type="number" name="y_natural" min="1" max="5"></label>
+          </div>
+        </fieldset>
+        <fieldset class="tags">
+          <legend>Failure tags (per clip, PLAN.md taxonomy)</legend>
+          <div class="tagrow" data-clip="X"><strong>X</strong><span class="taglist"></span></div>
+          <div class="tagrow" data-clip="Y"><strong>Y</strong><span class="taglist"></span></div>
+        </fieldset>
+        <label class="comment">Comment (optional, keep it short)
+          <input type="text" id="comment" maxlength="280" placeholder="e.g. Y hisses on sibilants">
+        </label>
+        <div class="actions">
+          <button type="submit" id="nextbtn" disabled>Next trial →</button>
+        </div>
+        <p class="dim small" id="gate-note">Play each clip at least once to unlock rating.</p>
+      </form>
+    </section>
+
+    <section id="done" hidden>
+      <h2>Session complete</h2>
+      <p class="dim" id="summary"></p>
+      <button type="button" id="exportbtn">Download results JSON</button>
+      <button type="button" id="restartbtn" class="ghost">Start over</button>
+    </section>
+  </main>
+  <script src="ab.js"></script>
+</body>
+</html>

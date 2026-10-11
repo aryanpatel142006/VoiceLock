@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Selective hearing · judge demo</title>
+  <link rel="stylesheet" href="judge.css">
+  <link rel="stylesheet" href="devices.css">
+  <script type="module" src="judge.js"></script>
+</head>
+<body>
+  <!-- T-088: A/B switch, acquisition pill, captions + a diagnostics drawer. No sliders or presets.
+       T-150: two modes, Focus and Quiet (Shift+F / Shift+Q); every other mode stays on /simple.
+       T-177: the saved people (keys 1/2) and Release (Shift+0) as buttons, the target line, a "Keys off" banner. -->
+  <p class="keys-off" id="keys-off" role="alert" hidden>Keys off: click the page</p>
+  <main class="stage">
+    <div class="modes" id="modes" role="group" aria-label="Mode (Shift+F / Shift+Q)">
+      <button type="button" data-mode="focus_hq" aria-pressed="true">
+        <strong>Focus</strong>
+        <small>hear who matters</small>
+      </button>
+      <button type="button" data-mode="quiet" aria-pressed="false">
+        <strong>Quiet</strong>
+        <small>stay connected without listening</small>
+      </button>
+    </div>
+    <div class="ab" id="ab" role="group" aria-label="What you hear (Space)">
+      <button type="button" data-ab="raw" aria-pressed="false">RAW</button>
+      <button type="button" data-ab="processed" aria-pressed="true">SELECTIVE HEARING</button>
+    </div>
+    <section class="people" id="people" aria-labelledby="people-heading">
+      <h2 id="people-heading">Choose saved person</h2>
+      <div class="people-buttons">
+        <button type="button" data-person="0" aria-pressed="false" disabled><kbd>1</kbd> <span>Person 1</span></button>
+        <button type="button" data-person="1" aria-pressed="false" disabled><kbd>2</kbd> <span>Person 2</span></button>
+        <button type="button" id="release" aria-pressed="false">Release</button>
+      </div>
+    </section>
+
+    <!-- T-158: Start failed (mic denied, missing or hung): one red line outside the drawer -->
+    <p class="mic-banner" id="mic-banner" role="alert" hidden></p>
+
+    <p class="pill" id="pill" role="status" aria-live="polite" data-state="idle">
+      <span id="pill-text">Press Start</span>
+      <small id="pill-note" hidden></small>
+      <strong id="replay-badge" class="badge" hidden>REPLAY</strong>
+    </p>
+    <p class="gate-pill" id="gate-pill" role="status" hidden title="Gate state from the engine: SOLO / OVERLAP-DUCKED / UNSURE"></p>
+    <p class="target-line" id="target-line" aria-live="polite">Target: —</p>
+    <!-- T-138: Chrome throttles a hidden tab's camera capture; say so instead of degrading silently. -->
+    <p class="bg-notice" id="bg-notice" role="status" hidden>Page in background: camera paused. Keep this tab in front.</p>
+
+    <!-- T-120: camera-free fallback. Whoever says this name becomes the target. -->
+    <form class="namecall" id="namecall" aria-label="Name Call" hidden>
+      <label><input type="checkbox" id="namecall-on"> Name Call</label>
+      <input id="namecall-name" type="text" maxlength="64" placeholder="Aryan" aria-label="Your name" autocomplete="off">
+      <select id="namecall-match" aria-label="Name match" title="strict: exactly your name or an alias; normal: close spellings, never a common other name like Ryan; loose: any close spelling">
+        <option value="strict">strict</option><option value="normal" selected>normal</option><option value="loose">loose</option>
+      </select>
+      <input id="namecall-exclude" type="text" maxlength="200" placeholder="not: Ryan" aria-label="Words that are not your name (commas)" autocomplete="off">
+      <button type="button" id="namecall-release" hidden>Release</button>
+    </form>
+
+    <section class="captions-panel" id="captions-panel" aria-label="Captions" hidden>
+      <p class="speaker-label" id="caption-speaker" hidden></p>
+      <p class="notice" id="caption-warning" role="status" hidden></p>
+      <div class="captions" id="captions" aria-live="polite">
+        <p class="empty">Live captions</p>
+      </div>
+    </section>
+
+    <button class="go" id="start" type="button" aria-pressed="false">Start</button>
+  </main>
+
+  <details class="drawer" id="drawer">
+    <summary>Diagnostics</summary>
+    <dl>
+      <dt>Backend</dt><dd id="d-backend">—</dd>
+      <dt>Tier</dt><dd id="d-tier">—</dd>
+      <dt>Delay</dt><dd id="d-delay">—</dd>
+      <dt>RTT</dt><dd id="d-rtt">—</dd>
+      <dt>SI-SDRi</dt><dd id="d-claim">—</dd>
+      <dt>Pick</dt><dd><meter id="d-conf" min="0" max="1" low="0.34" high="0.67" optimum="1" value="0"></meter> <span id="d-conf-text">—</span></dd>
+      <dt id="d-preset-label" hidden>TEAM PRESET</dt><dd id="d-preset" hidden>—</dd>
+    </dl>
+    <div id="devices" aria-label="Audio devices"></div>
+    <p class="keys"><kbd>Space</kbd> raw / selective · <kbd>Shift</kbd>+<kbd>C</kbd> calibrate · <kbd>Shift</kbd>+<kbd>R</kbd> replay clip · <kbd>Shift</kbd>+<kbd>N</kbd> Name Call (C/R/N alone while this drawer is open) · <kbd>1</kbd>/<kbd>2</kbd> saved person · <kbd>Shift</kbd>+<kbd>0</kbd> release</p>
+    <p class="drawer-buttons">
+      <button type="button" id="replay">Replay clip</button>
+      <!-- the clip that opens with the target alone (the live flow); replay.js keeps it when the server lists it -->
+      <select id="replay-clip" hidden><option value="demo-mf-easy">demo-mf-easy</option></select>
+      <!-- T-181: the team preset plays standard (T-129 Q-470); strict stays one pick away -->
+      <label>Isolation <select id="isolation" aria-label="Isolation"><option value="standard">standard</option><option value="strict">strict</option></select></label>
+    </p>
+    <ol class="log" id="log" aria-label="Fallbacks"></ol>
+    <div class="peek">
+      <video id="video" muted playsinline></video>
+      <img id="replay-preview" hidden alt="Replay frames">
+    </div>
+    <div id="view" hidden></div>
+    <small id="server-info"></small>
+  </details>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Selective hearing · rehearsal testbed</title>
+  <link rel="stylesheet" href="rehearsal.css">
+  <script type="module" src="rehearsal.js"></script>
+</head>
+<body>
+  <main id="rehearsal-root">
+    <header>
+      <h1>Rehearsal testbed</h1>
+      <p><span id="engine">engine: waiting for mic</span> · <span id="mic">phone mic closed</span> · <button type="button" id="mic-open">Open mic</button></p>
+      <p id="status" role="status" aria-live="polite"></p>
+    </header>
+
+    <section aria-labelledby="h-matrix">
+      <h2 id="h-matrix">A/B matrix (switches live, no restart)</h2>
+      <h3>Representation</h3>
+      <div class="seg" id="m-repr" role="group" aria-label="Representation"></div>
+      <p id="repr-warn" class="warn" hidden>models/team_projection_head.pt is not present; the choice is only recorded.</p>
+      <h3>Ambiguity policy</h3>
+      <div class="seg" id="m-policy" role="group" aria-label="Ambiguity policy"></div>
+      <h3>Latency vs accuracy</h3>
+      <div class="seg" id="m-ladder" role="group" aria-label="Latency ladder"></div>
+      <h3><label for="m-supp">Suppression</label> <output id="m-supp-out" for="m-supp">80 %</output></h3>
+      <input type="range" id="m-supp" min="0" max="100" step="1" value="80">
+    </section>
+
+    <section aria-labelledby="h-prompt">
+      <h2 id="h-prompt">Script prompter</h2>
+      <label for="script-select">Scenario</label>
+      <select id="script-select"></select>
+      <p id="p-left" class="timer"></p>
+      <ol id="cards" class="cards"></ol>
+    </section>
+
+    <section aria-labelledby="h-tel">
+      <h2 id="h-tel">Live telemetry</h2>
+      <dl class="tel">
+        <div><dt>Active speaker</dt><dd id="t-speaker">none</dd></div>
+        <div><dt>Mouth-to-ear</dt><dd id="t-latency">—</dd></div>
+        <div><dt>RTF</dt><dd id="t-rtf">—</dd></div>
+        <div><dt>Tier</dt><dd id="t-tier">—</dd></div>
+      </dl>
+      <label for="g-margin">Margin <span id="g-margin-n">—</span></label>
+      <meter id="g-margin" min="0" max="1" value="0"></meter>
+      <label for="g-conf">Confidence <span id="g-conf-n">—</span></label>
+      <meter id="g-conf" min="0" max="1" low="0.4" high="0.7" optimum="1" value="0"></meter>
+    </section>
+
+    <section aria-labelledby="h-rec">
+      <h2 id="h-rec">Take</h2>
+      <button type="button" id="rec" class="big">Start take</button>
+      <p><input id="mark-note" type="text" placeholder="marker note" aria-label="Marker note"> <button type="button" id="mark">Marker</button></p>
+      <p id="rec-info"></p>
+      <p>Saved to <code id="take-dir">results/rehearsal/</code></p>
+    </section>
+  </main>
+</body>
+</html>
