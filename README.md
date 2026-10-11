@@ -9,6 +9,10 @@ Built at HackRU Fall 2026 by Aryan Patel, Joseph Roche and Ahmad Abbadi.
 - **Focus**: you hear the selected person, with the rest of the room reduced.
 - **Quiet**: the room is silenced and you get captions from the selected person only.
 - **Raw / isolated A/B** so the difference is audible on the spot.
+- **Listen screen**: drag a voice into the ring to choose who to follow, and a room dial to set how far the rest of the room is turned down. In Quiet, captions fade in as the selected person speaks.
+- **Welcome**: a short cinematic opening before setup.
+- **Optional low-delay window** (`HEARING_TSE_WINDOW_S=0.5 HEARING_TSE_HOP_S=0.25`): shrinks the enrolled tier's window from 1.0 s to 0.5 s (a 0.75 s window-plus-hop delay in the engine). Off by default, and its end-to-end delay and quality are not among the measured results below; see `docs/research/T-420_short_window.md`.
+- **Optional fine-tuned team separator** (`HEARING_SEP_CKPT`, `HEARING_PICK=fixed`) for the two enrolled voices. Weights are not in this repository; see `docs/MODELS.md` and `docs/STAGE_CARD.md`.
 - **Saved voice profiles** for the people you want to follow, plus a live noise filter and level control.
 - Every session records its input, output and an event log, so results come from recordings.
 
