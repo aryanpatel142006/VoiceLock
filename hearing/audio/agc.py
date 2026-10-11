@@ -215,3 +215,47 @@ class AgcStage:
 
     def reset(self) -> None:
         self.agc.reset()
+
+
+# Live test Oct 11 (session 20261011T092456Z-3): the AGC's pause rule swung the applied gain 0 <-> +12 dB on a
+# steady single voice (out.wav level SD 6.9 dB vs 3.0 dB before the AGC), heard as the voice going up and down.
+# HEARING_FIXED_GAIN (default on): the output gets ONE constant makeup gain (HEARING_FIXED_GAIN_DB, default +22 dB:
+# the iPhone mic's -45 dBFS speech lands near -23 dBFS) and the soft limiter for peaks only. Nothing time-varying.
+FIXED_ENV = "HEARING_FIXED_GAIN"  # "0"/"off"/"false" = the T-169 AGC as before
+FIXED_DB_ENV = "HEARING_FIXED_GAIN_DB"
+FIXED_GAIN_DB = 22.0
+
+
+def fixed_gain_enabled() -> bool:
+    return os.environ.get(FIXED_ENV, "").strip().lower() not in ("0", "off", "false")
+
+
+def fixed_gain_db() -> float:
+    try:
+        v = float(os.environ.get(FIXED_DB_ENV, "") or FIXED_GAIN_DB)
+    except ValueError:
+        return FIXED_GAIN_DB
+    return v if math.isfinite(v) and -40.0 <= v <= 40.0 else FIXED_GAIN_DB
+
+
+class FixedGain:
+    """Constant makeup gain + soft limiter (same interface as :class:`Agc`): the level never moves."""
+
+    never_up = False
+
+    def __init__(self, sample_rate: int = PIPELINE_SR, *, gain_db: float | None = None, limit: float | None = LIMIT):
+        self.sample_rate = int(sample_rate)
+        self.gain_db = fixed_gain_db() if gain_db is None else float(gain_db)
+        self._g = np.float32(10.0 ** (self.gain_db / 20.0))
+        self.limit = limit
+
+    def reset(self) -> None:
+        pass
+
+    def process_array(self, x: np.ndarray) -> np.ndarray:
+        y = np.asarray(x, dtype=np.float32) * self._g
+        return soft_limit(y, self.limit) if self.limit is not None else y
+
+    def status(self) -> dict:
+        return {"gain_db": round(self.gain_db, 1), "pause_db": 0.0, "applied_db": round(self.gain_db, 1),
+                "floor_rule": False, "level_db": None, "target_db": None, "fixed": True}

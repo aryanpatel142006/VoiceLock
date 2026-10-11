@@ -64,6 +64,7 @@ from hearing.fusion import stream_vad
 from hearing.fusion.mixer import CONFIDENCE_KEY, OVERLAP_KEY, RESIDUAL_KEY
 from hearing.tse.base import LIPS_FPS, SR, conform_output, get_candidate
 from hearing.tse.enroll import ENROLL_S, ENROLLER_KEY, AutoEnroller
+from hearing.tse.enrolled import loudest_enabled
 from hearing.tse.gpu import TORCH_LOCK
 from hearing.tse.lips import LipFrame, feed_of
 from hearing.tse.windowed import crossfade_window, frame_span
@@ -469,13 +470,15 @@ class FocusHQ:
                 w.status, w.reason = "skip", "no p_speaking"
                 return
         enroll = None
+        if self._loudest_on():  # HEARING_PICK=loudest: no voice profile needed, the loudest separated voice plays
+            needs = ()
         if "enroll" in needs:
             enroll = self.enroller.clip() if self.enroller is not None else None
             if enroll is None:
                 w.status, w.reason = "skip", "enrolling"
                 return
         other = self.enroller.other_clip() if "other" in needs and self.enroller is not None else None
-        if not self._enrollment_prepared(enroll, other):
+        if enroll is not None and not self._enrollment_prepared(enroll, other):
             if self._prepared_clips is None:
                 w.status, w.reason = "skip", "enrolling"
                 return
@@ -492,6 +495,10 @@ class FocusHQ:
             w.future = self._executor().submit(self._extract, *args)
             return
         self._finish(w, *self._extract(*args))
+
+    def _loudest_on(self) -> bool:
+        """HEARING_PICK=loudest with a candidate that supports it (the enrolled candidate)."""
+        return loudest_enabled() and callable(getattr(self.cand, "_loudest", None))
 
     def _enrollment_prepared(self, enroll: np.ndarray, other: np.ndarray | None) -> bool:
         """True once the candidate prepared ``enroll`` (``prepare()``: the enrolled candidate's
@@ -622,7 +629,10 @@ class FocusHQ:
         self._settle()
         out, mix = self._emit_chunk(n)
         self._trim(self._out)
-        if self.residual:
+        if self.residual and self._loudest_on():  # loudest voice only: the room / other voice never comes back
+            ctx.telemetry.extras[RESIDUAL_KEY] = np.zeros_like(out, dtype=np.float32)
+            ctx.telemetry.extras[CONFIDENCE_KEY] = 1.0
+        elif self.residual:
             ctx.telemetry.extras[RESIDUAL_KEY] = (mix - out).astype(np.float32)
             if self._conf is not None:
                 ctx.telemetry.extras[CONFIDENCE_KEY] = self._conf
@@ -839,6 +849,12 @@ T-088). ``reason`` says
             # T-487: the team slot is locked (played every window, no identity gate) and its partner-dominance duck
             "locked": getattr(self.cand, "locked", None),
             "lock_duck_db": _round(getattr(self.cand, "lock_duck_db", None)),
+            # solo pass-through (telemetry): True = one voice, False = overlap; the locked target slot plays either way
+            "solo": getattr(self.cand, "solo", None),
+            "solo_source": getattr(self.cand, "solo_source", None),
+            # HEARING_PICK=loudest: "loudest" (the UI shows ISOLATED · loudest voice), else None
+            "pick": "loudest" if self._loudest_on() else None,
+            "loud_switches": getattr(self.cand, "loud_switches", None),
         }
         self._health_key = key
         return self._health_cache

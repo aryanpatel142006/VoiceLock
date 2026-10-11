@@ -83,7 +83,7 @@ import yaml
 
 from hearing import registry
 from hearing.audio import smooth as out_smooth
-from hearing.audio.agc import Agc, floor_rule_kwargs
+from hearing.audio.agc import Agc, FixedGain, fixed_gain_enabled, floor_rule_kwargs
 from hearing.audio.io import HOP, PIPELINE_SR, float_to_pcm16, pcm16_to_float
 from hearing.audio.stream import Chunker
 from hearing.context.features import ContextTracker
@@ -524,9 +524,13 @@ class Session:
         self.isolation: str = "standard"  # control.isolation: enrolled-tier strictness (T-085)
         self.profile: str | None = None  # control.profile: "judge" locks the demo defaults (T-088)
         self.auto_calibrator = AutoCalibrator()  # on with the judge profile
-        self.out_agc = Agc(PIPELINE_SR, **floor_rule_kwargs())  # T-135 output AGC + limiter (T-179 floor rule opt-in)
-        # T-484: cap-and-slew leveller after the AGC (HEARING_SMOOTH=1), None when off
-        self.out_smooth = out_smooth.Smoother(PIPELINE_SR, cap_db=out_smooth.cap_from_env()) if out_smooth.enabled() else None
+        # HEARING_FIXED_GAIN (default on): one constant makeup gain + peak limiter, no time-varying level at all;
+        # off = the T-135 output AGC + limiter (T-179 floor rule opt-in)
+        fixed = fixed_gain_enabled()
+        self.out_agc = FixedGain(PIPELINE_SR) if fixed else Agc(PIPELINE_SR, **floor_rule_kwargs())
+        # T-484: cap-and-slew leveller after the AGC (HEARING_SMOOTH=1), None when off or under the fixed gain
+        self.out_smooth = (out_smooth.Smoother(PIPELINE_SR, cap_db=out_smooth.cap_from_env())
+                           if out_smooth.enabled() and not fixed else None)
         self.agc_enabled = True  # control.agc (T-169): false on the remote leg, the laptop levels once
         # T-135: the tap's out_pre_agc.wav (16 kHz sessions): separation is scored before output leveling
         self.pre_agc_sink: Callable[[bytes], None] | None = None

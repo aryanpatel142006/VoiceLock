@@ -157,6 +157,19 @@ LOCK_ENV = "HEARING_TEAM_LOCK"  # "0" = off (the T-386/T-484 gated fixed slot as
 LOCK_PARTNER_S = 3.0
 LOCK_DUCK_DB = 6.0
 LOCK_DUCK_RATE = 6.0  # dB per second of hops, so the full duck (or release) takes 1 s
+# Solo pass-through (default on, HEARING_SOLO_PASS=0 = off), inside the T-487 locked mode. First version (eb58f7d0)
+# passed "whoever talks" in solo windows as the SUM of both slots, or the raw mix where the slots were weak; live
+# test Oct 11 (20261011T094553Z-2) it played the raw mix in ~65 % of windows and called only ~5 % overlap, so the
+# room and the other teammate came straight through ("not isolating at all"). Now (conservative): the output is
+# always the locked target slot alone, never the partner slot, the slot sum or the raw mix. Solo pass only removes
+# the T-487 partner-dominance duck, so the target slot plays at a steady 0 dB; the solo/overlap state below is kept
+# for /health telemetry only.
+SOLO_ENV = "HEARING_SOLO_PASS"
+SOLO_OVERLAP_DB = 12.0
+SOLO_SHARE_DB = 15.0
+SOLO_HOLD_S = 1.0
+SOLO_OVERLAP_FRAC = 0.3  # share of a window's 100 ms blocks that must be two-voice for the window to count as overlap
+SOLO_BLOCK = 1600  # 100 ms blocks at 16 kHz for the overlap test
 CONTRAST_ENV = "HEARING_ENROLLED_CONTRAST"  # T-178: default ``contrast`` when the pipeline spec sets none
 WARM_ENV = "HEARING_WARM_ENROLLED"  # T-339: "1" = saved-profile embeddings computed once at server start, shared
 # T-339: (embedder id, clip key) -> (embedding, profile pieces info), filled by hearing.server.warm (knob on only)
@@ -189,6 +202,36 @@ def slot_duck_db() -> float | None:
 def lock_enabled() -> bool:
     """T-487 locked mode for team slots: on unless ``$HEARING_TEAM_LOCK`` is 0/off/false."""
     return os.environ.get(LOCK_ENV, "").strip().lower() not in ("0", "off", "false")
+
+
+def solo_pass_enabled() -> bool:
+    """Solo pass-through in locked mode: on unless ``$HEARING_SOLO_PASS`` is 0/off/false."""
+    return os.environ.get(SOLO_ENV, "").strip().lower() not in ("0", "off", "false")
+
+
+# Loudest-voice mode (HEARING_PICK=loudest, opt-in; Aryan, Oct 11 live test): the iPhone mic sits next to the
+# person speaking, so they are the loudest voice. Each window is separated as usual (the team checkpoint when
+# $HEARING_SEP_TEAM_CKPT is loaded, else the stock separator) and ONLY the separated stream with the most energy
+# plays: no voice profiles, no ECAPA, no gate, no duck, no raw-mix fallback; the other stream and the room are
+# dropped (the tse stage sends a zero residual, so the room dial adds nothing back). Sticky: the locked voice
+# (followed across windows by correlating the overlap with the last output) is kept until the other stream is
+# LOUDEST_SWITCH_DB louder for more than LOUDEST_SWITCH_S; through pauses (both streams under LOUDEST_QUIET_DBFS)
+# the lock is kept up to LOUDEST_PAUSE_S, after which the next voice is picked fresh.
+PICK_ENV = "HEARING_PICK"
+LOUDEST_SWITCH_DB = 6.0
+LOUDEST_SWITCH_S = 1.0
+LOUDEST_PAUSE_S = 3.0
+LOUDEST_QUIET_DBFS = -55.0
+
+
+def loudest_enabled() -> bool:
+    """``$HEARING_PICK=loudest``: play only the loudest separated voice (see LOUDEST_*)."""
+    return os.environ.get(PICK_ENV, "").strip().lower() == "loudest"
+
+
+def _db(x) -> float:
+    x = np.asarray(x, np.float64)
+    return 10.0 * math.log10(float(np.mean(np.square(x))) + 1e-12) if len(x) else -120.0
 
 
 def partner_dominates(slot, partner, mix) -> bool:
@@ -421,6 +464,15 @@ class EnrolledCandidate:
         self._partner_s = 0.0  # T-487: consecutive time the partner slot has dominated
         self._lock_key = None  # T-487: the target the lock belongs to (a new pick resets the duck)
         self._lock_hop = None  # T-487: the last measured hop in samples
+        self.solo = None  # solo pass-through: True = one voice, passed whoever it is; False = overlap, target slot
+        self.solo_source = None  # "slot" (the locked target slot, always) / None (solo pass off)
+        self._overlap_left = 0.0  # seconds the overlap state is still held
+        self.pick = "loudest" if loudest_enabled() else None  # HEARING_PICK=loudest: telemetry
+        self._loud_slot = None  # loudest mode: index of the locked voice in the last window (None = no lock)
+        self._loud_switch_s = 0.0  # loudest mode: time the other stream has been LOUDEST_SWITCH_DB louder
+        self._loud_quiet_s = 0.0  # loudest mode: time both streams have been quiet
+        self.loud_switches = 0  # loudest mode: number of voice switches (telemetry)
+        self._prev_loud = False  # loudest mode: the last output carried a voice
 
     def load(self):
         self.separator.load()
@@ -572,6 +624,8 @@ class EnrolledCandidate:
         self, mix, sr, *, lips=None, lips_fps=25.0, p_speaking=None, enroll=None, other=None, asd=None
     ):
         mix = validate_audio(mix, sr)
+        if loudest_enabled():
+            return self._loudest(mix, sr)
         if enroll is None:
             raise ValueError("enrolled needs enrollment audio")
         enroll = validate_audio(enroll, sr)
@@ -618,6 +672,7 @@ class EnrolledCandidate:
         if team is not None and team < len(streams) and lock_enabled():
             return self._locked(mix, sr, streams, team, similarities, enroll)
         self.locked, self._lock_key = False, None
+        self.solo = self.solo_source = None
         fixed = team if team is not None and team < len(streams) else fixed_target(enroll, len(streams))
         self.fixed_pick = fixed is not None
         if fixed is not None:  # T-386: the slot is the identity; ECAPA only sets the gate and confidence
@@ -719,6 +774,9 @@ class EnrolledCandidate:
             self._lock_hop = found[1]
         hop_s = (self._lock_hop or len(mix) // 2) / sr  # unknown (first window, identical windows): half a window
         partner = streams[1 - slot] if len(streams) == 2 else np.zeros_like(streams[slot])
+        if solo_pass_enabled() and len(streams) == 2:
+            return self._solo_pass(mix, streams, slot, similarities, hop_s)
+        self.solo = self.solo_source = None
         self._partner_s = self._partner_s + hop_s if partner_dominates(streams[slot], partner, mix) else 0.0
         goal = -LOCK_DUCK_DB if self._partner_s > LOCK_PARTNER_S else 0.0
         step = LOCK_DUCK_RATE * hop_s
@@ -735,3 +793,86 @@ class EnrolledCandidate:
         if self.lock_duck_db < 0.0:
             return (out * np.float32(10.0 ** (self.lock_duck_db / 20.0))).astype(np.float32)
         return out.copy()
+
+    def _solo_state(self, mix, streams, hop_s):
+        """Solo / overlap state for telemetry (``$HEARING_SOLO_PASS``, see SOLO_*): True while both slots carried a
+        voice in >= SOLO_OVERLAP_FRAC of a window's 100 ms blocks, held SOLO_HOLD_S. It never changes the audio."""
+        mix = np.asarray(mix, np.float32)
+        s0, s1 = (np.asarray(y, np.float32) for y in streams)
+        b = SOLO_BLOCK
+        n = len(mix) // b
+
+        def blocks(x):
+            return 10.0 * np.log10(np.mean(np.square(x[:n * b].reshape(n, b), dtype=np.float64), axis=1) + 1e-12)
+
+        if n:
+            mix_db, d0, d1 = blocks(mix), blocks(s0), blocks(s1)
+            weak, strong = np.minimum(d0, d1), np.maximum(d0, d1)
+            ov = (weak >= strong - SOLO_OVERLAP_DB) & (weak >= mix_db - SOLO_SHARE_DB)
+            overlap_now = int(ov.sum()) >= max(2, int(math.ceil(SOLO_OVERLAP_FRAC * n)))
+        else:
+            lm, l0, l1 = _db(mix), _db(s0), _db(s1)
+            weak, strong = min(l0, l1), max(l0, l1)
+            overlap_now = weak >= strong - SOLO_OVERLAP_DB and weak >= lm - SOLO_SHARE_DB
+        self._overlap_left = SOLO_HOLD_S if overlap_now else max(0.0, self._overlap_left - hop_s)
+        return self._overlap_left > 0.0
+
+    def _solo_pass(self, mix, streams, slot, similarities, hop_s):
+        """Locked mode with solo pass-through: the locked target slot alone at a steady 0 dB every window (no partner
+        duck, no gate). Never the partner slot, the slot sum or the raw mix: isolation is never lost."""
+        overlap = self._solo_state(mix, streams, hop_s)
+        self.lock_duck_db, self._partner_s = 0.0, 0.0
+        self.locked = self.fixed_pick = True
+        self.gated = self.paused = self.soft_gated = False
+        self.soft_gain_db = self.slot_soft_db = None
+        self._pause_s = 0.0
+        self.confidence = 1.0
+        self.selected_stream = slot
+        self.similarity = similarities[slot]
+        self._prev = (np.asarray(mix, np.float32), streams[slot])
+        self.solo, self.solo_source = not overlap, "slot"
+        return streams[slot].copy()
+
+    def _loudest(self, mix, sr):
+        """HEARING_PICK=loudest: the loudest separated voice alone, sticky (see LOUDEST_*). Never the raw mix."""
+        self.separator.load()
+        sep = self.team_separator if self.team_separator is not None else self.separator
+        if sep is not self.separator:
+            sep.load()
+        self.separator_active = "team" if sep is not self.separator else "stock"
+        streams = [np.asarray(y, np.float32) for y in sep.separate(mix, sr)]
+        levels = [_db(y) for y in streams]
+        found = self._follow_hop(mix, streams) if self._prev is not None else None
+        hop = found[1] if found is not None and found[1] > 0 else len(mix) // 2
+        hop_s = hop / sr
+        loud = int(np.argmax(levels))
+        quiet = max(levels) < LOUDEST_QUIET_DBFS
+        self._loud_quiet_s = self._loud_quiet_s + hop_s if quiet else 0.0
+        cur = self._loud_slot
+        if cur is not None and self._loud_quiet_s > LOUDEST_PAUSE_S:
+            cur = None  # a long pause: the next voice is picked fresh
+        if cur is not None and found is not None and self._prev_loud:
+            cur = found[0]  # the stream that continues the voice we played (separator order can swap)
+        if cur is None or cur >= len(streams):
+            cur, self._loud_switch_s = (loud, 0.0)
+        elif len(streams) > 1 and not quiet:
+            other = max((i for i in range(len(streams)) if i != cur), key=lambda i: levels[i])
+            if levels[other] > levels[cur] + LOUDEST_SWITCH_DB:
+                self._loud_switch_s += hop_s
+                if self._loud_switch_s > LOUDEST_SWITCH_S:
+                    cur, self._loud_switch_s = other, 0.0
+                    self.loud_switches += 1
+            else:
+                self._loud_switch_s = 0.0
+        self._loud_slot = cur
+        self._prev_loud = levels[cur] >= LOUDEST_QUIET_DBFS  # only a voiced output is worth following next window
+        self._prev = (np.asarray(mix, np.float32), streams[cur])
+        self.selected_stream, self.similarity = cur, None
+        self.locked = True
+        self.fixed_pick = False
+        self.gated = self.paused = self.soft_gated = self.held = self.vetoed = False
+        self.soft_gain_db = self.slot_soft_db = None
+        self.solo = self.solo_source = None
+        self.lock_duck_db = 0.0
+        self.confidence = 1.0
+        return streams[cur].copy()
