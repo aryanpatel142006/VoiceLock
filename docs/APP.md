@@ -31,15 +31,15 @@ Two start lines, same flags; only three environment variables differ. Restarting
 ```bash
 # Base (shipped MossFormer2 weights, closed-set ECAPA pick)
 bash scripts/demo.sh --judge --team --lan --app
-# Fine-tuned (T-374 fixed-order checkpoint: slot 0 = Aryan, slot 1 = Joseph; gated windows duck the room 20 dB)
-HEARING_SEP_CKPT=$PWD/models/T-374/fixed_best.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20 \
+# Fine-tuned (T-387 fixed-order checkpoint, picked by T-408: slot 0 = Aryan, slot 1 = Joseph; gated windows duck the room 20 dB)
+HEARING_SEP_CKPT=$PWD/models/T-374/v2_t387.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20 \
   bash scripts/demo.sh --judge --team --lan --app
 ```
 
 - Run it from the main checkout (`~/CODE/selective-hearing`); `models/` is gitignored and lives there (`$HEARING_MODELS_DIR`).
 - `HEARING_PICK=fixed` needs `HEARING_SEP_CKPT` (base weights with the fixed pick play a random slot) and profiles named `aryan` / `joseph` (the team preset's default `HEARING_PROFILES_DIR` has them). A wrong path fails when the separator loads, with `HEARING_SEP_CKPT is not a file` (check the path with `ls` first).
 - Why this arm: T-386 measured held-out wrong-speaker 1.6 % vs 15.7 % for base, leak -17.2 vs -8.8 dB, same compute (`docs/BENCHMARKS.md`). The adoption condition is Aryan's listen and a live room test; no default changed, so the base line still plays base.
-- The morning task may swap the checkpoint for the T-387 / T-391 best one (`docs/T-387_fixed_wide_sir.md` recommends T-387's for the Aryan+Joseph fixed slot only). Only the `HEARING_SEP_CKPT` path changes; on Oct 10, 9:45 PM only `models/T-374/fixed_best.pt` existed in `$HEARING_MODELS_DIR`.
+- T-408 fetched T-387's checkpoint to `models/T-374/v2_t387.pt` and recommends it (same wrong-speaker as T-374's at floor 20, 2.3 vs 2.2 %, target-muted 21.8 vs 27.6 s over 10 rows, same compute; floors 12/15/25 lost, `docs/BENCHMARKS.md` T-408). `models/T-374/fixed_best.pt` (T-374) stays in `$HEARING_MODELS_DIR` as the reference. The morning task may swap in a better overnight checkpoint (`docs/T-387_fixed_wide_sir.md` recommends T-387's for the Aryan+Joseph fixed slot only); only the `HEARING_SEP_CKPT` path changes.
 - `HEARING_FIXED_GATE` stays off (T-402: not adopted).
 
 ## 2. Trust the certificate once

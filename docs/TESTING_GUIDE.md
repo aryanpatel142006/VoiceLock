@@ -408,6 +408,36 @@ bash scripts/demo.sh --restart
 
 ---
 
+## 11. The agents (swarm-control) — see, stop, restart
+
+See the board (or open the Notion page):
+
+```bash
+set -a; source ~/.swarm/env; set +a
+~/CODE/CLAUDE/HACKRU2026/swarm-control/.venv/bin/swarm status
+```
+
+**Stop all agents** (do this before measuring or demoing — frees the CPU):
+
+```bash
+pkill -f "swarm run"; pkill -f "swarm serve"
+```
+
+Start them again later:
+
+```bash
+cd ~/CODE/selective-hearing; set -a; source ~/.swarm/env; set +a
+S=~/CODE/CLAUDE/HACKRU2026/swarm-control/.venv/bin/swarm
+nohup caffeinate -dims $S serve >> ~/.swarm/selective-hearing/serve.nohup.log 2>&1 &
+nohup caffeinate -dims $S run --agent claude-a >> ~/.swarm/selective-hearing/run-a.nohup.log 2>&1 &
+nohup caffeinate -dims $S run --agent claude-a2 >> ~/.swarm/selective-hearing/run-a2.nohup.log 2>&1 &
+```
+
+Add a task by hand: `$S add "title" --type backend --importance high --description "..." --acceptance "..."`.
+The orchestrator playbook is `~/CODE/CLAUDE/HACKRU2026/swarm-control/skills/swarm-control/SKILL.md`.
+
+---
+
 ## 12b. Demo noise kit (speaker beside the target)
 `scripts/demo_noise.py` plays looping café babble (1), a competing talker (2) or both (3) on a chosen output device, with `+`/`-` level, Space pause, q quit. Sources come from WAVs under `HEARING_FIXTURES_DIR`; with none, Kokoro TTS and a synthetic murmur. Steps: `--list`; `--device NAME --calibrate` (pink noise, aim for ~65 dB(A) at the listener with a phone SPL app); then run without `--calibrate` using the printed `--level`. It refuses the engine's output (`--engine-output`, default the system output): check by passing the headphones name and seeing "refusing". Unit tests (`tests/test_demo_noise.py`) use a fake device list; the real speaker is a human check (never from verify).
 
@@ -425,6 +455,6 @@ bash scripts/demo.sh --restart
 | Synthetic silent / robotic | No ElevenLabs key → Kokoro; check `.env`; restart |
 | Anything else | `tail -50 "${TMPDIR:-/tmp}/hearing-serve-8000.log"` (server log of the server `demo.sh` started on :8000) and `docs/DEMO.md` sections 6 and C |
 
-Deeper docs: `docs/DEMO.md` (full runbook + judge script), `docs/BENCHMARKS.md` (all numbers), `docs/CONTRACTS.md` (protocol for the app team).
+Deeper docs: `docs/DEMO.md` (full runbook + judge script), `docs/BENCHMARKS.md` (all numbers), `docs/decisions/association.md` (why the target never swaps), `docs/CONTRACTS.md` (protocol for the app team), `PLAN.md`.
 
 **Browser checks (T-124).** They are Python pytest tests marked `slow` that use the Python Playwright in `.venv` (see `tests/test_phone_check.py`). Do not write or run node Playwright `PLAYWRIGHT=… node …-e2e.mjs` scripts: no node Playwright is installed.

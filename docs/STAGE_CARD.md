@@ -6,7 +6,7 @@ From rehearsal 2: **N = ____ %** wrong-speaker · **X = ____ %** WER · separato
 
 ## Start (in `~/CODE/selective-hearing`; wait for `JUDGE · backend Mac`, ~10 s)
 - **Base:** `bash scripts/demo.sh --judge --team --lan --app`
-- **Fine-tuned:** prefix `HEARING_SEP_CKPT=$PWD/models/T-374/fixed_best.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20` (or the morning's T-387/T-391 `.pt`)
+- **Fine-tuned:** prefix `HEARING_SEP_CKPT=$PWD/models/T-374/v2_t387.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20` (T-408; or the morning's overnight `.pt`)
 - iPhone USB mic: add `--mic "Aryan patel's iPhone Microphone"`. Phones: `https://<laptop IP>:8000/app/` (QR), accept the cert once, Add to Home Screen; companion only.
 
 ## Before the judge puts the AirPods in

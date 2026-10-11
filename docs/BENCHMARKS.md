@@ -3095,6 +3095,121 @@ rescuing is the next thing to try, and the t141 timing rows need a rerun on a ma
 stays in `hearing/tse/fixed_gate.py` behind `HEARING_FIXED_GATE` (default off) so these rows can be reproduced, and no further attempt is planned.
 Listening files: `~/Desktop/selective-hearing-finetune/<name>-5-ft-fixed-floor20-slotgate-live.wav` (holdout-sir0-cafe, level-matched like arms 0-4).
 
+## Gated-floor sweep on the T-387 fine-tuned separator (`HEARING_GATED_FLOOR_DB` in {12, 15, 20, 25}, T-408, Oct 10)
+
+**Question.** Three gates (T-370, T-402, T-407) did not beat arm 4 (fine-tuned + fixed pick + floor 20). Can the floor itself trade the
+Joseph-as-target muting against leak? Checkpoint: T-387's longer fixed-order fine-tune (SIR -10..+10 dB, `docs/T-387_fixed_wide_sir.md`),
+fetched from iLab `~/tmp/T-374b/run_fixed/best.pt` to `$HEARING_MODELS_DIR/T-374/v2_t387.pt` (223 MB, md5 `d673d485…`; never in git).
+Reference arm: T-374's `fixed_best.pt` at floor 20 (= T-386's arm 4), re-measured in the same batch.
+
+**Verdict: keep floor 20, and swap the checkpoint to T-387.** The pick rule (least target-muted time with wrong-speaker within +0.5 pt
+of t387 floor 20) chooses **t387 + floor 20**. The floor does not decide which windows are muted. It only sets how deep a gated window goes.
+- Target-muted (>= 10 dB down) barely moves with the floor: 21.2 / 21.4 / 21.8 / 21.8 s summed over 10 rows for floor 12 / 15 / 20 / 25.
+  Every floor tested is >= 10 dB, so a gated window counts as muted at all of them. The ECAPA gate picks the windows; the floor sets only the depth.
+  At stricter thresholds the floor does matter: >= 15 dB down 5.8 / 11.2 / 16.8 / 16.8 s, >= 20 dB down 3.6 / 3.6 / 9.0 / 14.6 s.
+  A lower floor makes Joseph's dropouts shallower (-12 dB instead of -20 dB). It does not remove them.
+- The price is wrong-speaker: 6.1 % (floor 12) / 4.0 % (15) / 2.3 % (20) / 2.3 % (25). Floors 12 and 15 miss the +0.5 pt bar (+3.8 / +1.7 pt), mostly
+  on the Joseph held-out rows (sir-6-cafe 2.8 -> 12.7..14.8 %, sir0-cafe 0.0 -> 8.5 % at floor 12). Floor 25 ties floor 20 at 10 dB
+  and is deeper at 20 dB (14.6 vs 9.0 s), for 0.4 dB more leak suppression. Not worth it.
+- **T-387 vs T-374 at floor 20** is the real gain. Target-muted falls 27.6 -> 21.8 s (t141 rows 14.0 -> 7.4 s; t141-hard joseph 8.2 -> 4.6 s,
+  t141-easy joseph 4.0 -> 2.6 s). Leak goes -16.7 -> -17.7 dB and SI-SDRi pre-AGC +7.6 -> +8.7 dB. Wrong-speaker is level (2.3 vs 2.2 %).
+  On the held-out rows the two checkpoints are close: muted 14.4 vs 13.6 s, wrong-speaker 1.3 vs 1.6 %, leak -18.6 vs -17.2 dB.
+  The new checkpoint mostly fixes the t141 real-pair rows, and aryan holdout-sir-6-cafe (4.2 -> 0.0 %, -13.0 -> -23.7 dB).
+- Compute is the same (same architecture): exclusive timing row t141-hard joseph:aryan, p95 window 257 ms (t387) vs 264 ms (t374), 0 / 58 deadline misses each.
+
+**Recommended launch line (team preset only, profiles `aryan`/`joseph`; no code default changed):**
+`HEARING_SEP_CKPT=$PWD/models/T-374/v2_t387.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20 bash scripts/demo.sh --judge --team`
+
+**How it ran.** laptop-a (`Aryans-MacBook-Pro.local`, Apple M4 Pro, MPS, local backend), git `ce798fe2` / `60254d83` (main + this task's
+scorer; no `hearing/` change). Each row is the T-386 command, `HEARING_PROFILES_DIR=$HEARING_FIXTURES_DIR/profiles HEARING_REGRESS_NO_BASELINE=1
+HEARING_SEP_CKPT=<ckpt> HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=<N> .venv/bin/python scripts/demo_regress.py --modes focus_hq --seconds 30 --no-free
+--no-baseline --profile team --isolation standard --voice-profile <target>:<other> --clip <scene>`. The scenes are the T-386 held-out ones
+(`t368/<target>/holdout-{sir0-cafe,sir0-none,sir-6-cafe}`, 6 rows) and t141 (`t141/<target>/demo-team-{easy,hard}`, 4 rows).
+- Quality rows: 50 (5 arms x 10), all exit 0. Two lanes ran at once, each under `swarm-lock --shared`, 22:28-22:49 (load 3.3-9.3).
+  Lane A ran t387 floors 20 / 12 / 25 and lane B ran t374 floor 20 and t387 floor 15. Because the two lanes ran together,
+  p95 is 252-564 ms with 0-2 misses per row (enrolled share 87-90 % on every row). Compare quality only.
+- Timing check: ONE `swarm-lock --exclusive --max-load 5` call, 22:49-22:51 (load 2.7-3.2), t141-hard joseph:aryan for t387+floor20 and t374+floor20.
+  Quality on these rows matched the shared rows exactly (2.1 % / -21.2 dB / 4.6 s and 1.4 % / -15.9 / 8.2), so these replays are deterministic.
+- Columns are as in T-386. `target-muted s` = target-active 200 ms frames after the cold start whose pre-AGC target part is >= 10 dB below the input's
+  (`eval.knob_sweep.live_atten`). `>= 15 / 20 dB down` = the same count at a stricter threshold.
+- Rows: `.venv/bin/python -m eval.t408_floor_sweep .swarm-run/laneA.log .swarm-run/laneB.log --out $HEARING_RESULTS_DIR/T-408_rows.json --export ~/Desktop/selective-hearing-finetune`
+  (timing: `$HEARING_RESULTS_DIR/T-408_rows_timing.json`). Listening: `~/Desktop/selective-hearing-finetune/<name>-6-t387-floor20.wav` (holdout-sir0-cafe,
+  level-matched like arms 0-5).
+
+Means per arm (wrong-speaker and leak: mean over rows; seconds: sum over rows):
+
+| rows | arm | n | wrong-speaker (mean) | leak dB (mean) | target-muted s (sum) | of it joseph-target s | target >= 15 dB down s | target >= 20 dB down s | SI-SDRi pre-AGC (mean) |
+|---|---|---|---|---|---|---|---|---|---|
+| all | t387+floor12 | 10 | 6.1 % | -14.2 | 21.2 | 18.6 | 5.8 | 3.6 | +8.6 |
+| all | t387+floor15 | 10 | 4.0 % | -15.6 | 21.4 | 18.8 | 11.2 | 3.6 | +8.7 |
+| all | t387+floor20 | 10 | 2.3 % | -17.7 | 21.8 | 19.2 | 16.8 | 9.0 | +8.7 |
+| all | t387+floor25 | 10 | 2.3 % | -18.1 | 21.8 | 19.2 | 16.8 | 14.6 | +8.7 |
+| all | t374+floor20 | 10 | 2.2 % | -16.7 | 27.6 | 22.8 | 24.2 | 11.6 | +7.6 |
+| t141 | t387+floor12 | 4 | 6.3 % | -12.9 | 7.0 | 6.8 | 2.6 | 2.2 | +8.2 |
+| t141 | t387+floor15 | 4 | 4.2 % | -14.3 | 7.0 | 6.8 | 3.6 | 2.2 | +8.2 |
+| t141 | t387+floor20 | 4 | 3.9 % | -16.4 | 7.4 | 7.2 | 5.0 | 3.6 | +8.3 |
+| t141 | t387+floor25 | 4 | 4.0 % | -15.6 | 7.4 | 7.2 | 5.0 | 4.6 | +8.2 |
+| t141 | t374+floor20 | 4 | 3.1 % | -15.8 | 14.0 | 12.2 | 12.6 | 6.0 | +5.2 |
+| holdout | t387+floor12 | 6 | 6.0 % | -15.0 | 14.2 | 11.8 | 3.2 | 1.4 | +8.9 |
+| holdout | t387+floor15 | 6 | 3.9 % | -16.5 | 14.4 | 12.0 | 7.6 | 1.4 | +9.0 |
+| holdout | t387+floor20 | 6 | 1.3 % | -18.6 | 14.4 | 12.0 | 11.8 | 5.4 | +9.0 |
+| holdout | t387+floor25 | 6 | 1.2 % | -19.7 | 14.4 | 12.0 | 11.8 | 10.0 | +9.0 |
+| holdout | t374+floor20 | 6 | 1.6 % | -17.2 | 13.6 | 10.6 | 11.6 | 5.6 | +9.1 |
+
+Per row:
+
+| scene | target:other | arm | load (1/5/15) | wrong-speaker | leak dB | target-muted s | p95 window ms | deadline misses | SI-SDRi pre-AGC | enrolled share |
+|---|---|---|---|---|---|---|---|---|---|---|
+| holdout-sir-6-cafe | aryan:joseph | t387+floor12 | 3.61 / 4.20 / 3.92 | 0.0 % | -23.7 | 1.4 | 356 | 1 / 58 | +17.8 | 88 % |
+| holdout-sir-6-cafe | aryan:joseph | t387+floor15 | 3.61 / 4.20 / 3.92 | 0.0 % | -23.7 | 1.4 | 361 | 1 / 58 | +17.9 | 88 % |
+| holdout-sir-6-cafe | aryan:joseph | t387+floor20 | 5.85 / 4.75 / 3.84 | 0.0 % | -23.7 | 1.4 | 373 | 1 / 58 | +17.7 | 88 % |
+| holdout-sir-6-cafe | aryan:joseph | t387+floor25 | 3.71 / 4.66 / 4.38 | 0.0 % | -23.7 | 1.4 | 292 | 0 / 58 | +18.1 | 87 % |
+| holdout-sir-6-cafe | aryan:joseph | t374+floor20 | 5.85 / 4.75 / 3.84 | 4.2 % | -13.0 | 1.6 | 374 | 1 / 58 | +12.6 | 88 % |
+| holdout-sir-6-cafe | joseph:aryan | t387+floor12 | 7.10 / 5.75 / 4.62 | 14.8 % | -11.3 | 5.6 | 355 | 1 / 58 | +7.3 | 88 % |
+| holdout-sir-6-cafe | joseph:aryan | t387+floor15 | 7.10 / 5.75 / 4.62 | 12.7 % | -12.5 | 5.8 | 359 | 1 / 58 | +7.9 | 88 % |
+| holdout-sir-6-cafe | joseph:aryan | t387+floor20 | 3.63 / 4.32 / 3.86 | 2.8 % | -16.6 | 5.8 | 372 | 1 / 58 | +8.1 | 88 % |
+| holdout-sir-6-cafe | joseph:aryan | t387+floor25 | 4.37 / 4.29 / 4.26 | 2.1 % | -21.4 | 5.8 | 254 | 0 / 58 | +7.9 | 87 % |
+| holdout-sir-6-cafe | joseph:aryan | t374+floor20 | 3.63 / 4.32 / 3.86 | 2.8 % | -15.5 | 5.2 | 372 | 1 / 58 | +7.0 | 88 % |
+| holdout-sir0-cafe | aryan:joseph | t387+floor12 | 4.14 / 4.39 / 3.95 | 2.1 % | -12.9 | 0.6 | 363 | 1 / 58 | +9.5 | 88 % |
+| holdout-sir0-cafe | aryan:joseph | t387+floor15 | 4.14 / 4.39 / 3.95 | 2.1 % | -12.9 | 0.6 | 357 | 1 / 58 | +9.5 | 88 % |
+| holdout-sir0-cafe | aryan:joseph | t387+floor20 | 5.12 / 4.19 / 3.56 | 2.1 % | -13.0 | 0.6 | 387 | 1 / 58 | +9.7 | 88 % |
+| holdout-sir0-cafe | aryan:joseph | t387+floor25 | 4.56 / 5.07 / 4.49 | 2.1 % | -13.0 | 0.6 | 258 | 0 / 58 | +9.7 | 87 % |
+| holdout-sir0-cafe | aryan:joseph | t374+floor20 | 5.12 / 4.19 / 3.56 | 1.4 % | -14.1 | 1.0 | 385 | 1 / 58 | +10.2 | 88 % |
+| holdout-sir0-cafe | joseph:aryan | t387+floor12 | 9.08 / 5.34 / 4.36 | 8.5 % | -15.3 | 4.8 | 373 | 1 / 58 | +4.9 | 88 % |
+| holdout-sir0-cafe | joseph:aryan | t387+floor15 | 9.08 / 5.34 / 4.36 | 0.0 % | -20.9 | 4.8 | 368 | 1 / 58 | +4.7 | 88 % |
+| holdout-sir0-cafe | joseph:aryan | t387+floor20 | 4.10 / 4.52 / 3.88 | 0.0 % | -23.4 | 4.8 | 375 | 1 / 58 | +4.3 | 88 % |
+| holdout-sir0-cafe | joseph:aryan | t387+floor25 | 3.28 / 4.21 / 4.24 | 0.0 % | -24.4 | 4.8 | 278 | 0 / 58 | +4.0 | 87 % |
+| holdout-sir0-cafe | joseph:aryan | t374+floor20 | 4.10 / 4.52 / 3.88 | 0.0 % | -23.4 | 4.6 | 376 | 1 / 58 | +3.9 | 88 % |
+| holdout-sir0-none | aryan:joseph | t387+floor12 | 4.63 / 4.44 / 3.99 | 2.8 % | -12.9 | 0.4 | 361 | 1 / 58 | +8.1 | 88 % |
+| holdout-sir0-none | aryan:joseph | t387+floor15 | 4.63 / 4.44 / 3.99 | 2.8 % | -12.9 | 0.4 | 357 | 1 / 58 | +8.3 | 88 % |
+| holdout-sir0-none | aryan:joseph | t387+floor20 | 6.73 / 4.74 / 3.79 | 2.8 % | -13.0 | 0.4 | 377 | 1 / 58 | +8.3 | 88 % |
+| holdout-sir0-none | aryan:joseph | t387+floor25 | 3.74 / 4.79 / 4.41 | 2.8 % | -13.0 | 0.4 | 254 | 0 / 58 | +8.5 | 87 % |
+| holdout-sir0-none | aryan:joseph | t374+floor20 | 6.73 / 4.74 / 3.79 | 1.4 % | -15.1 | 0.4 | 377 | 1 / 58 | +12.3 | 88 % |
+| holdout-sir0-none | joseph:aryan | t387+floor12 | 9.34 / 5.91 / 4.62 | 7.7 % | -14.1 | 1.4 | 371 | 1 / 58 | +5.9 | 88 % |
+| holdout-sir0-none | joseph:aryan | t387+floor15 | 9.34 / 5.91 / 4.62 | 5.6 % | -16.1 | 1.4 | 362 | 1 / 58 | +6.0 | 88 % |
+| holdout-sir0-none | joseph:aryan | t387+floor20 | 4.21 / 4.52 / 3.90 | 0.0 % | -21.8 | 1.4 | 366 | 1 / 58 | +6.0 | 88 % |
+| holdout-sir0-none | joseph:aryan | t387+floor25 | 4.25 / 4.27 / 4.25 | 0.0 % | -22.6 | 1.4 | 254 | 0 / 58 | +5.8 | 87 % |
+| holdout-sir0-none | joseph:aryan | t374+floor20 | 4.21 / 4.52 / 3.90 | 0.0 % | -22.5 | 0.8 | 370 | 1 / 58 | +8.7 | 88 % |
+| t141-easy | aryan:joseph | t387+floor12 | 4.98 / 4.49 / 3.94 | 5.6 % | -11.5 | 0.0 | 375 | 1 / 58 | +10.4 | 88 % |
+| t141-easy | aryan:joseph | t387+floor15 | 4.98 / 4.49 / 3.94 | 5.6 % | -11.6 | 0.0 | 377 | 1 / 58 | +10.3 | 88 % |
+| t141-easy | aryan:joseph | t387+floor20 | 5.24 / 4.05 / 3.45 | 5.0 % | -15.6 | 0.0 | 564 | 2 / 41 | +10.7 | 90 % |
+| t141-easy | aryan:joseph | t387+floor25 | 5.16 / 5.42 / 4.55 | 5.6 % | -11.6 | 0.0 | 252 | 0 / 58 | +10.4 | 87 % |
+| t141-easy | aryan:joseph | t374+floor20 | 5.24 / 4.05 / 3.45 | 2.8 % | -19.7 | 0.6 | 562 | 2 / 41 | +7.8 | 90 % |
+| t141-easy | joseph:aryan | t387+floor12 | 3.30 / 4.05 / 3.88 | 6.3 % | -15.7 | 2.4 | 376 | 1 / 58 | +6.7 | 88 % |
+| t141-easy | joseph:aryan | t387+floor15 | 3.30 / 4.05 / 3.88 | 2.8 % | -17.8 | 2.4 | 376 | 1 / 58 | +6.7 | 88 % |
+| t141-easy | joseph:aryan | t387+floor20 | 6.46 / 4.98 / 3.96 | 2.8 % | -18.3 | 2.6 | 363 | 1 / 58 | +6.7 | 88 % |
+| t141-easy | joseph:aryan | t387+floor25 | 4.03 / 4.58 / 4.36 | 2.8 % | -18.5 | 2.6 | 256 | 0 / 58 | +6.7 | 87 % |
+| t141-easy | joseph:aryan | t374+floor20 | 6.46 / 4.98 / 3.96 | 1.4 % | -19.2 | 4.0 | 356 | 1 / 58 | +4.6 | 88 % |
+| t141-hard | aryan:joseph | t387+floor12 | 4.76 / 4.50 / 3.97 | 5.6 % | -10.4 | 0.2 | 364 | 1 / 58 | +9.0 | 88 % |
+| t141-hard | aryan:joseph | t387+floor15 | 4.76 / 4.50 / 3.97 | 5.6 % | -10.4 | 0.2 | 363 | 1 / 58 | +9.0 | 88 % |
+| t141-hard | aryan:joseph | t387+floor20 | 4.09 / 3.94 / 3.44 | 5.6 % | -10.4 | 0.2 | 359 | 1 / 58 | +9.0 | 87 % |
+| t141-hard | aryan:joseph | t387+floor25 | 4.28 / 5.15 / 4.49 | 5.6 % | -10.4 | 0.2 | 264 | 0 / 58 | +9.0 | 87 % |
+| t141-hard | aryan:joseph | t374+floor20 | 4.09 / 3.94 / 3.44 | 7.0 % | -8.5 | 1.2 | 352 | 1 / 58 | +6.1 | 87 % |
+| t141-hard | joseph:aryan | t387+floor12 | 5.24 / 4.35 / 3.99 | 7.7 % | -13.8 | 4.4 | 374 | 1 / 58 | +6.7 | 88 % |
+| t141-hard | joseph:aryan | t387+floor15 | 5.24 / 4.35 / 3.99 | 2.8 % | -17.4 | 4.4 | 374 | 1 / 58 | +6.7 | 88 % |
+| t141-hard | joseph:aryan | t387+floor20 | 4.76 / 4.73 / 3.91 | 2.1 % | -21.2 | 4.6 | 362 | 1 / 58 | +6.7 | 88 % |
+| t141-hard | joseph:aryan | t387+floor25 | 3.72 / 4.42 / 4.31 | 2.1 % | -21.9 | 4.6 | 258 | 0 / 58 | +6.6 | 87 % |
+| t141-hard | joseph:aryan | t374+floor20 | 4.76 / 4.73 / 3.91 | 1.4 % | -15.9 | 8.2 | 359 | 1 / 58 | +2.4 | 88 % |
 
 ## Learned continuous-gain gate on the v3 separator's features, offline (`hearing/tse/learned_gate.py`, T-407, Oct 10)
 
@@ -3147,3 +3262,111 @@ no audible other-only windows, so wrong / leak there cannot separate the arms; t
 held the learned gate's muting at or above arm 4's. `HEARING_FIXED_GATE=learned` was not wired (the task wires it only after an offline
 win); `learned_gate.HEAD` stays None, so nothing loads by default. Next if anyone retries: per-window labels of the *slot's* content
 (the dump has only reference-stem energies, so a misrouted slot during overlap is invisible), and a dump of live-path windows.
+
+
+## Shorter separation windows with the fine-tuned separator, live on the Mac (`HEARING_TSE_WINDOW_S` / `HEARING_TSE_HOP_S`, T-419, Oct 10)
+
+**Question.** The enrolled tier runs 1.0 s windows every 0.5 s, so the output plays 1.5 s behind the room. Do 0.75 / 0.375 s or 0.5 / 0.25 s
+windows keep T-408's arm (`HEARING_SEP_CKPT=$HEARING_MODELS_DIR/T-374/v2_t387.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20`) as good, and do they keep
+up on the M4 Pro? New knobs (`hearing/tse/stage.py` `balanced_window()`): `HEARING_TSE_WINDOW_S` / `HEARING_TSE_HOP_S` rewrite an enrolled `tse` spec
+at exactly 1.0 / 0.5 (the `config/tiers.yaml` tier and the balanced preset); the speed/accuracy presets and the GPU box's `remote.enrolled` keep their windows.
+The window alone halves into the hop. Unset (default) = 1.0 / 0.5, no change. `/health` now reports `tse_window` (window, hop, expected delay).
+The delay `/judge` prints is `latency_ms.total` from the stage, so it follows the knob. `web/app`'s fixed "about 1.5 s behind" copy does not follow it (out of this task's scope).
+
+**Verdict: defaults unchanged. By the acceptance rule (wrong-speaker within +1 pt of the 1.0 s arm and no deadline misses) no shorter arm passes on all
+10 rows, so 1.0 / 0.5 stays the launch line.** The closest candidate is **0.75 / 0.375: measured delay 1125 ms (-375 ms)**. It passes on the 4 real-pair t141 rows
+(wrong-speaker 4.8 vs 4.0 %, +0.8 pt; 0 deadline misses in steady state) but fails on the 6 held-out rows (2.8 vs 1.3 %, +1.5 pt; over all 10 rows 3.6 vs 2.4 %, +1.2 pt).
+It also mutes more of the target (t141 sum 11.6 vs 7.4 s) and loses 2.2 dB pre-AGC SI-SDRi on t141 (0.6 dB on held-out).
+0.5 / 0.25 (750 ms) is out: on t141 it overran in steady state on 2 of 4 rows (3 overruns) and widened its hop once (delay 875 ms on t141-hard aryan). It mutes
+2.4x the target seconds of the reference (17.8 vs 7.4 s) and loses 3.9 dB SI-SDRi. The base separator at 0.5 / 0.25 is worse again (6.7 / 6.2 % wrong-speaker, 24.4 / 33.6 s muted).
+Low-delay launch line to try live (opt-in; not the default):
+`HEARING_SEP_CKPT=$PWD/models/T-374/v2_t387.pt HEARING_PICK=fixed HEARING_GATED_FLOOR_DB=20 HEARING_TSE_WINDOW_S=0.75 HEARING_TSE_HOP_S=0.375 bash scripts/demo.sh --judge --team`.
+Listening: `~/Desktop/selective-hearing-finetune/<name>-7-lowdelay-0.75.wav` (holdout-sir0-cafe, level-matched like arms 1-6).
+
+**How it ran.** laptop-a (`Aryans-MacBook-Pro.local`, Apple M4 Pro, MPS, local backend), this branch (git column), the T-386 command per row:
+`HEARING_PROFILES_DIR=$HEARING_FIXTURES_DIR/profiles HEARING_REGRESS_NO_BASELINE=1 [arm env] .venv/bin/python scripts/demo_regress.py --modes focus_hq --seconds 30 --no-free --no-baseline --profile team --isolation standard --voice-profile <target>:<other> --clip <scene>`.
+Every arm has `HEARING_GATED_FLOOR_DB=20`. The `ft` arms add `HEARING_SEP_CKPT=$HEARING_MODELS_DIR/T-374/v2_t387.pt HEARING_PICK=fixed`; `base` has no checkpoint (and no fixed pick).
+- Timing rows: the 4 t141 rows x 4 arms in ONE `swarm-lock --exclusive --max-load 5 --wait 1500` call, 23:00-23:11 (load 3.0-6.6), 16 rows, all exit 0.
+- Quality rows: the 6 held-out rows (`t368/<target>/holdout-{sir0-cafe,sir0-none,sir-6-cafe}`) under `swarm-lock --shared`. The ft 0.75 and base 0.5 rows ran 23:19-23:31.
+  The ft 1.0 and ft 0.5 rows were re-run 23:33-23:41, because the first ft 0.5 pass shared the machine with a verify (load 10-18, p95 532 ms, 90 / 384 misses, enrolled share
+  74 % on one row). The ft 1.0 re-run reproduces T-408's `t387+floor20` rows exactly (1.3 % / -18.6 dB / 14.4 s), so these replays are deterministic for quality.
+- Delay is **measured, not computed**. `measured delay` = the enrolled tier's lag in the recorded stream, from `session_score` cross-correlating out.wav against in.wav for each run of
+  one playing delay (refined +-150 ms around the telemetry prior, then checked by an open 0-4 s search), time-weighted over the enrolled runs. `engine total` = median telemetry
+  `latency_ms.total` while enrolled plays (stream delay + server compute + capture buffering). Neither includes the browser/device buffers (+20-40 ms through `/judge`, wired headphones).
+- Deadline misses = `overruns + late` of the enrolled tier's health at the last tick (the health keeps the last 58-64 windows). Every 0.75 / 0.5 miss on a held-out row, and the
+  0.75 misses on t141, are ONE late window at t = 1.4-2.2 s: the first window after the model load, before the tier plays (from ~3.9 s). The steady-state
+  misses (after 3 s) are: ft 0.75 none; ft 0.5 on t141 3 (t141-easy at 17.8 / 23.0 / 29.5 s), plus its hop widening on t141-hard aryan at 2.1-2.6 s; base 0.5 2 (holdout-sir-6-cafe joseph, 28.6 s, shared run).
+  The ft 0.5 p95 (172-228 ms locked) leaves 22-78 ms of its 250 ms hop. The ft 0.75 p95 (205-246 ms) leaves 129+ ms of its 375 ms hop.
+- Columns otherwise as T-386: wrong-speaker = `other_dominant_s` / 28.4 scored s; leak = the other talker out vs in; target-muted s = target-active 200 ms frames >= 10 dB down (`eval.knob_sweep.live_atten`).
+- Rows: `.venv/bin/python -m eval.t419_rows .swarm-run/batch_t.log .swarm-run/batch_q_kept.log .swarm-run/batch_q2.log --out $HEARING_RESULTS_DIR/T-419_rows.json`
+  (`batch_q_kept.log` = the first quality log without its load-hit ft 0.5 block). Export: `... --export ~/Desktop/selective-hearing-finetune --arm ft+0.75/0.375`.
+
+Means per arm (t141: in the lock; holdout: shared):
+
+| rows | arm | n | measured delay ms (mean, max) | engine total ms | wrong-speaker | leak dB | target-muted s (sum) | p95 window ms (max) | deadline misses | SI-SDRi pre-AGC |
+|---|---|---|---|---|---|---|---|---|---|---|
+| t141 | ft+1.0/0.5 | 4 | 1500.0, 1500.0 | 1522.9 | 4.0 % | -15.4 | 7.4 | 262 | 0 / 232 | +8.2 |
+| t141 | ft+0.75/0.375 | 4 | 1125.0, 1125.0 | 1147.9 | 4.8 % | -12.9 | 11.6 | 246 | 2 / 256 | +6.0 |
+| t141 | ft+0.5/0.25 | 4 | 781.2, 875.0 | 804.4 | 4.2 % | -12.7 | 17.8 | 228 | 10 / 256 | +4.3 |
+| t141 | base+0.5/0.25 | 4 | 750.0, 750.0 | 773.0 | 6.7 % | -11.4 | 24.4 | 218 | 4 / 256 | +1.2 |
+| holdout | ft+1.0/0.5 | 6 | 1500.0, 1500.0 | 1523.1 | 1.3 % | -18.6 | 14.4 | 293 | 1 / 348 | +9.0 |
+| holdout | ft+0.75/0.375 | 6 | 1125.0, 1125.0 | 1147.9 | 2.8 % | -16.4 | 15.0 | 222 | 2 / 384 | +8.4 |
+| holdout | ft+0.5/0.25 | 6 | 750.0, 750.0 | 772.8 | 3.1 % | -15.7 | 21.8 | 189 | 6 / 384 | +6.3 |
+| holdout | base+0.5/0.25 | 6 | 750.0, 750.0 | 772.8 | 6.2 % | -13.4 | 33.6 | 274 | 8 / 384 | +3.6 |
+
+Per row:
+
+| scene | target:other | arm | load (1/5/15) | measured delay ms | engine total ms | wrong-speaker | leak dB | target-muted s | p95 window ms | deadline misses | SI-SDRi pre-AGC | enrolled share | git |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| holdout-sir-6-cafe | aryan:joseph | ft+1.0/0.5 | 6.23 / 5.45 / 5.66 | 1500 | 1523 | 0.0 % | -23.7 | 1.4 | 257 | 0 / 58 | +18.1 | 87 % | 18ed2f91 |
+| holdout-sir-6-cafe | aryan:joseph | ft+0.75/0.375 | 5.60 / 6.90 / 6.44 | 1125 | 1148 | 2.8 % | -14.8 | 1.0 | 211 | 1 / 64 | +14.6 | 91 % | 18ed2f91 |
+| holdout-sir-6-cafe | aryan:joseph | ft+0.5/0.25 | 7.05 / 6.83 / 6.26 | 750 | 773 | 6.2 % | -10.7 | 1.2 | 170 | 1 / 64 | +10.7 | 92 % | 18ed2f91 |
+| holdout-sir-6-cafe | aryan:joseph | base+0.5/0.25 | 4.44 / 5.39 / 5.88 | 750 | 773 | 9.6 % | -10.8 | 3.4 | 173 | 1 / 64 | +8.4 | 92 % | 18ed2f91 |
+| holdout-sir-6-cafe | joseph:aryan | ft+1.0/0.5 | 7.08 / 5.68 / 5.73 | 1500 | 1523 | 2.8 % | -16.6 | 5.8 | 257 | 0 / 58 | +8.0 | 87 % | 18ed2f91 |
+| holdout-sir-6-cafe | joseph:aryan | ft+0.75/0.375 | 5.58 / 6.78 / 6.42 | 1125 | 1148 | 4.9 % | -16.6 | 6.2 | 208 | 0 / 64 | +5.9 | 92 % | 18ed2f91 |
+| holdout-sir-6-cafe | joseph:aryan | ft+0.5/0.25 | 5.64 / 6.49 / 6.16 | 750 | 773 | 3.4 % | -15.4 | 6.8 | 168 | 1 / 64 | +6.2 | 92 % | 18ed2f91 |
+| holdout-sir-6-cafe | joseph:aryan | base+0.5/0.25 | 3.63 / 5.07 / 5.74 | 750 | 773 | 5.5 % | -13.4 | 9.2 | 274 | 3 / 64 | +4.0 | 92 % | 18ed2f91 |
+| holdout-sir0-cafe | aryan:joseph | ft+1.0/0.5 | 3.01 / 4.48 / 5.43 | 1500 | 1523 | 2.1 % | -13.0 | 0.6 | 279 | 1 / 58 | +9.5 | 89 % | 18ed2f91 |
+| holdout-sir0-cafe | aryan:joseph | ft+0.75/0.375 | 6.66 / 8.51 / 6.86 | 1125 | 1148 | 4.2 % | -14.4 | 0.4 | 210 | 1 / 64 | +11.1 | 91 % | 18ed2f91 |
+| holdout-sir0-cafe | aryan:joseph | ft+0.5/0.25 | 9.43 / 6.56 / 6.06 | 750 | 773 | 4.1 % | -10.8 | 1.2 | 189 | 1 / 64 | +7.0 | 92 % | 18ed2f91 |
+| holdout-sir0-cafe | aryan:joseph | base+0.5/0.25 | 4.66 / 6.37 / 6.29 | 750 | 773 | 15.1 % | -6.6 | 3.6 | 177 | 1 / 64 | +2.1 | 92 % | 18ed2f91 |
+| holdout-sir0-cafe | joseph:aryan | ft+1.0/0.5 | 5.04 / 4.81 / 5.50 | 1500 | 1523 | 0.0 % | -23.4 | 4.8 | 275 | 0 / 58 | +4.2 | 87 % | 18ed2f91 |
+| holdout-sir0-cafe | joseph:aryan | ft+0.75/0.375 | 4.48 / 7.72 / 6.65 | 1125 | 1148 | 1.4 % | -21.2 | 5.2 | 222 | 0 / 64 | +1.7 | 92 % | 18ed2f91 |
+| holdout-sir0-cafe | joseph:aryan | ft+0.5/0.25 | 9.57 / 6.93 / 6.21 | 750 | 773 | 0.7 % | -22.5 | 7.6 | 182 | 1 / 64 | +1.3 | 92 % | 18ed2f91 |
+| holdout-sir0-cafe | joseph:aryan | base+0.5/0.25 | 4.49 / 6.08 / 6.18 | 750 | 773 | 1.4 % | -17.2 | 8.2 | 177 | 1 / 64 | +0.3 | 92 % | 18ed2f91 |
+| holdout-sir0-none | aryan:joseph | ft+1.0/0.5 | 6.19 / 5.07 / 5.56 | 1500 | 1524 | 2.8 % | -13.0 | 0.4 | 293 | 0 / 58 | +8.5 | 87 % | 18ed2f91 |
+| holdout-sir0-none | aryan:joseph | ft+0.75/0.375 | 3.30 / 7.02 / 6.44 | 1125 | 1148 | 2.8 % | -15.8 | 0.4 | 212 | 0 / 64 | +13.3 | 92 % | 18ed2f91 |
+| holdout-sir0-none | aryan:joseph | ft+0.5/0.25 | 9.56 / 7.15 / 6.32 | 750 | 773 | 2.7 % | -13.8 | 0.8 | 177 | 1 / 64 | +9.7 | 92 % | 18ed2f91 |
+| holdout-sir0-none | aryan:joseph | base+0.5/0.25 | 4.02 / 5.76 / 6.06 | 750 | 773 | 4.8 % | -12.4 | 3.4 | 171 | 1 / 64 | +4.6 | 92 % | 18ed2f91 |
+| holdout-sir0-none | joseph:aryan | ft+1.0/0.5 | 8.06 / 5.63 / 5.73 | 1500 | 1523 | 0.0 % | -21.8 | 1.4 | 253 | 0 / 58 | +5.8 | 87 % | 18ed2f91 |
+| holdout-sir0-none | joseph:aryan | ft+0.75/0.375 | 3.42 / 6.60 / 6.31 | 1125 | 1148 | 0.7 % | -15.9 | 1.8 | 205 | 0 / 64 | +3.7 | 92 % | 18ed2f91 |
+| holdout-sir0-none | joseph:aryan | ft+0.5/0.25 | 6.36 / 6.63 / 6.17 | 750 | 773 | 1.4 % | -20.8 | 4.2 | 168 | 1 / 64 | +3.2 | 92 % | 18ed2f91 |
+| holdout-sir0-none | joseph:aryan | base+0.5/0.25 | 3.91 / 5.48 / 5.94 | 750 | 773 | 0.7 % | -19.8 | 5.8 | 169 | 1 / 64 | +2.3 | 92 % | 18ed2f91 |
+| t141-easy | aryan:joseph | ft+1.0/0.5 | 4.95 / 5.74 / 4.93 | 1500 | 1523 | 5.6 % | -11.6 | 0.0 | 258 | 0 / 58 | +10.4 | 87 % | 335205b8 |
+| t141-easy | aryan:joseph | ft+0.75/0.375 | 4.75 / 5.75 / 5.09 | 1125 | 1148 | 6.9 % | -11.1 | 0.0 | 205 | 1 / 64 | +9.5 | 90 % | 18ed2f91 |
+| t141-easy | aryan:joseph | ft+0.5/0.25 | 3.37 / 4.74 / 4.78 | 750 | 774 | 6.2 % | -11.9 | 0.4 | 228 | 2 / 64 | +9.2 | 91 % | 18ed2f91 |
+| t141-easy | aryan:joseph | base+0.5/0.25 | 3.70 / 4.51 / 4.69 | 750 | 774 | 11.0 % | -8.0 | 3.6 | 218 | 1 / 64 | +2.5 | 92 % | 18ed2f91 |
+| t141-easy | joseph:aryan | ft+1.0/0.5 | 6.13 / 5.94 / 5.04 | 1500 | 1523 | 2.8 % | -18.3 | 2.6 | 253 | 0 / 58 | +6.7 | 87 % | 1a81110d |
+| t141-easy | joseph:aryan | ft+0.75/0.375 | 3.43 / 5.28 / 4.95 | 1125 | 1148 | 2.1 % | -15.6 | 5.6 | 232 | 1 / 64 | +1.8 | 91 % | 18ed2f91 |
+| t141-easy | joseph:aryan | ft+0.5/0.25 | 3.92 / 4.70 / 4.76 | 750 | 773 | 1.4 % | -14.0 | 7.6 | 215 | 4 / 64 | -1.0 | 92 % | 18ed2f91 |
+| t141-easy | joseph:aryan | base+0.5/0.25 | 4.22 / 4.52 / 4.68 | 750 | 773 | 1.4 % | -17.1 | 6.2 | 173 | 1 / 64 | +1.9 | 92 % | 18ed2f91 |
+| t141-hard | aryan:joseph | ft+1.0/0.5 | 6.58 / 6.00 / 5.09 | 1500 | 1523 | 5.6 % | -10.4 | 0.2 | 262 | 0 / 58 | +9.0 | 87 % | 18ed2f91 |
+| t141-hard | aryan:joseph | ft+0.75/0.375 | 3.91 / 5.14 / 4.91 | 1125 | 1148 | 9.0 % | -8.8 | 0.6 | 246 | 0 / 64 | +8.4 | 92 % | 18ed2f91 |
+| t141-hard | aryan:joseph | ft+0.5/0.25 | 5.36 / 4.96 / 4.85 | 875 | 898 | 8.3 % | -9.4 | 0.6 | 205 | 3 / 64 | +7.7 | 91 % | 18ed2f91 |
+| t141-hard | aryan:joseph | base+0.5/0.25 | 2.98 / 4.17 / 4.54 | 750 | 773 | 11.6 % | -6.4 | 6.2 | 162 | 1 / 64 | +0.5 | 92 % | 18ed2f91 |
+| t141-hard | joseph:aryan | ft+1.0/0.5 | 6.44 / 6.11 / 5.18 | 1500 | 1523 | 2.1 % | -21.2 | 4.6 | 253 | 0 / 58 | +6.7 | 87 % | 18ed2f91 |
+| t141-hard | joseph:aryan | ft+0.75/0.375 | 3.82 / 5.00 / 4.87 | 1125 | 1148 | 1.4 % | -16.0 | 5.4 | 211 | 0 / 64 | +4.2 | 92 % | 18ed2f91 |
+| t141-hard | joseph:aryan | ft+0.5/0.25 | 4.20 / 4.70 / 4.76 | 750 | 773 | 0.7 % | -15.5 | 9.2 | 172 | 1 / 64 | +1.4 | 92 % | 18ed2f91 |
+| t141-hard | joseph:aryan | base+0.5/0.25 | 2.99 / 4.03 / 4.47 | 750 | 773 | 2.7 % | -14.0 | 8.4 | 172 | 1 / 64 | -0.1 | 92 % | 18ed2f91 |
+## Identity bouncer on simulated extractor outputs, SIR 0 / −5 / −15 dB (`hearing/tse/identity_gate.py`, T-413, Oct 10)
+
+`swarm-lock --shared -- .venv/bin/python -m eval.identity_gate_eval --per-bin 30` on laptop-a (ECAPA `spkrec-ecapa-voxceleb`, device from `hearing.device.pick()`, 8 640 windows in 63 s, accuracy only). Items: `eval/sir_mixtures.py` test regions of the 3 team voices (ahmad, aryan, joseph), active-level SIR exact per bin. Outputs are simulated with ground truth (perfect target, full wrong lock, target with interferer −20/−10 dB, wrong lock with target −20 dB); closed set = the other two team voices.
+
+| window | accept / margin cos | clean target blocked | full/−20 dB wrong lock passed | all outputs false block / false pass |
+|---|---|---|---|---|
+| 1.0 s | 0.25 / 0.0 | 17.5 % | 2.1 % | 30.3 % / 6.2 % |
+| 1.5 s (shipped constants) | 0.25 / 0.0 | 3.9 % | 3.3 % | 17.3 % / 7.9 % |
+| 1.5 s | 0.30 / 0.05 | 10.0 % | 1.1 % | 25.0 % / 5.0 % |
+| 2.0 s | 0.25 / 0.0 | 2.2 % | 1.9 % | 13.8 % / 6.7 % |
+
+A full wrong lock is blocked in 100 % of 1.5 s windows at every bin (closed set, 0.30 / 0.05); a 20 dB-suppression extractor at −15 dB passes only 53 %. Not measured: a real extractor's output, live latency of `IdentityGateStream`. Not adopted or wired anywhere. Details: `docs/research/T-413_RANKED_APPROACHES_PLAN.md`.
