@@ -33,5 +33,6 @@ export function mount(root) {
           el("span", { class: "claim-cond", text: k.condition }))))),
     el("p", { class: "about-note", text: c.logged }),
     el("p", { class: "about-note", text: c.footer }),
+    el("p", {}, el("a", { href: "#sos", class: "link", text: "SOS: pair the band" })), // T-461
     el("p", {}, el("a", { href: "#welcome", class: "link", text: c.back }))));
 }

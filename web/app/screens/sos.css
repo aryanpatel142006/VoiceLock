@@ -1,0 +1,40 @@
+/* SOS pair screen (T-461). The SOS colour is a calm blue: never amber (RAW), green (Focus) or red (errors).
+   The test light is one steady change per press, not a flash; reduced motion drops the fade. */
+.sos { --color-sos: #9ccbff; position: relative; z-index: 1; max-width: 52rem; margin: 0; padding: var(--space-5) 0 var(--space-6); }
+.sos-title { font: 600 var(--text-title)/1.02 var(--font-display); letter-spacing: -.02em; margin: var(--space-2) 0 var(--space-4); overflow-wrap: anywhere; }
+.sos-lede { font-size: clamp(17px, 2.2vw, 24px); max-width: 40rem; margin: 0 0 var(--space-2); }
+.sos-honest { color: var(--color-dim); max-width: 40rem; margin: 0 0 var(--space-5); }
+
+.sos-pad { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--space-4); row-gap: var(--space-1);
+  align-items: center; padding: var(--space-5); border: 1px solid var(--color-line); border-radius: 14px; background: var(--color-bg-raise);
+  transition: border-color 150ms var(--ease-out, ease-out), background-color 150ms var(--ease-out, ease-out); }
+.sos-pad:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+.sos-pad[data-state="waiting"] { border-style: dashed; border-color: var(--color-faint); }
+.sos-light { grid-row: 1 / 3; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--color-faint); background: var(--color-idle);
+  transition: background-color 150ms var(--ease-out, ease-out), border-color 150ms var(--ease-out, ease-out); }
+.sos-pad-label { font: 600 clamp(20px, 2.6vw, 30px)/1.1 var(--font-display); overflow-wrap: anywhere; }
+.sos-light-text { font: 14px/1.4 var(--font-mono); color: var(--color-dim); font-variant-numeric: var(--numeric); }
+.sos-pad[data-lit] { border-color: var(--color-sos); }
+.sos-pad[data-lit] .sos-light { background: var(--color-sos); border-color: var(--color-sos); }
+
+.sos-status { margin: var(--space-3) 0 0; min-height: 1.45em; }
+.sos-refuse { margin: var(--space-2) 0 0; color: var(--color-bad); max-width: 40rem; }
+.sos-warn { margin: var(--space-2) 0 0; color: var(--color-warn); max-width: 40rem; }
+.sos-refuse[hidden], .sos-warn[hidden] { display: none; }
+.sos-actions { margin: var(--space-4) 0 var(--space-6); }
+.sos-again { font: inherit; color: var(--color-fg); background: transparent; border: 1px solid var(--color-fg); border-radius: 999px;
+  padding: var(--space-2) var(--space-4); min-height: 44px; cursor: pointer; }
+.sos-again:disabled { color: var(--color-faint); border-color: var(--color-line); cursor: default; }
+.sos-again:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+
+.sos-sounds { border: 0; border-top: 1px solid var(--color-line); margin: 0 0 var(--space-5); padding: var(--space-4) 0 0; display: grid; gap: var(--space-2); }
+.sos-h { font: 600 clamp(22px, 3vw, 32px)/1.1 var(--font-display); padding: 0; margin: 0 0 var(--space-2); }
+.sos-sound { display: grid; grid-template-columns: auto 8rem 1fr; align-items: baseline; gap: var(--space-3); padding: var(--space-3);
+  min-height: 44px; border: 1px solid var(--color-line); border-radius: 10px; cursor: pointer; }
+.sos-sound:has(input:checked) { border-color: var(--color-fg); background: rgb(255 255 255 / 0.08); }
+.sos-sound input { accent-color: var(--color-fg); margin: 0; align-self: center; }
+.sos-sound-name { font-weight: 600; }
+.sos-sound-note { color: var(--color-dim); }
+.sos-note { color: var(--color-dim); font-size: 14px; max-width: 40rem; margin: 0 0 var(--space-3); }
+@media (max-width: 520px) { .sos-sound { grid-template-columns: auto 1fr; } .sos-sound-note { grid-column: 2; } }
+@media (prefers-reduced-motion: reduce) { .sos-pad, .sos-light { transition: none; } }

@@ -1,0 +1,130 @@
+/*
+ * SOS (T-460): the trigger on Listen and the calm full frame. Loaded by sos.js.
+ * Night blue on purpose: amber = the room, green = the chosen person, red/yellow = problems, lilac = replay.
+ * Contrast on --sos-bg: --sos-fg 15.3:1, --sos-soft 11.3:1, --sos-ring 9.2:1 (checked in tests/sos.test.mjs).
+ * Nothing flashes or pulses; the only motion is the hold ring filling under the finger. Reduced motion: a plain fade.
+ */
+
+:root {
+  --sos-bg: #0d1b33;
+  --sos-bg-low: #08111f;
+  --sos-fg: #f3f4f1;
+  --sos-soft: #c9d6ec;
+  --sos-ring: #9cc3ff;
+  --sos-track: rgb(156 195 255 / 0.18);
+}
+
+/* ---- the trigger: on Listen only ----
+ * Wide screens: the right edge, half-way down (empty: the sound field's margin; the bottom row holds Start and
+ * Diagnostics). Phones: a round button bottom-right over the scrolling stage, with room left under the last row. */
+.sos-btn {
+  display: none;
+  position: fixed; z-index: 4;
+  right: max(var(--space-4, 16px), env(safe-area-inset-right));
+  bottom: max(var(--space-4, 16px), env(safe-area-inset-bottom));
+  width: 84px; height: 84px;
+  padding: 0;
+  flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 2px solid var(--sos-ring);
+  border-radius: 50%;
+  background: var(--sos-bg);
+  color: var(--sos-fg);
+  font-family: var(--font-ui, system-ui);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-quick, 180ms) var(--ease-out, ease-out);
+}
+.sos-btn-sub { display: none; }
+@media not ((min-width: 900px) and (min-height: 600px)) {
+  body[data-screen="listen"] .stage { padding-bottom: calc(84px + var(--space-6, 32px)); }
+}
+@media (min-width: 900px) and (min-height: 600px) {
+  .sos-btn {
+    top: 50%; bottom: auto; translate: 0 -50%;
+    right: max(var(--space-6, 32px), env(safe-area-inset-right));
+    width: auto; height: auto; min-width: 128px; min-height: 96px;
+    padding: 14px 24px 16px;
+    align-items: flex-start;
+    border-radius: 24px;
+  }
+  .sos-btn-sub { display: block; }
+}
+body[data-screen="listen"] .sos-btn { display: inline-flex; }
+body[data-sos="on"] .sos-btn { visibility: hidden; }
+.sos-btn:hover { background: #142849; }
+.sos-btn:active { background: #1a335c; }
+.sos-btn:focus-visible { outline: 3px solid var(--sos-fg); outline-offset: 4px; }
+.sos-btn-word {
+  font-family: var(--font-display, system-ui);
+  font-stretch: var(--stretch-display, 72%);
+  font-weight: var(--weight-display, 640);
+  font-size: 2.5rem; line-height: 0.9; letter-spacing: 0.02em;
+}
+.sos-btn-sub { font-size: 0.9375rem; color: var(--sos-soft); font-stretch: var(--stretch-wide, 118%); }
+
+/* ---- the calm frame ---- */
+.sos-calm {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  padding: var(--safe-top, 16px) var(--space-5, 24px) var(--safe-bottom, 16px);
+  background: linear-gradient(180deg, var(--sos-bg) 0%, var(--sos-bg) 55%, var(--sos-bg-low) 100%);
+  color: var(--sos-fg);
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;
+  cursor: default;
+}
+.sos-calm[hidden] { display: none; }
+.sos-calm-body {
+  width: min(100%, 44rem);
+  display: grid; justify-items: center; text-align: center;
+  gap: var(--space-5, 24px);
+}
+.sos-calm-title {
+  margin: 0;
+  font-family: var(--font-display, system-ui);
+  font-stretch: var(--stretch-display, 72%);
+  font-weight: var(--weight-display, 640);
+  font-size: clamp(3.5rem, 1.5rem + 9vw, 11rem);
+  line-height: 0.92; letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.sos-calm-line { margin: 0; max-width: 32ch; font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem); line-height: 1.4; color: var(--sos-soft); }
+
+/* the hold disc: a ring that fills while held (--sos-p 0..1, set by sos.js) */
+.sos-calm-hold {
+  --sos-p: 0;
+  position: relative;
+  width: clamp(168px, 34vmin, 260px); aspect-ratio: 1;
+  margin-top: var(--space-4, 16px);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.sos-calm-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(var(--sos-ring) calc(var(--sos-p) * 360deg), var(--sos-track) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
+}
+.sos-calm-hold-label {
+  max-width: 9ch;
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem); line-height: 1.15;
+  font-weight: var(--weight-strong, 600); font-stretch: var(--stretch-wide, 118%);
+  color: var(--sos-fg);
+}
+.sos-calm-hold:focus-visible { outline: 3px solid var(--sos-fg); outline-offset: 8px; }
+.sos-calm-hint { margin: 0; max-width: 40ch; font-size: 1rem; line-height: 1.45; color: var(--sos-soft); }
+.sos-calm-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* reduced motion: no view transition (sos.js), the frame fades in plainly instead. !important because app.css cuts
+ * every animation to .01ms under reduced motion; an opacity fade is the one motion kept (as motion.css does). */
+@media (prefers-reduced-motion: reduce) {
+  .sos-calm:not([hidden]) { animation: sos-fade 200ms linear both !important; }
+  .sos-btn { transition: none; }
+}
+@keyframes sos-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (forced-colors: active) {
+  .sos-btn { border-color: ButtonText; }
+}

@@ -30,6 +30,7 @@ export const SCREENS = [
   { id: "about", title: "About", nav: true },
   { id: "phone", title: "Phone", nav: false },
   { id: "diag", title: "Diagnostics", nav: false, sheet: true },
+  { id: "sos", title: "Pair the band", nav: false }, // T-461: SOS remote pairing, linked from About
 ];
 const DEFAULT = "welcome";
 const byId = new Map(SCREENS.map((s) => [s.id, s]));

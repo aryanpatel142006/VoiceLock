@@ -116,6 +116,7 @@ class Control(_Message):
     name: NameCall | None = None  # Name Call: the wearer's name and aliases (T-120)
     name_call: Literal["release"] | None = None  # Name Call: drop the current target, listen again
     agc: bool | None = None  # judge-profile output AGC; false = off (the remote leg of the remote path, T-169)
+    sos: bool | None = None  # T-462: true = silence the output, captions off (mode kept); false = back as before
 
 
 def parse_message(data: dict) -> Hello | Control:

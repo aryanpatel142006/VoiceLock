@@ -541,6 +541,7 @@ class Session:
         self._quiet_gain = 1.0  # output gain: ramps to 0 in Quiet, back to 1 outside
         self._quiet_feed: dict | None = None  # telemetry ``quiet``: feed focus|paused and why
         self._caption_tap: np.ndarray | None = None  # the active pipeline's output this hop (Quiet's ASR input)
+        self.sos = False  # T-462: SOS on: Quiet's ramp to silence, no captions; the mode underneath is untouched
         self.namecall: NameCaller | None = None  # Name Call mode (T-120), built on first use
         self._name: tuple[str, list[str]] = ("", [])
         self._name_match, self._name_exclude = NAME_DEFAULT_MATCH, []  # T-123 false-trigger guards
@@ -1036,7 +1037,10 @@ class Session:
         if isinstance(msg, Hello):
             self._apply_hello(msg)
         else:
+            was_sos = self.sos
             errors = self._apply_control(msg)
+            if self.sos != was_sos:  # T-462: the tap writes it to events.jsonl as its own line
+                errors.append({"type": "sos", "on": self.sos, "mode": self.mode, "t": time.time()})
         telemetry = self.telemetry()
         return [*errors, *self.poll_pref_errors(), *self._vision_events(), telemetry]
 
@@ -1083,6 +1087,12 @@ class Session:
                 self.ctx.suppression = JUDGE_NATURAL_SUPPRESSION / 100.0  # the judge's Natural slider
         if "suppression" in fields and control.suppression is not None:
             self.ctx.suppression = control.suppression / 100.0
+        if "sos" in fields and control.sos is not None and control.sos != self.sos:
+            self.sos = control.sos
+            log.info("SOS %s (mode %s kept)", "on" if self.sos else "off", self.mode)
+            if self._quiet_synth is not None:
+                self._quiet_synth.reset()  # nothing heard during SOS captions afterwards
+            self._quiet_feed = None
         if "target" in fields:
             old = self.ctx.target
             if self.vision.live:  # the selector owns the target; it applies on the next frame
@@ -1299,7 +1309,9 @@ class Session:
         out.extend(self._vision_events())  # after the audio: errors never delay the reply
         synth = self._quiet_synth if self._quiet_on else self._synth()
         if synth is not None:
-            out.extend({"type": "caption", **c} for c in synth.drain_captions())
+            captions = synth.drain_captions()  # drained under SOS too: nothing queued shows up afterwards
+            if not self.sos:
+                out.extend({"type": "caption", **c} for c in captions)
         self._server_sum += 1000.0 * (time.perf_counter() - start)
         self._server_n += 1
         return out
@@ -1356,9 +1368,9 @@ class Session:
             if self._quiet_synth is not None:
                 self._quiet_synth.reset()
             self._quiet_feed = None
-        if quiet:
+        if quiet and not self.sos:
             self._quiet_captions(len(y), out)
-        goal = 0.0 if quiet else 1.0
+        goal = 0.0 if quiet or self.sos else 1.0  # T-462: SOS takes the same ramp, whatever the mode
         if self._quiet_gain == goal:
             return y if goal else np.zeros_like(y)
         step = 1000.0 / (QUIET_FADE_MS * PIPELINE_SR)
@@ -1703,6 +1715,7 @@ class Session:
             "name_call": self._namecall_status(),
             "synth_feed": self.synth_feed,
             "quiet": dict(self._quiet_feed) if self.quiet and self._quiet_feed else None,  # T-149
+            "sos": {"on": self.sos},  # T-462
             "synth_feed_request": self.synth_feed_request,
             "hq_active": hq["active"],
             "hq_reason": hq["reason"],

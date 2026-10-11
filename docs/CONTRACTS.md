@@ -27,7 +27,7 @@ JSON messages (`type` field):
 | type | direction | shape |
 |---|---|---|
 | `hello` | client → server | `{"type":"hello","sample_rate":16000,"frame_ms":20,"video":true,"client":"console"}`; `/judge` and `/simple` add `"input_device"` / `"output_device"` (labels of the mic and output in use, `null` after Stop, T-121); the recording keeps them and `session_report` prints `mic: ...`; `"devices_missing":["mic"|"output"]` (T-133) lists saved devices the page could not open (it fell back and shows a banner) |
-| `control` | client → server | `{"type":"control","mode":"natural|focus_hq|synthetic|text|quiet|auto|name_call","name":{"text":"Aryan","aliases":[]},"name_call":"release","suppression":0-100,"target":{"lock_track_id":17}|null,"voice_override":"female_adult"|null,"hq_backend":"local|remote|auto","latency_preset":"speed|balanced|accuracy","synth_feed":"auto|mixture|natural|focus","ab":"raw|processed","attention":{"dwell_s":0.5,"hold_s":2.0,"switch_margin":0.04,"tie_margin":0.15,"hold_lock_s":10.0,"preset":"normal"},"agc":true|false}` (`agc`: judge-profile output AGC on/off, T-169) |
+| `control` | client → server | `{"type":"control","mode":"natural|focus_hq|synthetic|text|quiet|auto|name_call","name":{"text":"Aryan","aliases":[]},"name_call":"release","suppression":0-100,"target":{"lock_track_id":17}|null,"voice_override":"female_adult"|null,"hq_backend":"local|remote|auto","latency_preset":"speed|balanced|accuracy","synth_feed":"auto|mixture|natural|focus","ab":"raw|processed","attention":{"dwell_s":0.5,"hold_s":2.0,"switch_margin":0.04,"tie_margin":0.15,"hold_lock_s":10.0,"preset":"normal"},"agc":true|false,"sos":true|false}` (`agc`: judge-profile output AGC on/off, T-169; `sos`: see SOS below, T-462) |
 | `telemetry` | server → client, ~10 Hz | `{"type":"telemetry","seq":123,"tier":"gate","latency_ms":{"enhance":11.2,"gate":0.4,"total":63.0},"faces":[{"track_id":17,"box":[x,y,w,h],"p_speaking":0.83}],"target":{"track_id":17,"confidence":0.91,"locked":false},"voice":{"bucket":"male_adult","source":"face+voice","override":null},"acquisition":{"state":"isolated","since_s":4.2,"detail":""},"mode":"focus_hq","effective_mode":"focus_hq","pipeline":"tiers","device":"mps","tiers":{"active":"enrolled","reason":"enrolled ready","switches":1,"fading_from":null,"fade":null,"fade_kind":null,"delay_ms":1500,"same_bucket":false,"tiers":[{"name":"enrolled","eligible":true,"reason":"ready","delay_ms":1500,"health":[]}]},"transition":null,"ab":"processed","attention":{"dwell_s":0.5,"hold_s":2.0,"switch_margin":0.04,"tie_margin":0.15},"hq_backend":"auto","latency_preset":"balanced","synth_feed":"auto","synth_feed_request":"auto","hq_active":"local","hq_reason":"...","remote_rtt_ms":null}` (abridged: also `vision`) |
 | (telemetry, Focus HQ backend) | server → client | the `telemetry` event also carries `"hq_backend":"auto","hq_active":"remote","hq_reason":"remote healthy, RTT 12 ms < 150 ms","remote_rtt_ms":12.3` (see below) |
 | `caption` | server → client | `{"type":"caption","text":"see you at noon","final":true,"t0":12.31,"t1":13.02}` |
@@ -180,6 +180,25 @@ in the same reply, so the UI shows a degrade within one audio frame (telemetry w
 leaving Quiet resets its synth (a phrase from before never captions). `pipelines={"quiet": ...}` /
 `HEARING_PIPELINES="quiet=silence"` keeps the old behaviour (that spec plays, no captions, `quiet: null`).
 Measured: `docs/BENCHMARKS.md` T-149 (`eval/quiet_toggle.py`). Consumers: `/judge`, `/simple`, console (`mode` button), phone app.
+
+### SOS (`control.sos`, T-462)
+The wearer's one-button "make it stop" (a presenter remote stands in for a wrist band; a trusted person can press
+the same button from the phone companion). No medical claim. The page mutes its own output client-side (master
+gain, ~150 ms, no network) and plays its calm noise; the engine **echoes** the state so the companion and the
+session log see it. `{"type":"control","sos":true}` (alone or with other fields; `null` = no change) over
+`/ws/session` or `/ws/watch?session=<id>`:
+- the output takes Quiet's ramp to digital zeros (`QUIET_FADE_MS`, 20 ms) in **every** mode, and no `caption`
+  events are sent (queued captions are drained and dropped; Quiet's captions synth is not fed and is reset on
+  each change, so nothing heard during SOS captions afterwards; `telemetry.quiet` is `null` while on);
+- `mode`, `effective_mode`, the pipeline, target, enrollment, suppression and every other setting are untouched,
+  so `{"type":"control","sos":false}` returns to exactly the previous Focus / Quiet / Natural / ... state;
+- every `telemetry` carries `"sos": {"on": true|false}`; the reply to the control (sent at once, not on the 10 Hz
+  tick) already carries the new value (measured in `tests/test_sos.py`: < 200 ms over both sockets, TestClient);
+- on a change (not on a repeat) the reply also carries `{"type":"sos","on":true,"mode":"focus_hq","t":<unix s>}`,
+  which `HEARING_SESSION_LOG`'s `events.jsonl` records as its own `out` line next to the incoming control.
+  `/ws/watch` does not mirror this type (companions read `telemetry.sos`).
+Consumers: `/app/` (SOS screen, `session.setOutputGain`), the phone companion's SOS button, `session_report`-style
+readers of `events.jsonl`.
 
 ### Synthetic/Text ASR feed (`synth_feed`, T-074, T-079)
 What the ASR of Synthetic and Text hears; a partial `control` update independent of `mode`.

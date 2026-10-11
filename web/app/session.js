@@ -54,8 +54,11 @@ async function browserAudio({ playbackOnly, jitter, devices }) {
     processorOptions: { frameSamples: Math.round((rate * FRAME_MS) / 1000), ...jitterSamples(jitter, rate) },
   });
   source?.connect(node);
-  node.connect(ctx.destination);
-  return { ctx, node, stream, rate, source };
+  // T-460: one master gain in front of the speakers, so SOS (web/app/sos.js) can silence the room client-side
+  const master = ctx.createGain();
+  node.connect(master);
+  master.connect(ctx.destination);
+  return { ctx, node, stream, rate, source, master };
 }
 
 function browserEnv() {
@@ -101,6 +104,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
     hqActive: null,
     sent: [], // every control sent (devtools and tests)
     closed: false,
+    outputGain: 1, // T-460 master gain (SOS); kept across Stop/Start so a restart under SOS stays silent
   };
   const set = (patch) => store.set(patch);
   const st = () => store.state;
@@ -304,6 +308,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
       rt.frameAt = env.perfNow();
     };
     await audio.ctx?.resume?.();
+    if (audio.master && rt.outputGain !== 1) audio.master.gain.value = rt.outputGain;
     rt.audio = audio;
     rt.seq = 0;
     rt.frameAt = env.perfNow();
@@ -540,6 +545,25 @@ export function createSession({ store = appStore, url = null, devices = null, en
     if (!rt.renderTimer) rt.renderTimer = env.setInterval(tick, RENDER_MS);
   }
 
+  /**
+   * T-460: the master output gain (0..1) ramped linearly over `rampMs` from where it is now. Client-side only: the
+   * engine keeps running. Returns {ctx, endTime} (the AudioContext time the ramp ends; SOS measures press -> silence
+   * against it) or null when no audio is open (the value is still kept for the next Start).
+   */
+  function setOutputGain(v, rampMs = 0) {
+    rt.outputGain = Math.min(1, Math.max(0, Number(v) || 0));
+    const a = rt.audio;
+    const g = a?.master?.gain;
+    if (!g || !a.ctx) return null;
+    const t = a.ctx.currentTime;
+    if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t);
+    else { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); }
+    const endTime = t + Math.max(0, rampMs) / 1000;
+    if (rampMs > 0) g.linearRampToValueAtTime(rt.outputGain, endTime);
+    else g.setValueAtTime(rt.outputGain, t);
+    return { ctx: a.ctx, endTime };
+  }
+
   /** Close the socket for good (tests, page unload). */
   function close() {
     rt.closed = true;
@@ -567,6 +591,8 @@ export function createSession({ store = appStore, url = null, devices = null, en
     calibrate,
     setSuppression,
     setIsolation,
+    setOutputGain,
+    get outputGain() { return rt.outputGain; },
     replay,
     retryMic: () => devices?.retryMic(),
     send: sendControl,
