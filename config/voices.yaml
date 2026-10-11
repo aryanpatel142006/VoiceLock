@@ -1,0 +1,48 @@
+# Voice buckets -> TTS voice ids, read by hearing/synth/tts.py (resolve_voice / bucket_names).
+#
+# A bucket comes from voice_match (apparent gender/age, used only to pick a voice: never
+# stored or logged) or from the user's override. "neutral" must always exist and is the
+# default whenever the estimate is missing, uncertain or overridden to neutral.
+#
+# elevenlabs: default ("premade") voices available to every account; ids from the ElevenLabs
+#   voice library (GET /v1/voices?category=premade). Names are listed so a human can re-map
+#   if an id ever 404s.
+# local: Kokoro-82M voice names (kokoro-onnx voices-v1.0.bin). Kokoro has no child or
+#   truly senior voices, so the closest adult voice stands in.
+# local_speed: optional Kokoro speaking-rate multiplier (young brisker, senior slower; default 1.0).
+#   Voice choice is by DNSMOS and distinctness, see docs/DESIGN.md#synthetic-voices (T-094).
+# mock_hz: pitch of the mock TTS tone per word (offline tests and demos without a key).
+default: neutral
+buckets:
+  neutral:
+    elevenlabs: {id: SAz9YHcvj6GT2YYXdXww, name: River}
+    local: af_river
+    mock_hz: 170
+  female_young:
+    elevenlabs: {id: cgSgspJ2msm6clMCkdW9, name: Jessica}
+    local: af_nova
+    local_speed: 1.05
+    mock_hz: 240
+  female_adult:
+    elevenlabs: {id: EXAVITQu4vr4xnSDxMaL, name: Sarah}
+    local: af_heart
+    mock_hz: 220
+  female_senior:
+    elevenlabs: {id: XrExE9yKIg1WjnnlVkGX, name: Matilda}
+    local: bf_emma
+    local_speed: 0.9
+    mock_hz: 200
+  male_young:
+    elevenlabs: {id: TX3LPaxmHKxFdv7VOQHJ, name: Liam}
+    local: am_puck
+    local_speed: 1.05
+    mock_hz: 140
+  male_adult:
+    elevenlabs: {id: nPczCjzI2devNBz1zQrb, name: Brian}
+    local: am_michael
+    mock_hz: 120
+  male_senior:
+    elevenlabs: {id: pqHfZKP75CvOlQylNhV4, name: Bill}
+    local: bm_fable
+    local_speed: 0.9
+    mock_hz: 105

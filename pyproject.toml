@@ -1,0 +1,79 @@
+[project]
+name = "hearing"
+version = "0.1.0"
+description = "Selective hearing voice backend: target-speaker isolation, adjustable noise suppression, re-voiced speech."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "soundfile>=0.12",
+  "pyyaml>=6",
+  "pydantic>=2.6",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "soxr>=0.5",
+  "jiwer>=3",
+  "pesq>=0.0.4",
+  "pystoi>=0.4",
+  "websockets>=13",
+  "sounddevice>=0.5",
+  "pillow>=10",  # JPEG video frames in hearing.server.vision
+  "cryptography>=42",  # hearing serve --tls: self-signed certificate (hearing.server.tls)
+  "qrcode>=7.4",  # phone URL as a QR code in the terminal and on /connect
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6", "playwright>=1.45"]
+eval = ["datasets>=3.0", "faster-whisper>=1.1", "imageio-ffmpeg>=0.5"]
+# Heavy model stacks are added by the tasks that need them (see PLAN.md). Install with: pip install -e ".[dev,ml]"
+# clearvoice's runtime deps live in `ml`; clearvoice itself pins numpy<2, which conflicts with kokoro-onnx
+# (numpy>=2.0.2), so it sits in its own extra and is installed with `pip install --no-deps clearvoice`
+# (imports and runs on numpy 2.x). opencv-python is left out on purpose: opencv-contrib-python provides cv2.
+# onnxruntime <1.29: 1.29+ ships 1DS telemetry on macOS that uploads in the background and aborts the
+# interpreter at exit ("recursive_mutex lock failed") when an upload is in flight; disable_telemetry_events()
+# does not stop it. 1.28 has no telemetry client.
+ml = [
+  "onnxruntime>=1.20,<1.29",
+  "onnx>=1.16",  # DFN3 graph surgery (hearing/enhance/dfn_graphs.py)
+  "kokoro-onnx>=0.4",
+  "torch>=2.3",
+  "torchaudio>=2.1",
+  "speechbrain>=1.0",
+  "torchvision>=0.16",
+  "einops>=0.7",
+  "rotary_embedding_torch==0.8.3",
+  "librosa>=0.10",
+  "scikit-learn>=1.3",
+  "scenedetect>=0.6",
+  "python_speech_features>=0.6",
+  "pydub>=0.25",
+  "gdown>=5",
+  "torchinfo>=1.8",
+  "yamlargparse>=1.31",
+  "huggingface-hub>=0.20",
+  "transformers>=4.40",
+  "mediapipe>=0.10.20",
+  # Dolphin AV-TSE (hearing/tse/dolphin.py): upstream JusperLee/Dolphin has no installable package, so its
+  # model definition is vendored in hearing/tse/_dolphin/ (commit 9ff6f79); these are its runtime deps.
+  "safetensors>=0.4",
+  "vector-quantize-pytorch>=1.14",
+  "taylor-series-linear-attention>=0.1.9",
+  "beartype>=0.18",
+]
+clearvoice = ["clearvoice>=0.1.2"]  # install with --no-deps, see above
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["hearing*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "slow: needs model weights, a GPU, or more than a few seconds (skipped by verify_fast)",
+  "network: calls an external API (ElevenLabs, Hugging Face downloads)",
+]
+asyncio_mode = "auto"

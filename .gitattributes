@@ -1,0 +1,2 @@
+# Append-only results log: concurrent tasks add sections at the end; keep both sides instead of conflicting (Oct 10).
+docs/BENCHMARKS.md merge=union

@@ -1,0 +1,119 @@
+# Focus HQ fallback ladder, read by hearing/fusion/tiers.py (the "tiers" stage, the default
+# focus_hq pipeline of the session server). Best tier first; the ladder plays the first tier
+# whose needs are met and crossfades on every switch. The tiers that may play next run at once
+# (the playing one, every better one, the fallback below it, and every tier that needs `healthy`);
+# the others are suspended and primed with the last 0.5 s of input before they run again (T-116:
+# ladder 1.10-1.30 -> 0.26-0.27 ms per 10 ms hop on the demo clip, docs/BENCHMARKS.md; `idle: run`
+# on a tier, or HEARING_TIERS_IDLE=run, keeps it running), and each plays at its OWN delay: the ladder's latency is the playing tier's. A switch
+# between tiers of different delay jumps in time (replays or skips the difference): up to 500 ms it
+# is an equal-power crossfade, above it a dip (old fades out, new fades in, each over half of
+# crossfade_ms) so two different words never play on top of each other (hearing/fusion/tiers.py).
+#
+# needs:
+#   camera   - live face tracks (the session has video and a face detector)
+#   target   - a target track among them with confidence >= min_target_confidence
+#   healthy  - every stage of the tier reports ok: model loaded, GPU present (require_gpu),
+#              no overrun or late window, lips/enrollment available (tse); remote server up (remote)
+# avoid_when: conditions that make a tier ineligible even when its needs are met
+#   same_bucket - the target and another face seen in the last 3 s share a voice group (male/female,
+#                 hearing/synth/voice_match.py SameBucket; unknown/neutral never matches). The ladder
+#                 then skips the tier ("same-gender pair: enrolled skipped") with the usual hysteresis
+#                 and crossfade, and comes back upgrade_after_s after the pair stops matching.
+# pipeline: a spec or a list of specs; the first that builds is used (missing weights fall through).
+# devices: optional list of hearing.device.pick() values (cuda / mps / cpu) the tier is built on; on
+#   any other host the tier is not built at all (listed as unavailable in telemetry, never runs).
+#
+# Order and windows from the bake-off v2 (docs/BAKEOFF.md, docs/decisions/focus-hq-bakeoff.md,
+# GRID two-face av_full, n = 80): enrolled keeps +10.1 to +11.5 dB SI-SDRi from 0.5 s to 2 s
+# windows, AV-MossFormer2 needs 2 s (+11.2 dB; +3.9 at 1 s, -0.4 at 0.5 s). A tse stage's delay
+# is window + hop (threaded): enrolled 1.5 s here, 0.75 s on the GPU box after T-078; AV-MossFormer2 3.0 s.
+# The enrolled tier plays 1.5 s behind; only the cold-start AV tier plays 3.0 s behind.
+#
+# Remote GPU (docs/DEPLOY.md): `scripts/gpu_up.sh ilab` serves on Rutgers iLab (srun job, CUDA)
+#   focus_hq=tse(candidate="av_mossformer2", window_s=2.0, hop_s=1.0, require_gpu=true)>mixer
+# and tunnels it to ws://127.0.0.1:18765/ws/session. To play it, point the focus_hq tier at it, e.g.
+#   pipeline: 'remote(fallback="passthrough", delay_ms=3100, tier="focus_hq")'
+# (T-078: delay_ms is the playout buffer and only has to cover the p95 RTT, ~7 ms measured on
+# Oct 5; the remote answers each hop under its own seq, so the remote tse delay ADDS to it and the
+# remote stage reports buffer + remote algorithmic. 3100 here plays 6.1 s behind; 200 is enough).
+# Once enrollment reaches the remote session, run the shorter enrolled spec under
+# `remote:` below instead (109-123 ms per window on the RTX 4500 Ada, so a 0.25 s hop keeps up):
+#   REMOTE_PIPELINES="focus_hq=<remote.enrolled>" scripts/gpu_up.sh ilab
+# and point the enrolled tier at it, e.g.
+#   pipeline: 'remote(fallback="passthrough", delay_ms=200, tier="enrolled")'
+# (plays delay_ms + the remote tse delay = 200 + 750 ms for enrolled at 0.5 s / 0.25 s; the
+# balanced latency preset keeps those windows, speed/accuracy rewrite them, T-078).
+
+crossfade_ms: 150          # raised-cosine crossfade between the old and the new tier
+# Ladder stability (T-095, hearing/fusion/tiers.py TierPolicy). On the M4 Pro under load 8-10 the
+# old policy (move up after 1 s, drop at the first overrun) flapped gate <-> enrolled 7-8 times in
+# 60 s, each switch a 1.5 s dip/replay: SI-SDRi -3.0 / +1.0 dB, true dropouts 10.0 / 9.4 s (T-095
+# scorer). Now (with the enrolled tier's mixer(max_duck_db=20)), 3 runs x 60 s at load 8-11:
+# +2.9 / +2.8 / +2.1 dB (+10.7 / +10.5 / +10.3 once enrolled plays), true dropouts 0.08 s each,
+# 2 switches each (docs/BENCHMARKS.md). On the T-097 demo clip (demo-mf-easy, target locked, load
+# 4.6-8): +4.7 / +4.5 / +5.0 dB (+11.2 / +9.4 / +11.5 once enrolled plays), 0.00 s dropouts, 2 switches; with T-089's threaded enrolled
+# tier merged (load 4-21): +4.7 / +6.4 / +3.0 / +5.4 dB, 0.00-0.22 s, 2 switches. Enrolled stays the Mac default: it is the best tier whenever
+# it plays; the gate was the tier below the mixture.
+upgrade_after_s: 3.0       # a better tier must stay eligible (and not cooling) this long before the ladder moves up
+downgrade_after_s: 10.0    # an overrun/late tier keeps playing this long (its skipped windows fall back to the mix, measured far better than the gate under load); hard failures (crash, model, enrollment) leave at once
+                           # (1.5 s measured the same at load 8-10: +3.0 dB, 2 switches; 10 s kept for heavier load, where overruns run longer)
+min_switch_s: 10.0         # at most one promotion per 10 s (forced demotions are not held back)
+cooldown_s: 0.0            # cooling after an overrun: 10 s kept enrolled out for the whole 60 s under load (run 1), off
+min_target_confidence: 0.2  # TargetSelector confidence = centrality (locked: 1.0); 0.2 keeps side talkers
+
+tiers:
+  - name: enrolled
+    # Tier 1: audio-only TSE (MossFormer2_SS_16K separation + ECAPA match) against 2 s of the
+    # target's speech, collected automatically (hearing/tse/enroll.py) while ASD sees the target
+    # talking alone, contrasted with 2 s of the other people (negative enrollment); health says
+    # "enrolling" until then. Re-enrolls on a deliberate target switch, keeps the clip when the same
+    # face is re-detected (docs/decisions/association.md, T-061). Local (Mac, MPS): 1 s window every 0.5 s.
+    # Same-gender pairs (T-069: M/M 0.742 acc / 1.75 s, F/F 0.844 / 1.22 s of the other person per
+    # 10 s, vs M/F 0.945 / 0.20) skip this tier: AV Focus HQ (lips, CUDA hosts) or the gate plays
+    # instead (T-070); on the Mac that is the gate.
+    # "strict" preset (T-069 pause_duck_asd: wrong-target -50 % on M/F, -13 to -19 % same-gender, for
+    # 0.3-2.6 % lower accuracy, i.e. more short dropouts); off by default. Swap the pipeline for:
+    #   'tse(candidate="enrolled", window_s=1.0, hop_s=0.5, require_gpu=true, pause_floor=0.25, pause_p=0.5, pause_action="duck")>mixer'
+    # T-095: mixer(max_duck_db=20) keeps the residual >= -20 dB at slider 100, so a window that
+    # misses the target (or is skipped) plays it quieter instead of dropping it.
+    pipeline: 'tse(candidate="enrolled", window_s=1.0, hop_s=0.5, threaded=true, require_gpu=true)>mixer(max_duck_db=20)'
+    needs: [healthy]
+    avoid_when: [same_bucket]
+  - name: focus_hq
+    # Tier 1b, cold start only: AV-MossFormer2 over 2 s windows every 1 s, used while enrollment
+    # is still collecting. Explicit candidate, not "auto": Dolphin is negative at every window.
+    # CUDA only (T-072): on the M4 Pro (MPS) it measured compute p50 632 / p95 1043 ms per 1 s hop,
+    # overran, and starved vision (15 fps, 58 % frames dropped) while never becoming eligible, so the
+    # Mac ladder does not build it and enrolled + vision get the machine. Remote GPU: see `remote:`.
+    pipeline: 'tse(candidate="av_mossformer2", window_s=2.0, hop_s=1.0, require_gpu=true)>mixer'
+    needs: [camera, target, healthy]
+    devices: [cuda]
+  - name: gate
+    # T-095, measured on the demo clip (two overlapping GRID talkers, babble 5 dB SNR) on the M4 Pro
+    # under load 10-15, replaying each run's logged ASD through the stage offline (it matches the
+    # live score within ~1 dB). The target's ASD reads p >= 0.5 for only ~51 % of its speech, so
+    #   'dfn_ll>gate>mixer' (was):              SI-SDRi -2.7 / -3.9 dB, true dropouts 9.9 / 14.4 s per 45 s
+    #   hold_ms=1000:                            dropouts 3.0 / 8.5 s (bridges ASD flicker)
+    #   + max_duck_db=20, no dfn_ll (now):       SI-SDRi  0.0 / -1.6 dB, dropouts 0.0 / 0.0 s
+    # dfn_ll at full strength alone costs 2 dB SI-SDR on this clip (-0.96 -> -2.97) and drops target
+    # words (it cuts the other talker's leak by ~10 dB, but true dropouts stay 2.3-5.0 s even with
+    # the bounded duck), so the bridge tier plays the room ducked by at most 20 dB until enrolled
+    # takes over. Natural mode keeps dfn_ll (its own pipeline).
+    pipeline: ['gate(hold_ms=1000,max_duck_db=20)>mixer', 'gate(hold_ms=1000,max_duck_db=20)']
+    needs: [camera, target]
+  - name: audio-only
+    pipeline: ['dfn_ll', 'passthrough']
+    needs: []
+
+# The same TSE tiers on the remote GPU backend (not read by the ladder; pass one to the GPU box
+# as REMOTE_PIPELINES). threaded=true: the remote session must not block its event loop.
+remote:
+  enrolled: 'tse(candidate="enrolled", window_s=0.5, hop_s=0.125, threaded=true, require_gpu=true)>mixer'  # T-086: 625 ms, +10.68 dB on the A100
+  focus_hq: 'tse(candidate="av_mossformer2", window_s=2.0, hop_s=1.0, threaded=true, require_gpu=true)>mixer'
+  # T-086 perceptual post-filter option: full DeepFilterNet3 (33 ms) on the isolated target only (the
+  # tse residual still reaches the mixer). On 3 A100 replays of demo-mf-easy (slider 100) it raised
+  # DNSMOS OVRL 2.78 -> 3.08 (SIG/BAK in docs/BENCHMARKS.md) at SI-SDRi +4.88 -> +4.97 dB; dfn_ll
+  # reached OVRL 3.16 but cost 1.3 dB SI-SDRi, so it is out. Not the default: measured offline on the
+  # played output, not live, and a CPU DFN on the GPU box's event loop is what put the remote behind
+  # real time in T-075. Swap it into config/tiers-remote.yaml's enrolled tier to try it live.
+  enrolled_dfn: 'tse(candidate="enrolled", window_s=0.5, hop_s=0.125, threaded=true, require_gpu=true)>dfn>mixer'

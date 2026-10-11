@@ -1,0 +1,84 @@
+# The 'team' demo preset (T-130), loaded on top of the judge profile (hearing/server/judge.py) when
+# HEARING_DEMO_PRESET=team (or `scripts/demo.sh --judge --team`, or control.profile = "team").
+# Read by hearing/server/team.py; every key below is a pin shown in the /judge drawer ("TEAM PRESET").
+# Preset off (HEARING_DEMO_PRESET unset): none of this applies, the judge profile is unchanged.
+# Hard line: no prerecorded audio or canned captions on any live path. No caption prompt either (T-139,
+# Q-375): Whisper put prompt words ('Selective Hearing,', 'Select') over real speech. The names live
+# in Name Call only.
+
+# (1) Focus HQ backend (T-181): the Mac (`local`), never probed, even with the GPU tunnel up. T-129
+# measured it with profiles loaded (docs/BENCHMARKS.md "T-129 ... attempt 4", rows `mac` vs `base` /
+# `novideo` / `standard`): Mac team-easy SI-SDRi +1.55 dB / leak -7.4 dB vs the A100's best -1.40 dB;
+# mf-easy +3.10 dB / -14.5 dB vs -0.81 dB; the A100 only wins delay (825-950 ms vs 1500 ms).
+# `scripts/demo.sh --judge --team --gpu` (or HEARING_HQ_BACKEND=remote, which wins over this key) probes
+# and pins the A100 instead: hq_probe_n /health probes of
+# HEARING_REMOTE_URL (a failed probe is retried once): remote when a majority answered and their
+# RTT p95 < hq_probe_p95_ms, else local. A local pin caused by the GPU is re-probed every 10 s and
+# moves to remote at the next safe point (before Isolated, or at a pause); never back to local
+# (the remote stage still falls back to the local ladder inside itself if the GPU drops). T-154.
+hq_backend: local
+hq_probe_p95_ms: 60
+hq_probe_n: 5
+
+# (1b) Enrolled-tier isolation (T-181, T-129 Q-470): standard over the judge profile's strict. On the
+# Mac with profiles (docs/BENCHMARKS.md "T-129 ... attempt 5", rows mac-standard vs mac-strict, scored
+# before the output AGC) standard wins demo-mf-easy SI-SDRi +9.06 vs +7.54 dB, leak -19.6 vs -11.9 dB,
+# and ties demo-team-easy +3.54 vs +3.55 dB. Strict stays one click away in the /judge drawer.
+isolation: standard
+
+# (2) same_bucket guard (config/tiers.yaml avoid_when): turned off only when the two voice profiles
+# are a verified male/female pair. Same gender (or unverified) keeps it on. Fill in after
+# `scripts/make_profile.py` and a listen; `verified: false` keeps the guard on whatever the genders.
+pair:
+  target: {profile: aryan, gender: male}
+  other: {profile: joseph, gender: male}
+  verified: false
+
+# (3) voice profiles (T-125) are pre-loaded by the judge profile; HEARING_VOICE_PROFILE picks the
+# target (default: pair.target.profile when that profile exists). The C key still re-learns.
+
+# (4) explicit lock on the face attention picks first after Start (the centred one), held 60 s
+# through a lost face.
+lock_on_start: true
+hold_lock_s: 60
+
+# (5) Name Call: the wearer's name, the aliases Whisper writes for it, strict matching, and longer
+# quiet/release timers (namecall.QUIET_S 6 s / TIMEOUT_S 60 s by default).
+name: Aryan
+aliases: [Ariane, Arion, Arian]
+match: strict
+namecall_quiet_s: 10
+namecall_timeout_s: 180
+
+# (6) Synthetic voice pinned to the target's bucket (always overridable from the page).
+# TTS: ElevenLabs when ELEVENLABS_API_KEY is set, else Kokoro (hearing.synth.tts auto order).
+voice_override: male_adult
+
+# (7) Mac ladder: at most one promotion per 3 s (config/tiers.yaml min_switch_s 10).
+min_switch_s: 3
+
+# (8) Synthetic/Text feed and captions. HEARING_ASR stays `local` (faster-whisper) unless
+# ElevenLabs + venue Wi-Fi was verified (set HEARING_ASR=elevenlabs by hand then).
+synth_feed: focus
+asr: local
+caption_temperature: 0.0
+
+# (9) scripts/demo_noise.py start level (dBFS RMS) for the venue speaker.
+demo_noise_level_db: -20
+
+# (10) Demo audio path (T-143, final): NO external mic. Input = the laptop's built-in mic (exact
+# CoreAudio/Chrome label), output = AirPods Pro 3 over A2DP, picked explicitly on /judge (setSinkId).
+# AirPods: ANC on; Transparency, Adaptive, Conversation Awareness, ear detection and spatial audio off;
+# macOS Mic Mode Standard. The AirPods mic must never be the input (that drops them to HFP: 16 kHz,
+# no ANC). scripts/judge_check.py checks both labels and runs latency-test on these devices
+# (Bluetooth path: median <= bt_round_trip_max_ms, p95 <= bt_round_trip_max_ms + 50).
+# T-171: HEARING_INPUT_DEVICE (exact label, or `demo.sh --judge --team --mic LABEL`) overrides input_device, e.g.
+# "Aryan patel's iPhone Microphone" (iPhone over USB/Continuity; `bash scripts/mic_ab.sh` decides iPhone vs MacBook).
+input_device: MacBook Pro Microphone
+output_device: AirPods
+bt_round_trip_max_ms: 300
+
+# (11) Audio only (T-168, decided Oct 9): no camera in the demo. /judge never opens the camera and
+# says video:false in hello; the session drops any camera frame (a replay clip's too), so neither the
+# Mac nor the GPU runs vision or the AV (focus_hq) tier. The console page keeps its camera path.
+audio_only: true

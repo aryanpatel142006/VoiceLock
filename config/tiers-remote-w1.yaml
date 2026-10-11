@@ -1,0 +1,62 @@
+# T-129 side-server variant of config/tiers-remote.yaml: the enrolled tier on the Mac's 1.0 s window with a
+# 0.25 s hop (1.25 s delay; the Mac plays 1.0 s / 0.5 s = 1.5 s). With voice profiles the Mac beat every
+# 0.5 s-window A100 variant by 3.5 dB (team-easy) / 5.5 dB (mf-easy) pre-AGC (docs/BENCHMARKS.md T-129);
+# speaker-embedding error roughly doubles from 1.0 s to 0.5 s windows (arXiv 2310.04681). Served by a
+# side server only:
+#   REMOTE_PIPELINES='focus_hq=tiers(config="config/tiers-remote-w1.yaml")' scripts/gpu_up.sh ilab
+# Everything below the enrolled pipeline is the same as config/tiers-remote.yaml.
+# Focus HQ ladder of the remote GPU backend (scripts/gpu_up.sh serves it as
+#   focus_hq=tiers(config="config/tiers-remote.yaml")
+# ). Same TSE tiers, order and same-gender guard as config/tiers.yaml, without the DeepFilterNet
+# tiers: the laptop plays those itself (the remote stage's local fallback). T-075 measured why on
+# iLab (RTX 4500 Ada, ilab3): with config/tiers.yaml the remote session ran two CPU DFN instances
+# (gate + audio-only) on its event loop, 64 % of real time in onnxruntime, so it processed audio at
+# ~0.86x real time and the laptop's stream RTT grew by ~160 ms per second (9.3 s after 55 s).
+# T-116: the ladder no longer runs every tier every chunk. While enrolled plays with AV eligible as its
+# fallback, the gate and audio-only tiers are suspended, so T-115's dfn_ll cold-start bridge
+# (gate 'dfn_ll>gate(hold_ms=1000,max_duck_db=20)>mixer', audio-only 'dfn_ll') would only run during
+# the cold start (and whenever AV is not eligible). It stays off until an A100 A/B shows no whole-run
+# regression (none run in T-116: no GPU tunnel).
+crossfade_ms: 150
+upgrade_after_s: 1.0
+# T-110: the Mac ladder's overrun tolerance (T-095, config/tiers.yaml). Live through the A100 the
+# remote session is CPU-bound (vision + enroller + tse on one Python process; enrolled compute p50
+# 162 ms per window vs 69 ms offline), so enrolled overruns now and then; with the default policy
+# the remote ladder dropped to AV at once (3.2 s delay) and back, 4-6 switches per minute (SI-SDRi
+# +0.5 / +2.0 dB, leak -7 to -12 dB). An overrunning enrolled tier keeps playing (a skipped window
+# plays the mix for that hop); hard failures still leave at once.
+downgrade_after_s: 10.0
+# T-113: one promotion per 3 s (was 10 s, the Mac's). With 10 s the gate (~3.5 s in) held enrolled back
+# until ~13.7 s, and those first 14 s play the raw room or the gate: DNSMOS OVRL 1.5-1.8 there vs 2.6-2.8
+# once enrolled plays, and most of the whole-run leak. 3 locked 60 s A100 runs on demo-mf-easy:
+# Isolated ~3 s sooner, leak -10.7 / -13.6 / -15.0 dB (was -5.3 to -9.5), SI-SDRi +5.1 / +5.1 / +5.9 dB
+# (was +0.1 to +5.2), DNSMOS 2.50-2.66 (was 2.49-2.59), true dropouts 0.00-0.06 s (docs/BENCHMARKS.md).
+# Overrun demotions still wait downgrade_after_s, so this does not bring back the flapping.
+min_switch_s: 3.0
+cooldown_s: 0.0
+min_target_confidence: 0.2
+
+# T-086: enrolled 0.5 s / 0.125 s on the A100 = the lowest delay that keeps >= +10 dB with p95
+# compute < 70 % of the hop (16 av_full clips: +10.68 dB, compute p50/p95 69/85 ms per 125 ms hop,
+# 625 ms algorithmic; 0.5/0.25 +9.73 dB, 0.4/0.2 +8.34, 0.3/0.15 +7.57, 0.25/0.125 +6.00;
+# docs/BENCHMARKS.md). The laptop forwards `balanced` as is, so these windows play (REMOTE_PRESETS).
+# Order: enrolled outranks AV as soon as it is enrolled; AV plays the cold start and same-gender pairs.
+tiers:
+  - name: enrolled
+    # T-110: mixer(max_duck_db=20) as on the Mac (T-095): a window that misses the target plays it
+    # 20 dB down instead of a hole (A100 live replay with the plain mixer: 1.1-1.4 s true dropouts).
+    pipeline: 'tse(candidate="enrolled", window_s=1.0, hop_s=0.25, threaded=true, require_gpu=true)>mixer(max_duck_db=20)'
+    # post-filter option (T-086, +0.30 DNSMOS OVRL offline, see config/tiers.yaml remote.enrolled_dfn):
+    #   'tse(candidate="enrolled", window_s=0.5, hop_s=0.125, threaded=true, require_gpu=true)>dfn>mixer'
+    needs: [healthy]
+    avoid_when: [same_bucket]
+  - name: focus_hq
+    pipeline: 'tse(candidate="av_mossformer2", window_s=2.0, hop_s=1.0, require_gpu=true)>mixer'
+    needs: [camera, target, healthy]
+    devices: [cuda]
+  - name: gate
+    pipeline: 'gate'
+    needs: [camera, target]
+  - name: audio-only
+    pipeline: 'passthrough'
+    needs: []
