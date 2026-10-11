@@ -50,6 +50,7 @@ from __future__ import annotations
 import importlib
 import logging
 import math
+import os
 import time
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -142,6 +143,42 @@ class _Window:
         self.covered = math.nan
 
 
+# T-419: the enrolled tier's balanced window pair (config/tiers.yaml, latency preset "balanced") from the env,
+# e.g. HEARING_TSE_WINDOW_S=0.5 HEARING_TSE_HOP_S=0.25 plays 0.75 s behind instead of 1.5 s. Unset = 1.0 / 0.5.
+# Only an enrolled spec at exactly the balanced pair is rewritten: the speed/accuracy presets and the GPU box's
+# own windows (remote.enrolled, 0.5 / 0.125) keep theirs. HEARING_TSE_WINDOW_S alone sets the hop to window / 2.
+WINDOW_ENV, HOP_ENV = "HEARING_TSE_WINDOW_S", "HEARING_TSE_HOP_S"
+BALANCED_WINDOW = (1.0, 0.5)
+
+
+def balanced_window() -> tuple[float, float]:
+    """``(window_s, hop_s)`` the balanced enrolled tier runs at: the env knobs, else :data:`BALANCED_WINDOW`."""
+    raw_w, raw_h = os.environ.get(WINDOW_ENV, "").strip(), os.environ.get(HOP_ENV, "").strip()
+    try:
+        window = float(raw_w) if raw_w else BALANCED_WINDOW[0]
+        hop = float(raw_h) if raw_h else (window / 2 if raw_w else BALANCED_WINDOW[1])
+    except ValueError as e:
+        raise ValueError(f"{WINDOW_ENV}={raw_w!r} / {HOP_ENV}={raw_h!r}: need numbers in seconds") from e
+    if window <= 0 or not 0 < hop <= window:
+        raise ValueError(f"{WINDOW_ENV}={window:g} / {HOP_ENV}={hop:g}: need 0 < hop <= window")
+    return window, hop
+
+
+def tse_window() -> dict:
+    """``/health``'s ``tse_window``: the balanced enrolled tier's window, hop and threaded delay (window + hop),
+    the "expected delay" the pages show, and whether the env knobs changed it from 1.0 / 0.5."""
+    window, hop = balanced_window()
+    return {"window_s": window, "hop_s": hop, "delay_ms": round(1000.0 * (window + hop)),
+            "env": (window, hop) != BALANCED_WINDOW}
+
+
+def env_window(window_s: float, hop_s: float) -> tuple[float, float]:
+    """The balanced pair (1.0 / 0.5) becomes :func:`balanced_window`; any other pair is kept."""
+    if math.isclose(window_s, BALANCED_WINDOW[0]) and math.isclose(hop_s, BALANCED_WINDOW[1]):
+        return balanced_window()
+    return window_s, hop_s
+
+
 @registry.register("tse")
 class FocusHQ:
     """Sliding-window target-speaker extraction with streaming state. See the module doc."""
@@ -167,6 +204,8 @@ class FocusHQ:
         _candidate=None,  # tests inject a TSECandidate instance
     ):
         hop_s = window_s / 2 if hop_s is None else hop_s
+        if candidate == "enrolled":
+            window_s, hop_s = env_window(window_s, hop_s)
         if window_s <= 0 or not 0 < hop_s <= window_s:
             raise ValueError(f"need 0 < hop_s <= window_s, got window {window_s}, hop {hop_s}")
         if not 0.0 <= min_lips <= 1.0:

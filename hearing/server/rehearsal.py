@@ -28,6 +28,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 
 from hearing.tse.enrolled import GATED_PLAY_ENV
+from hearing.tse.stage import balanced_window
 
 RESULTS_ENV = "HEARING_REHEARSAL_DIR"
 SAMPLE_RATE = 16000
@@ -50,6 +51,14 @@ LADDER = {
     "balanced": {"label": "Balanced", "preset": "balanced", "window_s": 1.0, "hop_s": 0.5},
     "accurate": {"label": "High accuracy", "preset": "accuracy", "window_s": 1.5, "hop_s": 0.75},
 }
+
+
+def ladder() -> dict:
+    """:data:`LADDER` with ``balanced`` at the windows that really run (T-419: HEARING_TSE_WINDOW_S / _HOP_S)."""
+    window, hop = balanced_window()
+    return {**LADDER, "balanced": {**LADDER["balanced"], "window_s": window, "hop_s": hop}}
+
+
 DEFAULT_MATRIX = {"representation": "ecapa", "policy": "stream", "ladder": "balanced", "suppression": 0.8}
 
 SCRIPTS = [
@@ -209,7 +218,7 @@ def mount(app: FastAPI, results_root: Path | None = None) -> None:
 
     @app.get("/api/rehearsal/options")
     def options() -> dict:
-        return {"representations": REPRESENTATIONS, "policies": POLICIES, "ladder": LADDER,
+        return {"representations": REPRESENTATIONS, "policies": POLICIES, "ladder": ladder(),
                 "default": DEFAULT_MATRIX, "scripts": [*SCRIPTS, FREEFORM],
                 "projection_head_present": Path(REPRESENTATIONS["projection"]["weights"]).is_file()}
 

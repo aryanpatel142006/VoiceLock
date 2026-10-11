@@ -34,6 +34,7 @@ from hearing.server.tap import SessionTap
 from hearing.server.team import read_git_rev
 from hearing.server.watch import SessionWatch
 from hearing.tse.enroll import list_profiles, profile_versions
+from hearing.tse.stage import tse_window
 
 TEAM_REPLAY_CLIP = "demo-team-easy/clip.mp4"  # T-173
 
@@ -171,6 +172,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
                 "profiles": list_profiles(),  # T-172: the voice profiles a session would load
                 "profile_versions": profile_versions(),  # T-172 (Q-467): their active v<N>, null when flat
                 "sessions_active": len(sessions),  # T-182: open /ws/session connections (shared-GPU contamination check)
+                "tse_window": tse_window(),  # T-419: the balanced enrolled tier's window/hop and expected delay
                 **remote_identity(config.remote_url), **identity}
 
     @app.websocket("/ws/session")
