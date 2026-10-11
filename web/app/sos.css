@@ -52,6 +52,9 @@
 }
 body[data-screen="listen"] .sos-btn { display: inline-flex; }
 body[data-sos="on"] .sos-btn { visibility: hidden; }
+/* the Companion QR card sits on the same right edge: the button steps aside while it is open, so it never covers the
+ * code or the link (Shift+S and the band key still trigger SOS; Esc or Phone closes the card and brings it back) */
+body:has(.pl[data-open="true"]) .sos-btn { visibility: hidden; }
 .sos-btn:hover { background: #142849; }
 .sos-btn:active { background: #1a335c; }
 .sos-btn:focus-visible { outline: 3px solid var(--sos-fg); outline-offset: 4px; }
@@ -91,6 +94,19 @@ body[data-sos="on"] .sos-btn { visibility: hidden; }
 }
 .sos-calm-line { margin: 0; max-width: 32ch; font-size: clamp(1.125rem, 1rem + 0.6vw, 1.5rem); line-height: 1.4; color: var(--sos-soft); }
 
+/* T-478: Calm noise | Chill music. Pressed = 16 % white fill + white outline (the app's neutral pressed state); text
+ * stays --sos-fg (15.3:1 on --sos-bg; the fill only lightens it to ~#36435a, still > 9:1). 48 px targets. */
+.sos-calm-kinds { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2, 8px); }
+.sos-calm-kind {
+  font: inherit; font-size: 1.0625rem; font-weight: var(--weight-strong, 600);
+  color: var(--sos-fg); background: transparent;
+  border: 1px solid var(--sos-track); border-radius: 999px;
+  min-height: 48px; padding: 10px 22px;
+  cursor: pointer; touch-action: manipulation;
+}
+.sos-calm-kind[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); border-color: var(--sos-fg); box-shadow: inset 0 0 0 1px var(--sos-fg); }
+.sos-calm-kind:focus-visible { outline: 3px solid var(--sos-fg); outline-offset: 3px; }
+
 /* the hold disc: a ring that fills while held (--sos-p 0..1, set by sos.js) */
 .sos-calm-hold {
   --sos-p: 0;
@@ -127,4 +143,5 @@ body[data-sos="on"] .sos-btn { visibility: hidden; }
 
 @media (forced-colors: active) {
   .sos-btn { border-color: ButtonText; }
+  .sos-calm-kind[aria-pressed="true"] { border-width: 3px; }
 }

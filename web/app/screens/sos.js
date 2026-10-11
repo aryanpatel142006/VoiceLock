@@ -1,6 +1,8 @@
 // SOS: "Pair the band" (T-461). The wrist band has one button; today a presenter remote stands in for it.
 // The user presses that button once; its {code, key, label} goes to localStorage `hearing.sos` with the calm sound
-// (brown | pink | white) that SOS plays (T-460 reads the same key). Further presses light a test light (held-key
+// (brown | pink | white | music) that SOS plays (T-460 reads the same key). T-478: a two-option toggle, Calm noise /
+// Chill music, picks the kind; the noise colour picker shows under Calm noise, and `noise` keeps the last colour so
+// switching back to noise restores it. Further presses light a test light (held-key
 // repeats ignored). Escape is refused (it exits full screen); F5 / B / "." get a toggle warning.
 // The pure parts (classifyKey, matchesBand, loadSos, saveSos, labelFor, pairWarning) are covered by node --test.
 
@@ -13,6 +15,12 @@ export const SOUNDS = [
   { id: "white", name: "White", note: "Even hiss, like a fan." },
 ];
 export const DEFAULT_SOUND = "brown";
+export const MUSIC = "music";
+/** The two-option toggle (T-478), on this screen and on the calm frame (web/app/sos.js). */
+export const KINDS = [
+  { id: "noise", name: "Calm noise" },
+  { id: "music", name: "Chill music" },
+];
 export const LIGHT_MS = 450;
 
 export const ESCAPE_REASON = "Escape can't be the band: it exits full screen, so the page would jump out under you. Press a different button.";
@@ -84,13 +92,46 @@ export function loadSos(storage) {
     code: paired ? String(v.code || "") : null,
     key: paired ? String(v.key || "") : null,
     label: paired ? String(v.label || labelFor(v.key, v.code)) : null,
-    sound: SOUNDS.some((s) => s.id === v.sound) ? v.sound : DEFAULT_SOUND,
+    sound: v.sound === MUSIC || isNoise(v.sound) ? v.sound : DEFAULT_SOUND,
   };
+}
+
+function isNoise(id) {
+  return SOUNDS.some((s) => s.id === id);
+}
+
+function rawSos(storage) {
+  try {
+    const v = JSON.parse(storage?.getItem(STORAGE_KEY) || "null");
+    return v && typeof v === "object" ? v : {};
+  } catch { return {}; }
+}
+
+/** "music" or "noise" for a `hearing.sos.sound`. */
+export function soundKind(sound) {
+  return sound === MUSIC ? "music" : "noise";
+}
+
+/** The noise colour Calm noise plays: the current sound when it is noise, else the last noise colour saved. */
+export function noiseColour(storage) {
+  const { sound } = loadSos(storage);
+  if (isNoise(sound)) return sound;
+  const last = rawSos(storage).noise;
+  return isNoise(last) ? last : DEFAULT_SOUND;
+}
+
+/** Flip the toggle: "music" stores sound "music" (remembering the noise colour), "noise" restores that colour. */
+export function chooseKind(storage, kind) {
+  if (kind === "music") return saveSos(storage, { sound: MUSIC, noise: noiseColour(storage) });
+  return saveSos(storage, { sound: noiseColour(storage) });
 }
 
 /** Merge `patch` into `hearing.sos`; returns the stored value. Storage failures (private mode) keep it in memory. */
 export function saveSos(storage, patch) {
+  const last = patch.noise ?? rawSos(storage).noise;
   const next = { ...loadSos(storage), ...patch };
+  if (isNoise(last)) next.noise = last;
+  else delete next.noise;
   try { storage?.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* quota or private mode: this visit only */ }
   return next;
 }
@@ -127,10 +168,16 @@ export function mount(root, ctx = {}) {
   const $pad = el("div", { class: "sos-pad", tabindex: "0", "aria-labelledby": "sos-pad-label" },
     $light, el("span", { id: "sos-pad-label", class: "sos-pad-label" }), $lightText);
   const $again = el("button", { type: "button", class: "sos-again" });
+  const kinds = KINDS.map((k) => {
+    const b = el("button", { type: "button", class: "sos-kind", "data-kind": k.id, "aria-pressed": "false", text: k.name });
+    b.addEventListener("click", () => { saved = chooseKind(storage, k.id); renderKind(); }, { signal });
+    return b;
+  });
+  const $kindNote = el("p", { class: "sos-kind-note" });
   const sounds = SOUNDS.map((s) => {
     const input = el("input", { type: "radio", name: "sos-sound", value: s.id, id: `sos-sound-${s.id}` });
-    input.checked = s.id === saved.sound;
-    input.addEventListener("change", () => { if (input.checked) saved = saveSos(storage, { sound: s.id }); }, { signal });
+    input.checked = s.id === noiseColour(storage);
+    input.addEventListener("change", () => { if (input.checked) saved = saveSos(storage, { sound: s.id, noise: s.id }); }, { signal });
     return el("label", { class: "sos-sound", for: `sos-sound-${s.id}` }, input,
       el("span", { class: "sos-sound-name", text: s.name }), el("span", { class: "sos-sound-note", text: s.note }));
   });
@@ -142,8 +189,12 @@ export function mount(root, ctx = {}) {
     el("p", { class: "sos-honest", text: "In reality this is a band on the wrist with one button. For today a presenter remote stands in for it." }),
     $pad, $status, $refuse, $warn,
     el("p", { class: "sos-actions" }, $again),
-    el("fieldset", { class: "sos-sounds" },
-      el("legend", { class: "sos-h", text: "Calm sound" }), ...sounds),
+    el("section", { class: "sos-sounds", "aria-labelledby": "sos-sounds-h" },
+      el("h2", { class: "sos-h", id: "sos-sounds-h", text: "Calm sound" }),
+      el("div", { class: "sos-kinds", role: "group", "aria-labelledby": "sos-sounds-h" }, ...kinds),
+      $kindNote,
+      el("fieldset", { class: "sos-colours" },
+        el("legend", { class: "sos-colours-h", text: "Noise colour" }), ...sounds)),
     el("p", { class: "sos-note", text: "Plug the remote in before you start: macOS may show Keyboard Setup Assistant the first time (close it). The band only works while this browser tab has focus." }),
     el("p", {}, el("a", { href: "#about", class: "link", text: "Back to About" }))));
 
@@ -158,6 +209,15 @@ export function mount(root, ctx = {}) {
       : `Saved. The band is ${saved.label}${saved.code && saved.code !== saved.key ? ` (${saved.code})` : ""}.`;
     $again.textContent = waiting ? "Waiting…" : "Pair a different button";
     $again.disabled = waiting;
+  }
+
+  function renderKind() {
+    const kind = soundKind(saved.sound);
+    for (const b of kinds) b.setAttribute("aria-pressed", String(b.dataset.kind === kind));
+    $kindNote.textContent = kind === "music"
+      ? "Slow, soft chords with a few quiet bell notes. Made in this browser: no file, no network."
+      : "Steady noise. Pick its colour below.";
+    root.querySelector(".sos-colours").hidden = kind === "music";
   }
 
   function show($node, text) {
@@ -221,6 +281,7 @@ export function mount(root, ctx = {}) {
 
   if (!waiting) show($warn, pairWarning(saved.key, saved.code));
   render();
+  renderKind();
   queueMicrotask(() => $pad.focus({ preventScroll: true }));
   return () => clearTimeout(lightTimer);
 }
