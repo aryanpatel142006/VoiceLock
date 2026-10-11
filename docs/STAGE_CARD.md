@@ -1,6 +1,6 @@
 # STAGE CARD · Sunday demo (~3 min) · the app `/app/` (fallback `/judge`)
 
-<!-- Source: DECISION_demo.md (Oct 9) §1, §2, §4, with the demo order revised after live listening (Q-463): noise + one locked voice first, the overlap sentence as the reveal near the end. Pre-show list: RESEARCH_improve_enroll_agc.md. Keys checked against web/app/keys.js keyAction (identical to web/console/judge.js onKey; T-347). Gate pill: web/console/gate-state.js (T-382). Fine-tuned A/B: T-386 (BENCHMARKS), T-387. Start lines checked by T-405 with --no-open --port 0. Render: .venv/bin/python scripts/stage_card_pdf.py -> docs/STAGE_CARD.pdf -->
+<!-- Source: DECISION_demo.md (Oct 9) §1, §2, §4, with the demo order revised after live listening (Q-463): noise + one locked voice first, the overlap sentence as the reveal near the end. Pre-show list: RESEARCH_improve_enroll_agc.md. Keys checked against web/app/keys.js keyAction (identical to web/console/judge.js onKey; T-347). Gate pill: web/console/gate-state.js (T-382). Fine-tuned A/B: T-386 (BENCHMARKS), T-387. Start lines checked by T-405 with --no-open --port 0. Render: .venv/bin/python scripts/stage_card_pdf.py -> docs/STAGE_CARD.pdf. In the public VoiceLock repository DECISION_demo.md and RESEARCH_improve_enroll_agc.md are internal notes that were not published, and scripts/stage_card_pdf.py is at commit 85cd86f8. -->
 
 From rehearsal 2: **N = ____ %** wrong-speaker · **X = ____ %** WER · separator **base / fine-tuned** (circle)
 

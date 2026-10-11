@@ -1,6 +1,6 @@
 # CLAIMS: what the slides may say (judging Sun Oct 11, 2026)
 
-> Note: file paths in this document (`eval/`, `experiments/`, `docs/research/`, `docs/decisions/`, branch names) refer to the team's working repository. Those files are not part of this demo-only repository; they remain in its earlier git history where they were imported.
+> Note for readers of this repository: this document is copied from the team's working repository and cites its evidence by path. The code and notes it cites under `eval/`, `experiments/`, `gpu_jobs/`, `docs/research/` and `scripts/` (other than the demo scripts) were published in commit [`85cd86f8`](https://github.com/aryanpatel142006/VoiceLock/tree/85cd86f8) and removed from the current tree when the repository was trimmed to the demo app (`d5f5af83`); read them at that commit. Per-task decision records (`docs/decisions/`), measurement outputs (`eval/results/`, `results/`), recorded or generated clips (`eval/fixtures/demo/`, `eval/fixtures/real/`, `eval/fixtures/generated/`), model checkpoints (`models/`) and branch names were never published here; the numbers quoted from them in this document are the record.
 
 Rules: claim only what was measured, with its condition. Nothing prerecorded shown as live. No canned captions.
 Sources: app repo main at 3b233bd for sections 1-3 as first written; section 1b and the Oct 10 lines checked against main 5960c8e (line numbers are `git show origin/main:` lines).

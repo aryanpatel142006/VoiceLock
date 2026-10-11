@@ -2,6 +2,8 @@
 
 The app is the web page at `/app/` (`web/app/`, a PWA). `/judge` and `/simple` are untouched and stay served: **`/judge` is the stage fallback**, one URL change away. This file is the human checklist; design is in `docs/FRONTEND_PLAN.md`, the stage script is `docs/STAGE_CARD.md`, the generic phone notes are `docs/DEMO.md#phones`.
 
+> Note for readers of this repository: run the commands below from the repository root. `docs/FRONTEND_PLAN.md`, the fine-tuned checkpoints under `models/` and the session outputs are not published here; `scripts/phone_check.py` can be read at commit [`85cd86f8`](https://github.com/aryanpatel142006/VoiceLock/tree/85cd86f8). Without a checkpoint the app runs the base separator.
+
 Facts below were checked on laptop-a, Oct 10 2026 (LAN IP `10.75.113.217`, Mac name `Aryans-MacBook-Pro.local`). Steps that need the iPhone itself are not checked here (no phone in the loop); they are marked *(not run: needs the iPhone)*.
 
 ## 0. The rule that decides everything
