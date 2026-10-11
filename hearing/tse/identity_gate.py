@@ -8,8 +8,8 @@ when an extractor locked onto the interferer, the residual is mostly the target.
 
 * ``IdentityGate.score(audio)`` -> ``GateScore`` (one window).
 * ``bounce(mix, extract, gate)`` -> ``BounceResult``: pass / retry_pass / blocked (windowed).
-* ``IdentityGateStream`` gates a streaming extractor's output chunk by chunk with zero added
-  latency: decisions come from the last ``window_s`` of output, re-scored every ``hop_s``, and
+* ``IdentityGateStream`` gates a streaming extractor's output without added audio buffering:
+  decisions come from the last ``window_s`` of output, re-scored every ``hop_s``, and
   apply to the following chunks through a short gain ramp; blocked chunks play the room at
   ``floor_db`` below the mix (the T-180 gated-window floor) instead of the wrong voice.
 
@@ -122,9 +122,13 @@ class IdentityGateStream:
     """Causal per-chunk bouncer for a streaming extractor (``process(out_chunk, mix_chunk)``).
 
     ``fail_hops`` consecutive failed scores close the gate, ``pass_hops`` passes reopen it.
-    Before the first full window the gate is open (no evidence yet). Adds no latency; a wrong
-    voice can play for up to ``window_s * fraction + hop_s`` plus the embed time before it is
-    blocked.
+    Before the first full window the gate is open (no evidence yet). Adds no buffering;
+    a wrong voice can play during evidence collection and hysteresis. There is no
+    guaranteed detection bound when embeddings fail to distinguish the speakers.
+
+    Scores run synchronously, so embedding compute must be included in chunk deadline
+    measurements. Sample-clock decisions affect only subsequent samples and do not
+    depend on how the caller partitions the input.
     """
 
     def __init__(self, gate: IdentityGate, window_s: float = WINDOW_S, hop_s: float = HOP_S,
@@ -132,6 +136,8 @@ class IdentityGateStream:
                  pass_hops: int = 2, sr: int = SR):
         self.gate, self.sr = gate, sr
         self.window, self.hop = int(window_s * sr), int(hop_s * sr)
+        if min(sr, self.window, self.hop, fail_hops, pass_hops) <= 0:
+            raise ValueError("sample rate, window, hop and hysteresis counts must be positive")
         self.floor = float(10.0 ** (-floor_db / 20.0))
         self.step = 1.0 / max(1, int(ramp_ms * sr / 1000))
         self.fail_hops, self.pass_hops = fail_hops, pass_hops
@@ -146,6 +152,7 @@ class IdentityGateStream:
         self.last: GateScore | None = None
         self.history: list[tuple[int, GateScore, bool]] = []  # (sample, score, open after)
         self.t = 0
+        self.next_score = self.window
 
     def _decide(self) -> None:
         s = self.gate.score(self.buf[-self.window :])
@@ -163,15 +170,28 @@ class IdentityGateStream:
     def process(self, out_chunk: np.ndarray, mix_chunk: np.ndarray) -> np.ndarray:
         out = np.asarray(out_chunk, np.float32)
         mix = np.asarray(mix_chunk, np.float32)
-        self.buf = np.concatenate([self.buf, out])[-self.window :]
-        self.since += len(out)
-        self.t += len(out)
-        if len(self.buf) >= self.window and self.since >= self.hop:
-            self.since = 0
-            self._decide()
-        goal = 1.0 if self.open else 0.0
-        g = np.empty(len(out), np.float32)
-        for k in range(len(out)):  # linear ramp toward the decision, ~RAMP_MS long
-            self.gain += float(np.clip(goal - self.gain, -self.step, self.step))
-            g[k] = self.gain
-        return g * out + (1.0 - g) * self.floor * mix
+        if out.ndim != 1 or mix.shape != out.shape:
+            raise ValueError("output and mixture must be aligned mono arrays")
+        result = np.empty_like(out)
+        start = 0
+        while start < len(out):
+            # Consume only up to the next evidence boundary. Its decision affects
+            # subsequent samples, never samples already used to make the decision.
+            stop = min(len(out), start + self.next_score - self.t)
+            part = out[start:stop]
+            goal = 1.0 if self.open else 0.0
+            distance = np.arange(1, len(part) + 1, dtype=np.float64) * self.step
+            direction = 1.0 if goal > self.gain else -1.0
+            gains = self.gain + direction * np.minimum(distance, abs(goal - self.gain))
+            self.gain = float(gains[-1])
+            g = gains.astype(np.float32)
+            result[start:stop] = g * part + (1.0 - g) * self.floor * mix[start:stop]
+            self.buf = np.concatenate([self.buf, part])[-self.window:]
+            self.t += len(part)
+            self.since += len(part)
+            if self.t == self.next_score:
+                self._decide()
+                self.since = 0
+                self.next_score += self.hop
+            start = stop
+        return result

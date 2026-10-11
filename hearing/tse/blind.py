@@ -79,17 +79,34 @@ def download_model():
 
 def pick_fixed() -> bool:
     """HEARING_PICK=fixed (default off): a fine-tuned fixed-order checkpoint, slot 0 = first
-    enrolled speaker (Aryan), slot 1 = second (Joseph); see experiments/gpu/T-374."""
+    enrolled speaker (Aryan), slot 1 = second (Joseph); see experiments/gpu/T-374. Another pair's
+    checkpoint names its order in ``$HEARING_FIXED_SLOTS`` (T-447)."""
     return os.environ.get("HEARING_PICK", "").strip().lower() == "fixed"
 
 
 FIXED_SLOTS = ("aryan", "joseph")  # output order the T-374 fixed-order checkpoint was trained on
+FIXED_SLOTS_ENV = "HEARING_FIXED_SLOTS"  # T-447: e.g. "joseph,ahmad" for the JA checkpoint
+
+
+def fixed_slots():
+    """Profile names of slot 0 and 1: ``$HEARING_FIXED_SLOTS`` (two distinct comma-separated names,
+    T-447), unset/empty = FIXED_SLOTS. A malformed value raises instead of playing the wrong slot."""
+    raw = os.environ.get(FIXED_SLOTS_ENV, "").strip()
+    if not raw:
+        return FIXED_SLOTS
+    names = tuple(n.strip().lower() for n in raw.split(","))
+    if len(names) != 2 or not all(names) or names[0] == names[1]:
+        raise RuntimeError(f"{FIXED_SLOTS_ENV} needs two distinct names, e.g. joseph,ahmad: {raw!r}")
+    return names
 
 
 def fixed_slot(profile_name):
     """Stream index for a voice profile under HEARING_PICK=fixed, else None (pick as usual)."""
+    if not pick_fixed():
+        return None
     name = (profile_name or "").strip().lower()
-    return FIXED_SLOTS.index(name) if pick_fixed() and name in FIXED_SLOTS else None
+    slots = fixed_slots()
+    return slots.index(name) if name in slots else None
 
 
 SEP_CKPT_ENV = "HEARING_SEP_CKPT"

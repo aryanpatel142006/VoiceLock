@@ -3370,3 +3370,103 @@ Per row:
 | 2.0 s | 0.25 / 0.0 | 2.2 % | 1.9 % | 13.8 % / 6.7 % |
 
 A full wrong lock is blocked in 100 % of 1.5 s windows at every bin (closed set, 0.30 / 0.05); a 20 dB-suppression extractor at −15 dB passes only 53 %. Not measured: a real extractor's output, live latency of `IdentityGateStream`. Not adopted or wired anywhere. Details: `docs/research/T-413_RANKED_APPROACHES_PLAN.md`.
+
+## Joseph+Ahmad fine-tune, iteration 1: offline + live A/B (`JA/iter1.pt`, `HEARING_FIXED_SLOTS=joseph,ahmad`, T-447, Oct 11)
+
+Question: does T-391's v3 fixed-order recipe, trained on the Joseph+Ahmad pair (T-369's best-separating male pair), beat the shipped MossFormer2
+on held-out J+A speech, offline and live in the enrolled tier?
+
+**Launch line (team demo with Joseph and Ahmad, every knob off by default):**
+`HEARING_SEP_CKPT=$HEARING_MODELS_DIR/JA/iter1.pt HEARING_PICK=fixed HEARING_FIXED_SLOTS=joseph,ahmad HEARING_GATED_FLOOR_DB=20 HEARING_PROFILES_DIR=$HEARING_FIXTURES_DIR/profiles-ja bash scripts/demo.sh --judge --team`
+(`HEARING_FIXED_SLOTS` unset keeps `aryan,joseph`, the T-374/T-387 order; a malformed value raises instead of playing the wrong slot.
+`profiles-ja` holds `joseph` (copy of the demo's `profiles/joseph`) and `ahmad` v1. `ahmad` is not in the demo's `profiles/`:
+`list_profiles()` is sorted, so `ahmad` would become `names[0]`, the judge profile's default target and /judge key 1.. With `profiles-ja` and `config/demo-team.yaml`'s pair (aryan/joseph, absent there) the judge session starts on `ahmad` with `joseph` as the
+negative. Prefix `HEARING_VOICE_PROFILE=joseph` to start on Joseph. Keys 1/2 on /judge are ahmad / joseph. `demo.sh --judge --team --check` still uses the A/J `demo-team-easy` clip.)
+
+**Training.** iLab job 451001 (rlab3, one GPU, `sbatch`, 45.9 GPU-min, 1141 optimizer steps, batch 1 x accum 4), `experiments/gpu/T-447/submit.sh ja1`:
+init from the shipped `MossFormer2_SS_16K`, `--recipe v3 --lr 5e-5 --lr-sched cosine --sir -10 10`, cafe noise, stranger items, 2 s crops, seed 447,
+slot 0 = joseph, slot 1 = ahmad. Split by take: train joseph profile-02..05, 07 and ahmad profile-01..07 (01-02 MacBook mic, 03-07 iPhone);
+val joseph profile-06 / ahmad profile-08; holdout-*/same-* never read. Val (185 two-speaker crops): fixed-slot SI-SDRi -16.5 dB at step 0 (53.5 % slots swapped)
+-> **+15.3 dB, 0.0 % swapped** at the best step (1141); a stranger in a slot -13.1 dB.
+
+**Offline** (`experiments/gpu/T-447/eval_sep.py --speakers joseph ahmad`, same job, accuracy only; 1.0 s windows, 0.5 s hop as live; scenes from
+joseph/ahmad holdout-01+02 (same-01+02 for the last rows), "cafe" = test PCAFETER seconds + test babble at SNR 5 dB; wrong % = target-active windows whose
+pick holds more of the other talker than the target, 95 % bootstrap interval; SI-SDRi on target-active windows; leak = picked stream on other-only windows).
+Base picks with ECAPA (the demo); JA-iter1 with ECAPA and with its fixed slot. Raw: iLab `~/tmp/T-447/eval_ja1.json`.
+
+| scene | target:other | base ECAPA wrong % | base ECAPA SI-SDRi | JA-iter1 ECAPA wrong % | JA-iter1 fixed wrong % | JA-iter1 fixed SI-SDRi | JA-iter1 fixed leak dB |
+|---|---|---|---|---|---|---|---|
+| holdout-sir0-cafe | joseph:ahmad | 29.2 [19, 39] | -0.3 | 18.1 [10, 26] | 6.9 [1, 12] | +8.4 | -25.0 |
+| holdout-sir0-cafe | ahmad:joseph | 17.2 [8, 27] | +2.8 | 17.2 [8, 27] | 12.5 [5, 20] | +10.0 | -33.8 |
+| holdout-sir0-none | joseph:ahmad | 6.9 [1, 14] | +9.6 | 5.6 [1, 11] | 0.0 [0, 0] | +10.9 | -62.6 |
+| holdout-sir0-none | ahmad:joseph | 4.7 [0, 11] | +14.1 | 12.5 [5, 22] | 3.1 [0, 8] | +13.7 | -48.0 |
+| holdout-sir-6-cafe | joseph:ahmad | 26.4 [17, 38] | +3.9 | 20.8 [11, 31] | 6.9 [1, 14] | +11.7 | -64.6 |
+| holdout-sir-6-cafe | ahmad:joseph | 28.1 [17, 39] | +5.6 | 20.3 [11, 30] | 20.3 [11, 31] | +9.9 | -41.0 |
+| holdout-sir-10-cafe | joseph:ahmad | 23.6 [15, 33] | +6.9 | 22.2 [12, 32] | 12.5 [6, 21] | +13.1 | -73.2 |
+| holdout-sir-10-cafe | ahmad:joseph | 17.2 [8, 27] | +11.8 | 21.9 [12, 33] | 29.7 [19, 42] | +10.9 | -47.3 |
+| holdout-sir+6-cafe | joseph:ahmad | 22.2 [12, 32] | -1.7 | 11.1 [4, 18] | 9.7 [4, 17] | +5.0 | -24.0 |
+| holdout-sir+6-cafe | ahmad:joseph | 18.8 [9, 28] | +4.0 | 10.9 [5, 19] | 6.2 [2, 12] | +9.1 | -27.6 |
+| holdout-sir0-snr0 | joseph:ahmad | 40.3 [29, 51] | -3.5 | 25.0 [15, 36] | 11.1 [4, 18] | +7.2 | -23.8 |
+| holdout-sir0-snr0 | ahmad:joseph | 26.6 [16, 38] | +1.3 | 18.8 [11, 28] | 12.5 [5, 22] | +8.6 | -29.3 |
+| same-sir0-cafe | joseph:ahmad | 23.7 [17, 31] | +0.2 | 23.1 [17, 30] | 10.9 [6, 16] | +7.7 | -34.0 |
+| same-sir0-cafe | ahmad:joseph | 14.2 [9, 20] | +7.3 | 6.5 [3, 10] | 5.2 [2, 9] | +9.8 | -35.5 |
+
+On the 6 rows the task names (SIR 0 cafe / none, SIR -6 cafe, both targets): wrong-speaker **18.8 % -> 8.3 %** (mean), SI-SDRi **+6.0 -> +10.8 dB**,
+leak -16.2 -> -45.8 dB (JA-iter1 with the ECAPA pick: 15.7 %, +8.7 dB, -30.8 dB). The weak spot is Ahmad as target with Joseph louder: SIR -6 is a tie (20.3 vs 28.1 %, overlapping intervals) and SIR -10 is worse
+than base (29.7 vs 17.2 %). Outside the pair it breaks, as T-374/T-391 did: with a stranger 6 dB louder than the target the fixed pick is wrong 54-64 %
+of the time (base ECAPA 4-19 %), and on GRID s4:s1 the JA net's ECAPA pick is wrong 67.9 % (base 7.5 %). The knob is for the Joseph+Ahmad pair only.
+(T-369's "2.1 % wrong-speaker before training" is a different measurement: one shared passage, offline whole-clip separation.)
+
+**Live on the Mac** (laptop-a `Aryans-MacBook-Pro.local`, Apple M4 Pro, MPS, local backend; git `5b87e1c0` (quality) / `e3badef6` (timing), both T-447 on main `ef602930`).
+T-284 command per row, made by `.venv/bin/python -m eval.t447_ja batch [--timing]`:
+`HEARING_PROFILES_DIR=$HEARING_FIXTURES_DIR/profiles-ja HEARING_REGRESS_NO_BASELINE=1 [knobs] .venv/bin/python scripts/demo_regress.py --modes focus_hq --seconds 30 --no-free --no-baseline --profile team --isolation standard --voice-profile <target>:<other> --clip <scene>`.
+Scenes: `$HEARING_FIXTURES_DIR/t447/<target>/holdout-{sir0-cafe,sir0-none,sir-6-cafe}` (T-368's builder with the pair set to Joseph+Ahmad, `eval.t447_ja scenes`;
+holdout-01/02 only; cafe = DEMAND PCAFETER at SNR 10 dB; sir-6 = the other talker 6 dB louder). Arms: `base` (no knob), `base+floor20` (`HEARING_GATED_FLOOR_DB=20`),
+`ja1+fixed+floor20` (the launch line's four knobs). Quality: 18 rows in one `swarm-lock --shared` call, 02:02-02:15, 1-min load 5.7-14.6, all exit 0.
+Timing: 4 rows (sir0-cafe, both targets, base+floor20 vs ja1+fixed+floor20) in ONE `swarm-lock --exclusive --max-load 5 --wait 1800` call, 02:18-02:21, load 4.0-5.3, all exit 0.
+Columns as T-386 (`eval.t386_rows` / `eval.knob_sweep.live_atten`): wrong-speaker = `other_dominant_s` / scored s (incl. the cold start), leak = other talker out vs in,
+target-muted s = target-active 200 ms frames >= 10 dB down pre-AGC, p95 window / deadline misses = the enrolled tier's health at the last tick (1.0 s window, 0.5 s hop).
+Rows: `.venv/bin/python -m eval.t447_ja rows .swarm-run/batch_q.log .swarm-run/batch_t.log --out $HEARING_RESULTS_DIR/T-447_rows.json`.
+
+| batch | arm | rows | wrong-speaker (mean) | leak dB (mean) | target-muted s (sum) | SI-SDRi pre-AGC (mean) | deadline misses (sum) |
+|---|---|---|---|---|---|---|---|
+| quality | base | 6 | 6.8 % | -13.3 | 9.2 | +8.5 | 5 / 331 |
+| quality | base+floor20 | 6 | 3.5 % | -15.6 | 11.2 | +9.1 | 4 / 331 |
+| quality | ja1+fixed+floor20 | 6 | 4.0 % | -15.4 | 9.6 | +9.2 | 27 / 331 |
+| timing | base+floor20 | 2 | 5.2 % | -13.3 | 4.6 | +4.9 | 1 / 116 |
+| timing | ja1+fixed+floor20 | 2 | 3.5 % | -15.7 | 2.6 | +8.1 | 0 / 116 |
+
+| batch | scene | target:other | arm | load (1/5/15) | wrong-speaker | leak dB | target-muted s | p95 window ms | deadline misses | SI-SDRi pre-AGC | enrolled share |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| quality | holdout-sir-6-cafe | ahmad:joseph | base | 7.89 / 7.86 / 5.92 | 4.2 % | -11.2 | 3.6 | 264 | 0 / 58 | +6.3 | 87 % |
+| quality | holdout-sir-6-cafe | ahmad:joseph | base+floor20 | 7.17 / 7.64 / 5.94 | 4.2 % | -11.6 | 3.6 | 327 | 0 / 58 | +6.5 | 89 % |
+| quality | holdout-sir-6-cafe | ahmad:joseph | ja1+fixed+floor20 | 6.66 / 7.44 / 5.94 | 10.6 % | -11.8 | 1.6 | 488 | 0 / 58 | +10.2 | 87 % |
+| quality | holdout-sir-6-cafe | joseph:ahmad | base | 10.09 / 8.22 / 6.29 | 9.9 % | -9.9 | 0.6 | 294 | 1 / 58 | +9.5 | 89 % |
+| quality | holdout-sir-6-cafe | joseph:ahmad | base+floor20 | 8.09 / 7.93 / 6.28 | 4.3 % | -13.1 | 2.2 | 532 | 3 / 41 | +10.8 | 76 % |
+| quality | holdout-sir-6-cafe | joseph:ahmad | ja1+fixed+floor20 | 7.01 / 7.69 / 6.27 | 3.5 % | -13.6 | 2.8 | 307 | 3 / 41 | +10.2 | 76 % |
+| quality | holdout-sir0-cafe | ahmad:joseph | base | 9.50 / 6.53 / 3.98 | 9.2 % | -11.9 | 3.2 | 388 | 0 / 58 | +3.4 | 90 % |
+| quality | holdout-sir0-cafe | ahmad:joseph | base+floor20 | 14.60 / 8.12 / 4.68 | 7.0 % | -13.3 | 3.2 | 283 | 0 / 58 | +3.6 | 90 % |
+| quality | holdout-sir0-cafe | ahmad:joseph | ja1+fixed+floor20 | 11.93 / 8.28 / 4.91 | 2.3 % | -13.5 | 1.6 | 552 | 23 / 58 | +7.2 | 81 % |
+| quality | holdout-sir0-cafe | joseph:ahmad | base | 9.24 / 8.03 / 4.97 | 13.5 % | -8.9 | 1.0 | 311 | 3 / 41 | +5.1 | 76 % |
+| quality | holdout-sir0-cafe | joseph:ahmad | base+floor20 | 7.65 / 7.81 / 5.05 | 3.5 % | -13.4 | 1.4 | 305 | 0 / 58 | +6.2 | 87 % |
+| quality | holdout-sir0-cafe | joseph:ahmad | ja1+fixed+floor20 | 6.28 / 7.42 / 5.05 | 4.2 % | -14.7 | 1.6 | 288 | 0 / 58 | +5.8 | 90 % |
+| quality | holdout-sir0-none | ahmad:joseph | base | 9.46 / 8.15 / 5.43 | 0.0 % | -20.3 | 0.6 | 383 | 0 / 58 | +14.0 | 88 % |
+| quality | holdout-sir0-none | ahmad:joseph | base+floor20 | 7.51 / 7.81 / 5.43 | 0.0 % | -20.3 | 0.6 | 438 | 1 / 58 | +14.3 | 88 % |
+| quality | holdout-sir0-none | ahmad:joseph | ja1+fixed+floor20 | 6.17 / 7.42 / 5.40 | 0.7 % | -21.7 | 0.6 | 319 | 1 / 58 | +13.2 | 89 % |
+| quality | holdout-sir0-none | joseph:ahmad | base | 5.65 / 7.09 / 5.37 | 4.2 % | -17.2 | 0.2 | 379 | 1 / 58 | +12.3 | 88 % |
+| quality | holdout-sir0-none | joseph:ahmad | base+floor20 | 8.58 / 7.54 / 5.61 | 2.1 % | -22.0 | 0.2 | 378 | 0 / 58 | +13.3 | 87 % |
+| quality | holdout-sir0-none | joseph:ahmad | ja1+fixed+floor20 | 10.08 / 8.15 / 5.93 | 2.8 % | -17.2 | 1.4 | 266 | 0 / 58 | +8.7 | 90 % |
+| timing | holdout-sir0-cafe | ahmad:joseph | base+floor20 | 4.85 / 7.04 / 6.36 | 7.0 % | -13.3 | 3.2 | 271 | 1 / 58 | +3.7 | 89 % |
+| timing | holdout-sir0-cafe | ahmad:joseph | ja1+fixed+floor20 | 5.28 / 6.84 / 6.32 | 2.8 % | -16.6 | 1.0 | 374 | 0 / 58 | +10.4 | 87 % |
+| timing | holdout-sir0-cafe | joseph:ahmad | base+floor20 | 4.83 / 6.51 / 6.22 | 3.5 % | -13.4 | 1.4 | 270 | 0 / 58 | +6.2 | 87 % |
+| timing | holdout-sir0-cafe | joseph:ahmad | ja1+fixed+floor20 | 3.98 / 6.09 / 6.08 | 4.2 % | -14.7 | 1.6 | 344 | 0 / 58 | +5.8 | 87 % |
+
+**Verdict: KEEP OFF by default, A/B by ear before using it for a J+A demo.** Live, the gap offline shows (18.8 % -> 8.3 % wrong) mostly disappears, because the
+live enrolled tier's own picking and floor 20 on the base model already fix most of what the fine-tune fixes: wrong-speaker over the 6 quality rows is 3.5 % (base+floor20)
+vs 4.0 % (JA-iter1), SI-SDRi +9.1 vs +9.2 dB, leak -15.6 vs -15.4 dB. What JA-iter1 does win: **Ahmad as target**: sir0-cafe 2.3-2.8 % wrong (vs 7.0 %), SI-SDRi
++7.2..+10.4 dB (vs +3.6..+3.7), and target-muted 1.0-1.6 s (vs 3.2 s), in both the quality and the exclusive timing run. What it loses: Ahmad as target with Joseph 6 dB louder
+(10.6 % vs 4.2 % wrong), and Joseph as target without noise (SI-SDRi +8.7 vs +13.3 dB, leak -17.2 vs -22.0, 1.4 s muted vs 0.2). Compute: 0 / 116 deadline misses
+under the exclusive lock (base+floor20 1 / 116); p95 window 344-374 ms vs 270-271 ms for base+floor20 at the same load. Same architecture, so the p95 gap is most likely noise
+from 2 rows each, but it has not been re-measured. The 23 / 58 misses on the quality ja1 ahmad:joseph sir0-cafe row ran at 1-min load 11.9 without the exclusive lock.
+Same row in the exclusive lock: 0 / 58. Listening A/B: `~/Desktop/selective-hearing-JA/` (`eval.t447_ja export`, level-matched as T-386). Next iteration: more Ahmad-target
+training with Joseph louder (SIR -10..-6 dB), and an energy/VAD slot gate under the fixed pick, as T-386/T-402 recommended for the A/J checkpoint.
