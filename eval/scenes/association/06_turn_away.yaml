@@ -1,0 +1,7 @@
+name: turn_away
+description: A alone 0-4; A turns away (no face, still talking) 4-8 while B talks 4-14; A faces the camera again 8-14.
+duration_s: 14
+persons:
+  A: [[0, 4, speak], [4, 8, away], [8, 14, speak]]
+  B: [[0, 4, silent], [4, 14, speak]]
+target: [[0, A]]

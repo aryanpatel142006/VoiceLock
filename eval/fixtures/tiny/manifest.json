@@ -1,0 +1,45 @@
+{
+  "dataset": "openslr/librispeech_asr",
+  "split": "test-clean",
+  "license": "CC BY 4.0 (LibriSpeech, Panayotov et al. 2015)",
+  "sample_rate": 16000,
+  "duration_s": 3.0,
+  "speech": [
+    {
+      "file": "speech_a.wav",
+      "id": "1580-141084-0019",
+      "speaker_id": "1580",
+      "sex": "F",
+      "text": "YES MY DEAR WATSON I HAVE SOLVED THE MYSTERY",
+      "source_duration_s": 3.125
+    },
+    {
+      "file": "speech_b.wav",
+      "id": "61-70968-0002",
+      "speaker_id": "61",
+      "sex": "M",
+      "text": "A GOLDEN FORTUNE AND A HAPPY LIFE",
+      "source_duration_s": 2.97
+    }
+  ],
+  "noise": {
+    "file": "noise_babble.wav",
+    "type": "babble",
+    "source_ids": [
+      "6930-76324-0026",
+      "2830-3980-0042",
+      "1284-1181-0019",
+      "2094-142345-0045",
+      "7176-92135-0013",
+      "1221-135767-0008"
+    ],
+    "source_speakers": [
+      "6930",
+      "2830",
+      "1284",
+      "2094",
+      "7176",
+      "1221"
+    ]
+  }
+}

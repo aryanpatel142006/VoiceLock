@@ -1,0 +1,17 @@
+name: c_occlusion
+description: A (target) is hidden for 0.5 s at t=3 s while B talks. Target should stay A through the gap.
+fps: 25
+duration_s: 8
+actors:
+  - id: 1
+    box: [[0, 0.44, 0.3, 0.12, 0.2]]
+    speaking: [[0, 8]]
+  - id: 2
+    box: [[0, 0.74, 0.3, 0.12, 0.2]]
+    speaking: [[2, 6]]
+camera:
+  - [0, 1]
+occlusions:
+  - {actor: 1, t0: 3.0, t1: 3.5}
+expected:
+  - {t0: 0, t1: 8, target: 1}

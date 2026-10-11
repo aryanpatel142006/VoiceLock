@@ -1,0 +1,7 @@
+name: b_speaks_a_silent
+description: Target A never talks; B talks the whole time. Nothing of B may be enrolled or played as the target.
+duration_s: 12
+persons:
+  A: [[0, 12, silent]]
+  B: [[0, 12, speak]]
+target: [[0, A]]

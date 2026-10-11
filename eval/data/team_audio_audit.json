@@ -1,0 +1,156 @@
+{
+  "recording_count": 12,
+  "recordings": [
+    {
+      "channels": 1,
+      "duration_s": 20.0,
+      "noise_floor_rms": 0.00015512452373513951,
+      "path": "eval/fixtures/demo_listen/00_AB_DEMO_COMPARISON.wav",
+      "peak_amplitude": 0.899993896484375,
+      "rms_energy": 0.07296083122491837,
+      "sample_rate": 16000,
+      "snr_db": 53.44818624051705,
+      "speaker": "shared",
+      "speech_fraction": 0.388
+    },
+    {
+      "channels": 1,
+      "duration_s": 10.0,
+      "noise_floor_rms": 0.015527392644435168,
+      "path": "eval/fixtures/demo_listen/01_raw_overlap_mix.wav",
+      "peak_amplitude": 0.899993896484375,
+      "rms_energy": 0.08911941945552826,
+      "sample_rate": 16000,
+      "snr_db": 15.17747627010557,
+      "speaker": "shared",
+      "speech_fraction": 0.52
+    },
+    {
+      "channels": 1,
+      "duration_s": 10.0,
+      "noise_floor_rms": 0.00018085202464135364,
+      "path": "eval/fixtures/demo_listen/02_isolated_aryan.wav",
+      "peak_amplitude": 0.694305419921875,
+      "rms_energy": 0.0720093697309494,
+      "sample_rate": 16000,
+      "snr_db": 52.00131269347959,
+      "speaker": "shared",
+      "speech_fraction": 0.433
+    },
+    {
+      "channels": 1,
+      "duration_s": 10.0,
+      "noise_floor_rms": 1.1693151918734731e-05,
+      "path": "eval/fixtures/demo_listen/03_isolated_joseph.wav",
+      "peak_amplitude": 0.454742431640625,
+      "rms_energy": 0.040352415293455124,
+      "sample_rate": 16000,
+      "snr_db": 70.75875884815676,
+      "speaker": "shared",
+      "speech_fraction": 0.372
+    },
+    {
+      "channels": 1,
+      "duration_s": 58.692625,
+      "noise_floor_rms": 0.002275450201705098,
+      "path": "eval/fixtures/generated/team/aryan/fixture-01.wav",
+      "peak_amplitude": 0.242462158203125,
+      "rms_energy": 0.014953294768929482,
+      "sample_rate": 16000,
+      "snr_db": 16.353391181771624,
+      "speaker": "aryan",
+      "speech_fraction": 0.3036292383711024
+    },
+    {
+      "channels": 1,
+      "duration_s": 50.0,
+      "noise_floor_rms": 0.002403216902166605,
+      "path": "eval/fixtures/generated/team/aryan/profile-01.wav",
+      "peak_amplitude": 0.17657470703125,
+      "rms_energy": 0.016072522848844528,
+      "sample_rate": 16000,
+      "snr_db": 16.50582164082429,
+      "speaker": "aryan",
+      "speech_fraction": 0.46
+    },
+    {
+      "channels": 1,
+      "duration_s": 108.69260770975056,
+      "noise_floor_rms": 0.0023272080812603234,
+      "path": "eval/fixtures/generated/team/aryan/source-voicememo.m4a",
+      "peak_amplitude": 0.24321645498275757,
+      "rms_energy": 0.015481886453926563,
+      "sample_rate": 44100,
+      "snr_db": 16.45977323255893,
+      "speaker": "aryan",
+      "speech_fraction": 0.3314932376483577
+    },
+    {
+      "channels": 1,
+      "duration_s": 48.15,
+      "noise_floor_rms": 0.003643681202083826,
+      "path": "eval/fixtures/generated/team/joseph/fixture-01-20261009-1353.wav",
+      "peak_amplitude": 0.70794677734375,
+      "rms_energy": 0.06491173803806305,
+      "sample_rate": 16000,
+      "snr_db": 25.015657312365427,
+      "speaker": "joseph",
+      "speech_fraction": 0.3813084112149533
+    },
+    {
+      "channels": 1,
+      "duration_s": 27.8,
+      "noise_floor_rms": 0.0021216132445260882,
+      "path": "eval/fixtures/generated/team/joseph/fixture-02-namecall-20261009-1353.wav",
+      "peak_amplitude": 0.70794677734375,
+      "rms_energy": 0.07731587439775467,
+      "sample_rate": 16000,
+      "snr_db": 31.232049079586304,
+      "speaker": "joseph",
+      "speech_fraction": 0.312589928057554
+    },
+    {
+      "channels": 1,
+      "duration_s": 15.7,
+      "noise_floor_rms": 0.003721855743788183,
+      "path": "eval/fixtures/generated/team/joseph/profile-01-20261009-1353.wav",
+      "peak_amplitude": 0.70794677734375,
+      "rms_energy": 0.06505562365055084,
+      "sample_rate": 16000,
+      "snr_db": 24.85050616693284,
+      "speaker": "joseph",
+      "speech_fraction": 0.4121019108280255
+    },
+    {
+      "channels": 1,
+      "duration_s": 50.0,
+      "noise_floor_rms": 0.009637589193880558,
+      "path": "profiles/aryan/profile-01.wav",
+      "peak_amplitude": 0.707916259765625,
+      "rms_energy": 0.06444000452756882,
+      "sample_rate": 16000,
+      "snr_db": 16.50374303756449,
+      "speaker": "aryan",
+      "speech_fraction": 0.46
+    },
+    {
+      "channels": 1,
+      "duration_s": 15.7,
+      "noise_floor_rms": 0.003721855743788183,
+      "path": "profiles/joseph/profile-01.wav",
+      "peak_amplitude": 0.70794677734375,
+      "rms_energy": 0.06505562365055084,
+      "sample_rate": 16000,
+      "snr_db": 24.85050616693284,
+      "speaker": "joseph",
+      "speech_fraction": 0.4121019108280255
+    }
+  ],
+  "roots": [
+    "profiles/aryan",
+    "profiles/joseph",
+    "eval/fixtures/generated/team/aryan",
+    "eval/fixtures/generated/team/joseph",
+    "eval/fixtures/demo_listen"
+  ]
+}

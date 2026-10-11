@@ -1,0 +1,7 @@
+name: occlusion
+description: A alone 0-4, both talk 4-12, A's face is covered for 1 s at 7-8 (still talking).
+duration_s: 12
+persons:
+  A: [[0, 7, speak], [7, 8, occluded], [8, 12, speak]]
+  B: [[0, 4, silent], [4, 12, speak]]
+target: [[0, A]]

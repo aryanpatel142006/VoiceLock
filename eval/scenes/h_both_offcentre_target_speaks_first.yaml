@@ -1,0 +1,15 @@
+name: both_offcentre_target_speaks_first
+description: Both faces sit off-centre at equal distance (cx 0.2 and 0.78, within tie_margin; B marginally more central so the oracle stays right); B (the intended target) talks alone for 5 s, then A joins in.
+fps: 25
+duration_s: 8
+actors:
+  - id: 1
+    box: [[0, 0.14, 0.3, 0.12, 0.2]]
+    speaking: [[5, 8]]
+  - id: 2
+    box: [[0, 0.72, 0.3, 0.12, 0.2]]
+    speaking: [[0, 8]]
+camera:
+  - [0, 2]
+expected:
+  - {t0: 1, t1: 8, target: 2}

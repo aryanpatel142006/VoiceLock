@@ -1,0 +1,348 @@
+{
+  "version": 2,
+  "name": "demo-mm",
+  "kind": "synthetic_scene",
+  "note": "same-gender (male) pair, babble SNR 10 dB",
+  "clip": "clip.mp4",
+  "duration_s": 30.4,
+  "fps": 25,
+  "sample_rate": 16000,
+  "frame_size": [
+    640,
+    360
+  ],
+  "snr_db": 10.0,
+  "sir_db_overlap": 0.0,
+  "speech_level_dbfs": -18.5,
+  "stems": {
+    "mix": "stems/mix.wav",
+    "target": "stems/target.wav",
+    "other": "stems/other.wav",
+    "noise": "stems/noise.wav"
+  },
+  "sections": [
+    {
+      "name": "target_alone",
+      "start_s": 0.0,
+      "end_s": 5.4
+    },
+    {
+      "name": "alternate",
+      "start_s": 5.4,
+      "end_s": 13.64
+    },
+    {
+      "name": "overlap",
+      "start_s": 13.64,
+      "end_s": 25.0
+    },
+    {
+      "name": "target_alone_2",
+      "start_s": 25.0,
+      "end_s": 30.4
+    }
+  ],
+  "target": {
+    "rule": "left",
+    "track_id": 0,
+    "side": "left",
+    "box": [
+      0.0742,
+      0.24,
+      0.2461,
+      0.63
+    ],
+    "actor": "grid-s1"
+  },
+  "faces": [
+    {
+      "track_id": 0,
+      "side": "left",
+      "role": "target",
+      "actor": "grid-s1",
+      "sex": "M",
+      "center_x": 0.1973,
+      "mean_box": [
+        0.0742,
+        0.24,
+        0.2461,
+        0.63
+      ],
+      "speaking": [
+        [
+          0.32,
+          1.8
+        ],
+        [
+          2.12,
+          3.52
+        ],
+        [
+          3.84,
+          5.4
+        ],
+        [
+          5.72,
+          7.2
+        ],
+        [
+          9.68,
+          11.36
+        ],
+        [
+          13.96,
+          15.84
+        ],
+        [
+          16.16,
+          17.76
+        ],
+        [
+          18.08,
+          19.52
+        ],
+        [
+          19.84,
+          21.36
+        ],
+        [
+          21.68,
+          23.2
+        ],
+        [
+          23.52,
+          25.0
+        ],
+        [
+          25.32,
+          26.72
+        ],
+        [
+          27.04,
+          28.6
+        ],
+        [
+          28.92,
+          30.4
+        ]
+      ],
+      "speaking_s": 21.48
+    },
+    {
+      "track_id": 1,
+      "side": "right",
+      "role": "other",
+      "actor": "grid-s2",
+      "sex": "M",
+      "center_x": 0.7464,
+      "mean_box": [
+        0.6234,
+        0.32,
+        0.2461,
+        0.57
+      ],
+      "speaking": [
+        [
+          7.52,
+          9.36
+        ],
+        [
+          11.68,
+          13.64
+        ],
+        [
+          13.96,
+          15.84
+        ],
+        [
+          16.16,
+          18.08
+        ],
+        [
+          18.4,
+          20.28
+        ],
+        [
+          20.6,
+          22.36
+        ],
+        [
+          22.68,
+          24.6
+        ]
+      ],
+      "speaking_s": 13.16
+    }
+  ],
+  "sentences": [
+    {
+      "who": "target",
+      "utt": "bbbf6n",
+      "text": "bin blue by f six now",
+      "start_s": 0.32,
+      "end_s": 1.8
+    },
+    {
+      "who": "target",
+      "utt": "bbir8p",
+      "text": "bin blue in r eight please",
+      "start_s": 2.12,
+      "end_s": 3.52
+    },
+    {
+      "who": "target",
+      "utt": "bgbb2p",
+      "text": "bin green by b two please",
+      "start_s": 3.84,
+      "end_s": 5.4
+    },
+    {
+      "who": "target",
+      "utt": "brwnzn",
+      "text": "bin red with n zero now",
+      "start_s": 5.72,
+      "end_s": 7.2
+    },
+    {
+      "who": "other",
+      "utt": "bbwm4s",
+      "text": "bin blue with m four soon",
+      "start_s": 7.52,
+      "end_s": 9.36
+    },
+    {
+      "who": "target",
+      "utt": "lbby2n",
+      "text": "lay blue by y two now",
+      "start_s": 9.68,
+      "end_s": 11.36
+    },
+    {
+      "who": "other",
+      "utt": "lrwl5p",
+      "text": "lay red with l five please",
+      "start_s": 11.68,
+      "end_s": 13.64
+    },
+    {
+      "who": "target",
+      "utt": "lgaf6p",
+      "text": "lay green at f six please",
+      "start_s": 13.96,
+      "end_s": 15.84
+    },
+    {
+      "who": "target",
+      "utt": "pbbc7a",
+      "text": "place blue by c seven again",
+      "start_s": 16.16,
+      "end_s": 17.76
+    },
+    {
+      "who": "target",
+      "utt": "praxzp",
+      "text": "place red at x zero please",
+      "start_s": 18.08,
+      "end_s": 19.52
+    },
+    {
+      "who": "target",
+      "utt": "sgai7s",
+      "text": "set green at i seven soon",
+      "start_s": 19.84,
+      "end_s": 21.36
+    },
+    {
+      "who": "target",
+      "utt": "sgic1a",
+      "text": "set green in c one again",
+      "start_s": 21.68,
+      "end_s": 23.2
+    },
+    {
+      "who": "target",
+      "utt": "bbbf6n",
+      "text": "bin blue by f six now",
+      "start_s": 23.52,
+      "end_s": 25.0
+    },
+    {
+      "who": "other",
+      "utt": "lwwf7p",
+      "text": "lay white with f seven please",
+      "start_s": 13.96,
+      "end_s": 15.84
+    },
+    {
+      "who": "other",
+      "utt": "pbib7p",
+      "text": "place blue in b seven please",
+      "start_s": 16.16,
+      "end_s": 18.08
+    },
+    {
+      "who": "other",
+      "utt": "pgbk7p",
+      "text": "place green by k seven please",
+      "start_s": 18.4,
+      "end_s": 20.28
+    },
+    {
+      "who": "other",
+      "utt": "prwj8s",
+      "text": "place red with j eight soon",
+      "start_s": 20.6,
+      "end_s": 22.36
+    },
+    {
+      "who": "other",
+      "utt": "pwwk3n",
+      "text": "place white with k three now",
+      "start_s": 22.68,
+      "end_s": 24.6
+    },
+    {
+      "who": "target",
+      "utt": "bbir8p",
+      "text": "bin blue in r eight please",
+      "start_s": 25.32,
+      "end_s": 26.72
+    },
+    {
+      "who": "target",
+      "utt": "bgbb2p",
+      "text": "bin green by b two please",
+      "start_s": 27.04,
+      "end_s": 28.6
+    },
+    {
+      "who": "target",
+      "utt": "brwnzn",
+      "text": "bin red with n zero now",
+      "start_s": 28.92,
+      "end_s": 30.4
+    }
+  ],
+  "source": {
+    "dataset": "GRID",
+    "license": "CC BY 4.0 (GRID corpus, Cooke et al. 2006, doi:10.5281/zenodo.3625687)",
+    "speakers": {
+      "target": "s1",
+      "other": "s2"
+    },
+    "noise": {
+      "dataset": "openslr/librispeech_asr",
+      "split": "test-clean",
+      "utterances": [
+        "6930-76324-0026",
+        "2830-3980-0042",
+        "1284-1181-0019",
+        "2094-142345-0045",
+        "7176-92135-0013",
+        "1221-135767-0008"
+      ],
+      "file": "noise_babble.wav",
+      "tiled_period_s": 3.0
+    }
+  }
+}
