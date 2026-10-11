@@ -1672,7 +1672,8 @@ class Session:
         ours = self.ctx.telemetry.extras.get("tse") or {}
         # T-134 confidence; T-382 gated / soft_gated (the enrolled pick's last window) for the gate pill
         tse = {"confidence": ours.get("confidence"), "gated": ours.get("gated"), "soft_gated": ours.get("soft_gated"),
-               "separator": ours.get("separator")}  # T-465: stock / team separator of the last enrolled window
+               "separator": ours.get("separator"),  # T-465: stock / team separator of the last enrolled window
+               "locked": ours.get("locked"), "lock_duck_db": ours.get("lock_duck_db")}  # T-487: team slot locked
         remote = self._remote_report(latency)
         if remote is not None and remote["source"] != "local":
             # T-156: the GPU's audio plays, so what it isolates is the remote session's state
@@ -1685,6 +1686,7 @@ class Session:
             if isinstance(theirs.get("tse"), dict):
                 tse = {"confidence": theirs["tse"].get("confidence"), "gated": theirs["tse"].get("gated"),
                        "soft_gated": theirs["tse"].get("soft_gated"), "separator": theirs["tse"].get("separator"),
+                       "locked": theirs["tse"].get("locked"), "lock_duck_db": theirs["tse"].get("lock_duck_db"),
                        "source": "remote"}
         rtt = self.remote_rtt_ms()
         hq = self.hq_status()

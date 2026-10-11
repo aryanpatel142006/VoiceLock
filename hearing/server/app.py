@@ -23,6 +23,7 @@ from hearing.context.prefs import prior_model
 from hearing.device import pick
 from hearing.server import rehearsal, team, warm
 from hearing.server.connect import mount_connect
+from hearing.server.hostload import host_load
 from hearing.server.session import (
     LAST_CLIENT_DEVICES,
     ServerConfig,
@@ -173,6 +174,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
                 "profile_versions": profile_versions(),  # T-172 (Q-467): their active v<N>, null when flat
                 "sessions_active": len(sessions),  # T-182: open /ws/session connections (shared-GPU contamination check)
                 "tse_window": tse_window(),  # T-419: the balanced enrolled tier's window/hop and expected delay
+                "host_load": host_load(),  # T-485: load average per core, the app's "laptop is busy" warning
                 **remote_identity(config.remote_url), **identity}
 
     @app.websocket("/ws/session")
@@ -191,7 +193,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
         async def send(msg: bytes | dict, *, record: bool = True) -> None:
             if isinstance(msg, dict) and msg.get("type") == "telemetry":
                 # T-346: `recording` = this session is written to HEARING_SESSION_LOG (the app's truth strip)
-                msg = {**msg, **identity, "recording": tap is not None}
+                msg = {**msg, **identity, "recording": tap is not None, "host_load": host_load()}  # T-485
             async with send_lock:
                 if tap is not None and record:
                     # Preserve the replay tap's privacy rule for voice estimates.

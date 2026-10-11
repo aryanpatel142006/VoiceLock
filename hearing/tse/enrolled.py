@@ -149,6 +149,14 @@ SLOT_DUCK_ENV = "HEARING_SLOT_DUCK_DB"  # e.g. 6: the most a gated slot with spe
 SLOT_PARTNER_DB = 3.0  # partner slot louder than the target slot by this much = partner dominates
 SLOT_ACTIVE_DB = -20.0  # target slot RMS at least this far under the window mix RMS = it has speech energy
 SLOT_MIN_RMS = 1e-4  # and at least -80 dBFS
+# T-487 locked mode (default on): with the team separator and a saved teammate in HEARING_FIXED_SLOTS the slot IS
+# that person, so every window plays the target slot (silence included) with no per-window ECAPA gate, confidence 1
+# (the mixer ducks the room and the partner by the room dial). Only a partner slot louder than the target slot by
+# SLOT_PARTNER_DB for more than LOCK_PARTNER_S ducks the target, at most LOCK_DUCK_DB, moving LOCK_DUCK_RATE dB/s.
+LOCK_ENV = "HEARING_TEAM_LOCK"  # "0" = off (the T-386/T-484 gated fixed slot as before)
+LOCK_PARTNER_S = 3.0
+LOCK_DUCK_DB = 6.0
+LOCK_DUCK_RATE = 6.0  # dB per second of hops, so the full duck (or release) takes 1 s
 CONTRAST_ENV = "HEARING_ENROLLED_CONTRAST"  # T-178: default ``contrast`` when the pipeline spec sets none
 WARM_ENV = "HEARING_WARM_ENROLLED"  # T-339: "1" = saved-profile embeddings computed once at server start, shared
 # T-339: (embedder id, clip key) -> (embedding, profile pieces info), filled by hearing.server.warm (knob on only)
@@ -176,6 +184,22 @@ def slot_duck_db() -> float | None:
     except ValueError:
         return None
     return d if math.isfinite(d) and d >= 0 else None
+
+
+def lock_enabled() -> bool:
+    """T-487 locked mode for team slots: on unless ``$HEARING_TEAM_LOCK`` is 0/off/false."""
+    return os.environ.get(LOCK_ENV, "").strip().lower() not in ("0", "off", "false")
+
+
+def partner_dominates(slot, partner, mix) -> bool:
+    """The partner slot carries speech energy and is louder than the target slot by more than SLOT_PARTNER_DB."""
+    def rms(x):
+        return float(np.sqrt(np.mean(np.square(np.asarray(x, np.float64))))) if len(x) else 0.0
+
+    rs, rp, rm = rms(slot), rms(partner), rms(mix)
+    if rp < max(SLOT_MIN_RMS, rm * 10.0 ** (SLOT_ACTIVE_DB / 20.0)):
+        return False
+    return rp > rs * 10.0 ** (SLOT_PARTNER_DB / 20.0)
 
 
 def slot_gain_db(slot, partner, mix, cap_db: float) -> float | None:
@@ -392,6 +416,11 @@ class EnrolledCandidate:
         self.fixed_gate_probs = None  # T-402: last window's p(target, partner, none) of the fixed-slot gate
         self.fixed_gate_stranger = False  # T-402: last window's target slot matched neither profile
         self.fixed_gate_swapped = False  # T-402: last window played the partner slot (swap rescue)
+        self.locked = False  # T-487: last window played the team slot in locked mode (no identity gate)
+        self.lock_duck_db = 0.0  # T-487: the locked slot's gain (0 .. -LOCK_DUCK_DB), down while the partner dominates
+        self._partner_s = 0.0  # T-487: consecutive time the partner slot has dominated
+        self._lock_key = None  # T-487: the target the lock belongs to (a new pick resets the duck)
+        self._lock_hop = None  # T-487: the last measured hop in samples
 
     def load(self):
         self.separator.load()
@@ -586,6 +615,9 @@ class EnrolledCandidate:
         self.margin_score = None if math.isinf(margin) else margin
         conf = 1.0 if math.isinf(margin) else min(max(margin / full, 0.0), 1.0)
         self.held = self.vetoed = False
+        if team is not None and team < len(streams) and lock_enabled():
+            return self._locked(mix, sr, streams, team, similarities, enroll)
+        self.locked, self._lock_key = False, None
         fixed = team if team is not None and team < len(streams) else fixed_target(enroll, len(streams))
         self.fixed_pick = fixed is not None
         if fixed is not None:  # T-386: the slot is the identity; ECAPA only sets the gate and confidence
@@ -675,3 +707,31 @@ class EnrolledCandidate:
         if self.gated:
             return np.zeros_like(streams[choice])
         return streams[choice].copy()
+
+    def _locked(self, mix, sr, streams, slot, similarities, enroll):
+        """T-487: play the team slot every window (pauses too, no ECAPA gate), confidence 1; duck it smoothly by at
+        most LOCK_DUCK_DB only after the partner slot has dominated for more than LOCK_PARTNER_S."""
+        key = (slot, len(enroll), profile_name(enroll))
+        if key != self._lock_key:  # a new pick (or the first window): fresh lock, no carried duck
+            self._lock_key, self._partner_s, self.lock_duck_db = key, 0.0, 0.0
+        found = self._follow_hop(mix, streams) if self._prev is not None else None
+        if found is not None and found[1] > 0:  # the hop is measured from the sample-equal overlap with the last window
+            self._lock_hop = found[1]
+        hop_s = (self._lock_hop or len(mix) // 2) / sr  # unknown (first window, identical windows): half a window
+        partner = streams[1 - slot] if len(streams) == 2 else np.zeros_like(streams[slot])
+        self._partner_s = self._partner_s + hop_s if partner_dominates(streams[slot], partner, mix) else 0.0
+        goal = -LOCK_DUCK_DB if self._partner_s > LOCK_PARTNER_S else 0.0
+        step = LOCK_DUCK_RATE * hop_s
+        self.lock_duck_db = float(min(max(goal, self.lock_duck_db - step), self.lock_duck_db + step))
+        self.locked = self.fixed_pick = True
+        self.gated = self.paused = self.soft_gated = False
+        self.soft_gain_db = self.slot_soft_db = None
+        self._pause_s = 0.0
+        self.confidence = 1.0
+        self.selected_stream = slot
+        self.similarity = similarities[slot]
+        self._prev = (mix, streams[slot])
+        out = streams[slot]
+        if self.lock_duck_db < 0.0:
+            return (out * np.float32(10.0 ** (self.lock_duck_db / 20.0))).astype(np.float32)
+        return out.copy()

@@ -836,6 +836,9 @@ T-088). ``reason`` says
             "soft_gated": getattr(self.cand, "soft_gated", None),
             # T-465: "stock" / "team", the separator of the last enrolled window (None: other candidate / none yet)
             "separator": getattr(self.cand, "separator_active", None),
+            # T-487: the team slot is locked (played every window, no identity gate) and its partner-dominance duck
+            "locked": getattr(self.cand, "locked", None),
+            "lock_duck_db": _round(getattr(self.cand, "lock_duck_db", None)),
         }
         self._health_key = key
         return self._health_cache
