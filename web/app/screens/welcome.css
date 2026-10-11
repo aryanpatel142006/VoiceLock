@@ -1,7 +1,9 @@
-/* Welcome (T-366): the first frame a judge sees. Type leads: one condensed hero line bottom-left, the
-   press-and-hold disc beside three plain facts, the sound field right of centre, flat until the mic streams.
-   Classes are wl-* because app.css still styles the shell's built-in welcome (.hold, .field, .welcome).
-   Layout and values follow web/app/DESIGN_SPEC.md 5.1 and comp/welcome.html. Transform/opacity motion only. */
+/* Welcome (T-366; cold open T-429): the first frame a judge sees. Type leads: one condensed hero line bottom-left,
+   the press-and-hold disc beside three plain facts, and behind everything the grain field (welcome.js draws it on a
+   full-frame canvas: the room's noise as chaos, pulled into one clear ring by the hold). Classes are wl-* because
+   app.css still styles the shell's built-in welcome (.hold, .field, .welcome). Layout follows DESIGN_SPEC 5.1;
+   the storyboard is docs/ux-review-shots/WELCOME_WOW.md. Motion is transform/opacity/filter only; every cold-open
+   delay here is a COLD_OPEN number in welcome.js (one timeline, two owners). */
 
 /* the ring's progress is a registered number so letting go can drain it with a transition */
 @property --wl-p { syntax: "<number>"; inherits: true; initial-value: 0; }
@@ -9,10 +11,10 @@
 .screen-welcome { padding-bottom: 0; }
 
 .wl {
-  --field-x: 64%;
-  --field-y: 42%;
-  --field-size: min(78vh, 62vw);
   --disc: 168px;
+  --wl-px: 0;
+  --wl-py: 0;
+  --wl-c: 0; /* the field's collapse 0..1 (welcome.js writes it each drawn frame): the world turns down */
   position: relative;
   isolation: isolate;
   display: grid;
@@ -21,56 +23,86 @@
   padding-bottom: calc(var(--safe-b, 0px) + clamp(28px, 6vh, 72px));
 }
 
-/* ---------- sound field (static placeholder until scene.js, T-349) ---------- */
-/* scene.js (motion.js sets html.has-scene) draws the real field and its label behind the stage: this stand-in gives way */
-html.has-scene .wl-field,
-html.has-scene .wl-field-label { display: none; }
-/* --wl-level 0..1 is the real mic peak (24 dB/s release, mapped -60..-6 dBFS); 0 and grey while idle. */
+/* ---------- the field: canvas, vignette, film grain, honesty label (back to front) ---------- */
 .wl-field {
-  --wl-level: 0;
-  --ring: var(--color-idle, #3a3f45);
   position: fixed;
-  z-index: -1;
-  left: var(--field-x);
-  top: var(--field-y);
-  width: var(--field-size);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
+  inset: 0;
+  z-index: -3;
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
-  display: grid;
-  place-items: center;
-  background: repeating-radial-gradient(circle,
-    transparent 0 calc(7.2% - 1px),
-    color-mix(in oklab, var(--ring) 80%, transparent) calc(7.2% - 1px) 7.2%);
-  -webkit-mask-image: radial-gradient(circle, #000 calc(16% + var(--wl-level) * 24%), transparent calc(44% + var(--wl-level) * 22%));
-          mask-image: radial-gradient(circle, #000 calc(16% + var(--wl-level) * 24%), transparent calc(44% + var(--wl-level) * 22%));
 }
-.wl-field[data-live="live"] { --ring: color-mix(in oklab, var(--color-fg) calc(22% + var(--wl-level) * 60%), var(--color-idle, #3a3f45)); }
-.wl-field[data-live="replay"] { --ring: var(--color-replay, #b9a6ff); opacity: 0.5; }
-/* the core: a light that only exists when there is level to show */
-.wl-field-core {
-  width: 12%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 1px solid color-mix(in oklab, var(--ring) 90%, transparent);
-  background: radial-gradient(circle, color-mix(in oklab, var(--color-fg) calc(var(--wl-level) * 55%), transparent), transparent 70%);
-  scale: calc(1 + var(--wl-level) * 0.6);
+.wl-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 62% at 50% 46%, transparent 48%, rgb(0 0 0 / 0.58) 100%);
+}
+.wl-grain {
+  position: fixed;
+  inset: -96px;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity, 0.06);
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  will-change: translate;
+}
+/* the grain only steps while something is happening: the cold open and the hold (nothing loops at rest) */
+.wl[data-cold="play"] .wl-grain,
+.wl[data-phase="holding"] .wl-grain,
+.wl[data-phase="full"] .wl-grain,
+.wl[data-phase="starting"] .wl-grain { animation: wl-grain 480ms steps(6) infinite; }
+@keyframes wl-grain {
+  0% { translate: 0 0; }
+  20% { translate: -36px -48px; }
+  40% { translate: 44px -14px; }
+  60% { translate: -18px 36px; }
+  80% { translate: 30px 50px; }
+  100% { translate: 0 0; }
 }
 .wl-field-label {
   position: fixed;
-  z-index: -1;
-  left: var(--field-x);
-  top: calc(var(--field-y) + var(--field-size) * 0.135);
-  translate: -50% 0;
+  z-index: 0;
+  right: var(--safe-right, var(--gutter, 24px));
+  bottom: calc(var(--safe-b, 0px) + 18px);
   color: var(--color-faint);
-  font: var(--text-micro, 12px)/1.2 var(--font-mono);
+  font: 500 var(--text-micro, 12px)/1.2 var(--font-mono);
   font-variant-numeric: var(--numeric, tabular-nums);
+  letter-spacing: var(--tracking-label, 0.01em);
   white-space: nowrap;
-  padding: 2px 8px;
-  background: var(--color-bg); /* knock the ring line out behind the words */
   pointer-events: none;
 }
+.wl[data-cold="play"] .wl-field-label { animation: wl-fade-in 600ms linear 1200ms backwards; }
+
+/* the shared sound scene (scene.js, z 0) sits under this opaque field on Welcome: not drawn here, so a phone does not
+   raster two full canvases per level frame (measured: 33 ms frames at DPR 3 on a 4x-throttled CPU, T-429). It is
+   back, live, on the cut to Setup/Listen (motion.css keeps the scene live through cuts). */
+body[data-screen="welcome"] .scene { display: none; }
+
+/* the chrome sits out of the frame while the cold open plays (welcome.js sets body[data-wl-cold]) */
+body:has(.screen-welcome) .chrome { transition: opacity 700ms var(--ease-out); }
+body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
+
+.wl-skip {
+  position: fixed;
+  z-index: 11;
+  right: var(--safe-right, var(--gutter, 24px));
+  top: calc(var(--safe-t, 0px) + 16px);
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control, 4px);
+  background: var(--color-bg);
+  color: var(--color-dim);
+  font: 500 var(--text-small, 14px)/1 var(--font-ui);
+  cursor: pointer;
+  animation: wl-fade-in 400ms linear 900ms backwards;
+}
+.wl-skip:hover { color: var(--color-fg); border-color: var(--color-dim); }
+.wl-skip:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
 
 /* ---------- type ---------- */
 .wl-main {
@@ -78,6 +110,9 @@ html.has-scene .wl-field-label { display: none; }
   gap: clamp(32px, 6vh, 64px);
   position: relative;
   z-index: var(--z-content, 10);
+  /* depth: the type sits a layer in front of the field, so the pointer moves it a few px the other way */
+  translate: calc(var(--wl-px) * -6px) calc(var(--wl-py) * -4px);
+  transition: translate 500ms var(--ease-out);
 }
 .wl-hero {
   margin: 0;
@@ -89,7 +124,24 @@ html.has-scene .wl-field-label { display: none; }
   line-height: 0.92;
   letter-spacing: var(--tracking-display, -0.035em);
   text-wrap: balance;
-  animation: wl-arrive var(--dur-cut, 520ms) var(--ease-out) backwards; /* backwards: no blur(0) layer left on the type */
+  /* the world turning down: as the ring fills the line recedes and the disc is what is left */
+  opacity: calc(1 - var(--wl-c) * 0.62);
+}
+.wl[data-phase="holding"] .wl-hero { will-change: opacity; }
+/* kinetic type: each word rises through its own mask (the mask keeps descenders: padding, pulled back by margin) */
+.wl-w {
+  display: inline-block;
+  overflow: clip;
+  padding: 0.1em 0.04em 0.16em;
+  margin: -0.1em -0.04em -0.16em;
+  vertical-align: top;
+}
+.wl-wi { display: inline-block; transform-origin: 0 100%; }
+.wl[data-cold="play"] .wl-wi { animation: wl-word 720ms var(--ease-out) var(--wl-d, 0ms) backwards; }
+@keyframes wl-word {
+  from { translate: 0 112%; rotate: 3deg; opacity: 0.001; filter: blur(5px); }
+  60% { filter: blur(0); }
+  to { translate: 0 0; rotate: 0deg; opacity: 1; filter: blur(0); }
 }
 
 .wl-row {
@@ -97,8 +149,10 @@ html.has-scene .wl-field-label { display: none; }
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-6, 32px) var(--space-8, 64px);
-  animation: wl-arrive var(--dur-cut, 520ms) var(--ease-out) 80ms backwards;
 }
+.wl[data-cold="play"] .wl-row { animation: wl-arrive 640ms var(--ease-out) 4400ms backwards; }
+.wl[data-cold="play"] .wl-key,
+.wl[data-cold="play"] .wl-sound { animation: wl-arrive 640ms var(--ease-out) 4640ms backwards; }
 .wl-start { display: grid; justify-items: center; gap: var(--space-3, 12px); padding-left: 12px; } /* room for the ring */
 .wl-key { margin: 0; font-size: var(--text-small, 14px); color: var(--color-dim); }
 .wl-key kbd {
@@ -110,6 +164,32 @@ html.has-scene .wl-field-label { display: none; }
 }
 @media (pointer: coarse), (max-width: 720px) { .wl-key { display: none; } }
 
+/* sound on/off: a real button, 44 px tall though it reads as text; pressed = the neutral fill (T-356).
+   Wide screens: a quiet corner control above the field label, so the composition stays the comp's. */
+.wl-sound {
+  position: fixed;
+  z-index: var(--z-content, 10);
+  right: calc(var(--safe-right, var(--gutter, 24px)) - 12px);
+  bottom: calc(var(--safe-b, 0px) + 40px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control, 4px);
+  background: none;
+  color: var(--color-dim);
+  font: 500 var(--text-small, 14px)/1 var(--font-ui);
+  cursor: pointer;
+  transition: color var(--dur-quick, 180ms) var(--ease-out), background-color var(--dur-quick, 180ms) var(--ease-out);
+}
+.wl-sound:hover { color: var(--color-fg); }
+.wl-sound[aria-pressed="true"] { color: var(--color-fg); background: rgb(255 255 255 / 0.16); border-color: var(--color-fg); }
+.wl-sound:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.wl-ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.wl-sound[aria-pressed="false"] .wl-ico path { stroke-dasharray: 60; }
+
 .wl-facts {
   display: grid;
   gap: var(--space-2, 8px);
@@ -117,6 +197,7 @@ html.has-scene .wl-field-label { display: none; }
   color: var(--color-dim);
   font-size: var(--text-lead, 20px);
   line-height: 1.3;
+  opacity: calc(1 - var(--wl-c) * 0.5);
 }
 .wl-facts p { margin: 0; }
 .wl-facts strong { color: var(--color-fg); font-weight: var(--weight-strong, 600); }
@@ -146,7 +227,8 @@ html.has-scene .wl-field-label { display: none; }
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  transition: scale var(--dur-quick, 180ms) var(--ease-out), --wl-p var(--dur-quick, 180ms) var(--ease-in);
+  /* letting go: the disc springs back (overshoot), the ring drains */
+  transition: scale 620ms var(--ease-spring), --wl-p var(--dur-quick, 180ms) var(--ease-in);
 }
 .wl-disc-label { font-weight: var(--weight-strong, 600); font-size: var(--text-lead, 20px); line-height: 1.08; text-wrap: balance; }
 .wl-disc-sub { font-size: var(--text-micro, 12px); opacity: 0.72; }
@@ -159,34 +241,55 @@ html.has-scene .wl-field-label { display: none; }
           mask: radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
   pointer-events: none;
 }
+/* the release: one ring leaves the disc when the hold completes (welcome.js animates it with WAAPI) */
+.wl-ripple {
+  position: absolute;
+  inset: -11px;
+  border-radius: 50%;
+  border: 2px solid var(--color-fg);
+  opacity: 0;
+  pointer-events: none;
+}
 @media (hover: hover) { .wl-disc[data-phase="idle"]:hover, .wl-disc[data-phase="failed"]:hover { scale: 1.02; } }
-/* while held the ring follows the press frame by frame (no easing on top of real time) */
-.wl-disc[data-phase="holding"] { scale: 0.97; transition: scale var(--dur-quick, 180ms) var(--ease-out); }
-.wl-disc[data-phase="armed"] { scale: 0.97; }
+/* pressed: the disc sinks at once, then gives further as the ring fills (the real hold time, --wl-p, T-427), like a key
+   travelling down; the ring follows the press frame by frame (no easing on top of real time) */
+.wl-disc[data-phase="holding"] { scale: calc(0.94 - var(--wl-p) * 0.03); transition: scale 220ms var(--ease-out); }
+.wl-disc[data-phase="holding"] .wl-ring { scale: calc(1 + var(--wl-p) * 0.06); } /* the ring widens with the hold: scale, not inset, so no layout per frame */
+.wl-disc[data-phase="armed"] { scale: 0.91; }
 .wl-disc[data-phase="starting"], .wl-disc[data-phase="full"] { cursor: progress; }
 .wl-disc[data-phase="failed"] .wl-ring { background: conic-gradient(var(--color-bad) 0 1turn); opacity: 0.6; }
 .wl-disc:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 16px; border-radius: 50%; }
 
 /* ---------- the unlock: the stillness before the cut ---------- */
-.wl[data-phase="done"] .wl-facts, .wl[data-phase="done"] .wl-key { opacity: 0.4; transition: opacity var(--dur-hold, 240ms) var(--ease-out); }
+.wl[data-phase="done"] .wl-facts, .wl[data-phase="done"] .wl-key, .wl[data-phase="done"] .wl-sound { opacity: 0.4; transition: opacity var(--dur-hold, 240ms) var(--ease-out); }
 
 @keyframes wl-arrive {
   from { opacity: 0; filter: blur(var(--motion-blur, 10px)); translate: 0 var(--motion-distance, 24px); }
 }
+@keyframes wl-fade-in { from { opacity: 0; } }
 
-/* ---------- 390 px: one column, field up top and bleeding off both edges ---------- */
+/* ---------- 390 px: one column, the field fills the frame, the label sits under the chrome ---------- */
 @media (max-width: 720px) {
-  .wl { --field-x: 50%; --field-y: 24%; --field-size: 120vw; --disc: 140px; min-height: calc(100dvh - 60px - var(--safe-t, 0px)); }
+  .wl { --disc: 140px; min-height: calc(100dvh - 60px - var(--safe-t, 0px)); }
   .wl-row { gap: var(--space-5, 24px); }
   .wl-disc-label { font-size: var(--text-body, 16px); }
   .wl-facts { font-size: var(--text-body, 16px); }
+  .wl-field-label { bottom: auto; top: calc(var(--safe-t, 0px) + 66px); }
+  .wl-sound { position: static; justify-self: start; margin: var(--space-2, 8px) 0 0 -12px; }
+  .wl-skip { top: calc(var(--safe-t, 0px) + 10px); }
+  .wl-vignette { background: radial-gradient(ellipse 80% 60% at 50% 40%, transparent 40%, rgb(0 0 0 / 0.6) 100%); }
 }
 @media (max-height: 560px) and (orientation: landscape) {
   .wl { --disc: 120px; }
   .wl-hero { font-size: clamp(40px, 9vh, 96px); }
 }
 
+/* ---------- reduced motion: the calm still version ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .wl-hero, .wl-row { animation: none; }
-  .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; }
+  .wl { animation: wl-fade-in 200ms linear; }
+  .wl-wi, .wl-row, .wl-key, .wl-sound, .wl-field-label, .wl-skip, .wl-grain { animation: none !important; }
+  .wl-main { translate: none; transition: none; }
+  .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; transition: --wl-p 0ms; }
+  .wl-hero, .wl-facts { transition: none; }
+  .wl-ripple { display: none; }
 }
