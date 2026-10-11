@@ -9,3 +9,11 @@ VoiceLock was built at HackRU Fall 2026 by Aryan Patel, Joseph Roche and Ahmad A
 - **Choosing the compute.** I picked the Rutgers iLab GPU for the remote path (`scripts/gpu_up.sh`); the Mac stayed the stage backend because it measured better with saved profiles.
 - **Voice and listening tests.** My voice is one of the two saved profiles in the team preset, and Joseph and I did the listening checks through the demo headphones (words understood, wrong-speaker intrusions, how audible the other voice is during overlap).
 - **Demo, docs and pitch.** The demo runbook (`docs/DEMO.md`), the stage card (`docs/STAGE_CARD.md`), the claims we are willing to make (`docs/CLAIMS.md`), the README and the public VoiceLock repository, plus the pitch.
+
+## Ahmad Abbadi: what I worked on
+
+- Coordinated discussion of speaker selection, generalization, and evaluation across the swarm.
+- Requested separate training, validation, and test data and checks for data leakage.
+- Reviewed the app screens and demo previews and raised usability questions.
+- Contributed paired model-evaluation statistics (T-381): seed variability summaries and strict paired wrong-speaker comparisons; published the utility with its statistical limitations.
+- Published the current shared web app to the submission repository from my account; the implementation includes contributions from the wider team.
