@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arena · blind A/B</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }
+  h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  .meta { color: #666; font-size: .875rem; }
+  .row { display: flex; align-items: center; gap: .75rem; margin: .75rem 0; }
+  .row b { width: 6rem; }
+  .choices { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+  button { font: inherit; padding: .5rem 1rem; border: 1px solid #888; border-radius: .375rem; background: #fff; cursor: pointer; }
+  button:hover { background: #f0f0f0; }
+  input, textarea { font: inherit; width: 100%; box-sizing: border-box; }
+  #done { display: none; }
+</style>
+</head>
+<body>
+<h1>Arena · blind A/B</h1>
+<p class="meta" id="meta">loading…</p>
+<label>Listener <input id="listener" placeholder="your name"></label>
+<section id="trial">
+  <p id="question"></p>
+  <div class="row"><b>Mix</b><audio id="ref" controls preload="auto"></audio></div>
+  <div class="row"><b>A</b><audio id="a" controls preload="auto"></audio></div>
+  <div class="row"><b>B</b><audio id="b" controls preload="auto"></audio></div>
+  <textarea id="note" rows="2" placeholder="optional note (artifacts, wrong talker, dropouts)"></textarea>
+  <div class="choices">
+    <button data-c="a">A better</button><button data-c="b">B better</button>
+    <button data-c="tie">Same</button><button data-c="both_bad">Both bad</button>
+  </div>
+</section>
+<p id="done">All trials judged. Thank you.</p>
+<script>
+let batch, i = 0;
+const $ = (id) => document.getElementById(id);
+function show() {
+  if (i >= batch.trials.length) { $("trial").style.display = "none"; $("done").style.display = "block"; return; }
+  const t = batch.trials[i];
+  $("meta").textContent = `${batch.batch_id} · trial ${i + 1} of ${batch.trials.length}`;
+  $("question").textContent = batch.questions[0];
+  $("ref").src = "/" + t.reference; $("a").src = "/" + t.a; $("b").src = "/" + t.b;
+  $("note").value = "";
+}
+document.querySelectorAll("button[data-c]").forEach((btn) => btn.onclick = async () => {
+  const t = batch.trials[i];
+  const r = await fetch("/verdict", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trial_id: t.trial_id, choice: btn.dataset.c, listener: $("listener").value, note: $("note").value }) });
+  if (!r.ok) { alert("not saved: " + (await r.text())); return; }
+  i += 1; show();
+});
+fetch("/batch.json").then((r) => r.json()).then((b) => { batch = b; show(); });
+</script>
+</body>
+</html>

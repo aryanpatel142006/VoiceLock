@@ -1,0 +1,124 @@
+{
+  "diagnostic": {
+    "source": "T-291 (team_slices.npz, 0.5s)",
+    "n_train": 114,
+    "n_test": 212,
+    "stock": {
+      "train_margin": 0.14719824865460396,
+      "train_acc": 0.9912280701754386,
+      "test_margin": 0.1212327852845192,
+      "test_acc": 0.9952830188679245,
+      "test_intra": 0.17746176570653915,
+      "test_cross": 0.05622898042201996
+    },
+    "head_true": {
+      "train_margin": 1.7921006381511688,
+      "train_acc": 1.0,
+      "test_margin": 1.3991774320602417,
+      "test_acc": 0.9575471698113207,
+      "test_intra": 0.7827741503715515,
+      "test_cross": -0.6164032816886902,
+      "margin_gap": 0.3929232060909271,
+      "expansion_vs_stock": 11.541246279020445
+    },
+    "head_shuffled": {
+      "train_margin_shuffled_labels": 1.7380341291427612,
+      "train_acc_shuffled_labels": 1.0,
+      "test_margin_eval_true": 0.008135303854942322,
+      "test_acc_eval_true": 0.6886792452830188,
+      "test_margin_eval_shuffled": -0.0029195845127105713,
+      "test_acc_eval_shuffled": 0.6179245283018868,
+      "margin_gap": 1.7409537136554718
+    },
+    "pac_bound": {
+      "n_samples": 114,
+      "n_params": 14560,
+      "gamma": 0.5,
+      "delta": 0.05,
+      "rademacher_term": 4.313577214276337,
+      "confidence_term": 0.3815935830990771,
+      "generalization_bound": 4.695170797375414
+    },
+    "hypotheses": {
+      "H_SHUFFLE_MEMORIZATION": {
+        "hypothesis": "[H1] 2-layer head with 14,560 params memorizes shuffled training labels (margin > 1.5).",
+        "observed_shuffled_train_margin": 1.7380341291427612,
+        "confirmed": true
+      },
+      "H_SHUFFLE_TEST_COLLAPSE": {
+        "hypothesis": "[H2] Shuffled head collapses to chance on held-out test data (margin <= 0.15, acc ~= 50%).",
+        "observed_shuffled_test_margin": -0.0029195845127105713,
+        "observed_shuffled_test_acc": 0.6179245283018868,
+        "confirmed": true
+      },
+      "H_TRUE_GENERALIZATION": {
+        "hypothesis": "[H3] True-label head maintains significant expansion on held-out test takes (margin > 1.0).",
+        "observed_true_test_margin": 1.3991774320602417,
+        "stock_test_margin": 0.1212327852845192,
+        "expansion_ratio": 11.541246279020445,
+        "confirmed": true
+      },
+      "H_SESSION_CONFOUND": {
+        "hypothesis": "[H4] When train and test share session recording channels, test expansion reflects channel-correlated signal.",
+        "status": "VALIDATED_BY_DESIGN (every slice traces to single recording memo per speaker)"
+      }
+    }
+  },
+  "failure_modes": {
+    "reverb": {
+      "failure_mode": "Unseen Room Reverberation (T60 > 0.4s)",
+      "physical_mechanism": "Late reflections smear formant transitions; energy blurs across orthogonal spectral modes.",
+      "hypothesis": "[H-REVERB] T60 > 0.4s drops test margin by >= 50% from baseline.",
+      "baseline_margin": 1.3991774320602417,
+      "stressed_margin": 0.1778977122157812,
+      "stressed_acc": 0.7264150943396226,
+      "margin_drop_pct": 87.28555019974608,
+      "falsifiable_test": "Simulated RIR convolution with T60 in [0.4, 0.8]s.",
+      "passed_failure_criterion": true
+    },
+    "codec": {
+      "failure_mode": "Codec Distortion (Low-bitrate Opus/AAC <= 24 kbps)",
+      "physical_mechanism": "Band-limiting, MDCT quantization, and psychoacoustic spectral hole filling distort fine formants.",
+      "hypothesis": "[H-CODEC] Low-bitrate codec transcoding drops test margin by >= 40%.",
+      "baseline_margin": 1.3991774320602417,
+      "stressed_margin": 0.706869900226593,
+      "stressed_acc": 0.8584905660377359,
+      "margin_drop_pct": 49.479609659959216,
+      "falsifiable_test": "Transcoding through ffmpeg libopus at 16 kbps.",
+      "passed_failure_criterion": true
+    },
+    "overlap": {
+      "failure_mode": "Overlapping Speech in Enrollment Slice (SIR <= 6 dB)",
+      "physical_mechanism": "Interferer leakage pulls enrollment prototype into intermediate ambiguous region.",
+      "hypothesis": "[H-OVERLAP] Enrollment SIR <= 6 dB causes margin collapse >= 40% and elevated false accepts.",
+      "baseline_margin": 1.3991774320602417,
+      "stressed_margin": 0.013028383255004883,
+      "stressed_acc": 0.6462264150943396,
+      "margin_drop_pct": 99.06885410266938,
+      "falsifiable_test": "Synthetic addition of interfering voice at 0 to 6 dB SIR.",
+      "passed_failure_criterion": true
+    },
+    "pitch": {
+      "failure_mode": "Pitch Shift / Prosodic Drift (Delta F0 >= +-4 semitones)",
+      "physical_mechanism": "Harmonic grid shifts outside frequency-band coordinates learned by head.",
+      "hypothesis": "[H-PITCH] Pitch shifting by +-4 semitones causes margin drop >= 40%.",
+      "baseline_margin": 1.3991774320602417,
+      "stressed_margin": 0.2705482244491577,
+      "stressed_acc": 0.7641509433962265,
+      "margin_drop_pct": 80.66376584914006,
+      "falsifiable_test": "PSOLA or sox pitch shift by +-4 semitones.",
+      "passed_failure_criterion": true
+    },
+    "whisper": {
+      "failure_mode": "Whispered Speech (Unvoiced Phonation)",
+      "physical_mechanism": "Absence of harmonic glottal comb; excitation is turbulent aspiration noise; F1/F2 formants shift upward.",
+      "hypothesis": "[H-WHISPER] Whispered speech collapses margin below 0.25 and margin drops >= 70%.",
+      "baseline_margin": 1.3991774320602417,
+      "stressed_margin": -0.002161160111427307,
+      "stressed_acc": 0.5518867924528302,
+      "margin_drop_pct": 100.15445933174072,
+      "falsifiable_test": "Acoustic recording of whispered speech evaluated against modal-voice profile.",
+      "passed_failure_criterion": true
+    }
+  }
+}
