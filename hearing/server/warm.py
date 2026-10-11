@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import os
 import sys
 import threading
 import time
@@ -32,6 +33,7 @@ WARM = (
     ("hearing.vision.light_asd", ("light_asd",), True),
     ("hearing.synth.apparent_face", ("apparent_face",), False),
     ("hearing.tse.blind", ("MossFormer2_SS_16K",), True),
+    ("hearing.tse.blind", ("MossFormer2_SS_16K@team",), True),  # T-465: only with $HEARING_SEP_TEAM_CKPT
     ("hearing.tse.enrolled", ("spkrec-ecapa-voxceleb",), True),
 )
 
@@ -62,6 +64,9 @@ def warm(plan=WARM) -> dict[str, str]:
             done.update({n: "skipped: not available" for n in names})
             continue
         for name in names:
+            if name.endswith("@team") and not os.environ.get("HEARING_SEP_TEAM_CKPT", "").strip():
+                done[name] = "skipped: off"  # T-465: the auto-switch's team checkpoint loads only with its knob
+                continue
             t0 = time.perf_counter()
             try:
                 if torch_lock:

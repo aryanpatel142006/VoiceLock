@@ -109,6 +109,40 @@ def fixed_slot(profile_name):
     return slots.index(name) if name in slots else None
 
 
+# T-465 auto-switch (default off): the shipped separator for anyone, the fine-tuned fixed-order checkpoint named here
+# only for windows whose target is a saved profile in HEARING_FIXED_SLOTS (and whose partner, when it is a saved
+# profile, is the other slot). Both are loaded at start; hearing.tse.enrolled picks one per window.
+TEAM_CKPT_ENV = "HEARING_SEP_TEAM_CKPT"
+TEAM_MODEL = f"{MODEL}@team"  # hearing.models name of the team checkpoint
+
+
+def team_checkpoint() -> Path | None:
+    """``$HEARING_SEP_TEAM_CKPT`` as a path (None when unset); a missing file is a RuntimeError."""
+    raw = os.environ.get(TEAM_CKPT_ENV, "").strip()
+    if not raw:
+        return None
+    path = Path(raw).expanduser()
+    if not path.is_file():
+        raise RuntimeError(f"{TEAM_CKPT_ENV} is not a file: {path}")
+    return path
+
+
+def team_slot(target_name, partner_name=None):
+    """Slot of the team checkpoint to play for this target, or None (use the stock separator and the ECAPA pick).
+
+    The target must be a saved profile named in ``fixed_slots()``; a partner that is itself a saved profile must be
+    the other slot (a live-calibrated partner, ``None``, does not veto). Independent of ``HEARING_PICK``."""
+    slots = fixed_slots()
+    name = (target_name or "").strip().lower()
+    if name not in slots:
+        return None
+    slot = slots.index(name)
+    partner = (partner_name or "").strip().lower()
+    if partner and partner != slots[1 - slot]:
+        return None
+    return slot
+
+
 SEP_CKPT_ENV = "HEARING_SEP_CKPT"
 
 
@@ -170,7 +204,18 @@ class _TorchBackend:
 
 @models.register_loader(MODEL)
 def _load_separator():
-    checkpoint = _checkpoint()
+    return _load_mossformer(_checkpoint())
+
+
+@models.register_loader(TEAM_MODEL)
+def _load_team_separator():
+    checkpoint = team_checkpoint()
+    if checkpoint is None:
+        raise RuntimeError(f"{TEAM_CKPT_ENV} is not set")
+    return _load_mossformer(checkpoint)
+
+
+def _load_mossformer(checkpoint):
     try:
         import torch
         from clearvoice.models.mossformer2_ss.mossformer2 import MossFormer2_SS_16K
@@ -207,13 +252,14 @@ def validate_audio(audio, sr=SR):
 class BlindSeparator:
     """Two-stream separator shared by enrolled and blind association candidates."""
 
-    def __init__(self, backend=None):
+    def __init__(self, backend=None, model=None):
         self.backend = backend
+        self.model = model  # hearing.models name; None = separator_model() (HEARING_SEPARATOR)
         self.device = getattr(backend, "device", "")
 
     def load(self):
         if self.backend is None:
-            self.backend = models.load(separator_model())
+            self.backend = models.load(self.model or separator_model())
         self.device = self.backend.device
 
     def separate(self, mix, sr=SR):
@@ -222,7 +268,7 @@ class BlindSeparator:
         streams = self.backend.separate(mix)
         if len(streams) != 2:
             raise ValueError("separator must return exactly two streams")
-        result = np.stack([conform_output(y, len(mix), separator_model()) for y in streams])
+        result = np.stack([conform_output(y, len(mix), self.model or separator_model()) for y in streams])
         if not np.isfinite(result).all():
             raise ValueError("separator returned nonfinite audio")
         return rescale_to_mix(result, mix)

@@ -834,6 +834,8 @@ T-088). ``reason`` says
             # T-382: the last window's gate state (enrolled pick only), for the UI's gate pill
             "gated": getattr(self.cand, "gated", None),
             "soft_gated": getattr(self.cand, "soft_gated", None),
+            # T-465: "stock" / "team", the separator of the last enrolled window (None: other candidate / none yet)
+            "separator": getattr(self.cand, "separator_active", None),
         }
         self._health_key = key
         return self._health_cache
