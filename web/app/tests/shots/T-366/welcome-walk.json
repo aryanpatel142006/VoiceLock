@@ -1,0 +1,374 @@
+{
+ "chromium": {
+  "version": "153.0.8010.12",
+  "shot_1920": {
+   "screen": "welcome",
+   "hasScene": true,
+   "placeholderShown": false,
+   "sceneLabel": "idle \u00b7 mic off",
+   "hero": "136px",
+   "overflowX": false,
+   "install": "On iPhone: Share, then Add to Home Screen.",
+   "p_at_400ms": "0.441",
+   "after_early_release": [
+    "idle",
+    "welcome"
+   ],
+   "errors": []
+  },
+  "shot_390": {
+   "screen": "welcome",
+   "hasScene": true,
+   "placeholderShown": false,
+   "sceneLabel": "idle \u00b7 mic off",
+   "hero": "52px",
+   "overflowX": false,
+   "install": "For full screen: tap Share, then Add to Home Screen.",
+   "p_at_400ms": "0.442",
+   "after_early_release": [
+    "idle",
+    "welcome"
+   ],
+   "errors": []
+  },
+  "mouse": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1640.0999999940395,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "touch": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1573.7000000029802,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Space": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1573.7000000029802,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Enter": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1623,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Space_page": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1625.7000000029802,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "short-space": {
+   "screen": "welcome",
+   "hash": "",
+   "started": false,
+   "audioContext": [],
+   "phases": [
+    "idle",
+    "holding",
+    "idle"
+   ],
+   "problem": "",
+   "errors": [],
+   "hold_ms": 300
+  },
+  "mouse_reduced": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1323.3999999910593,
+     "active": true,
+     "phase": "starting",
+     "state0": "running",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  }
+ },
+ "webkit": {
+  "version": "26.6",
+  "shot_1920": {
+   "screen": "welcome",
+   "hasScene": true,
+   "placeholderShown": false,
+   "sceneLabel": "idle \u00b7 mic off",
+   "hero": "136px",
+   "overflowX": false,
+   "install": "On iPhone: Share, then Add to Home Screen.",
+   "p_at_400ms": "0.442",
+   "after_early_release": [
+    "idle",
+    "welcome"
+   ],
+   "errors": []
+  },
+  "shot_390": {
+   "screen": "welcome",
+   "hasScene": true,
+   "placeholderShown": false,
+   "sceneLabel": "idle \u00b7 mic off",
+   "hero": "52px",
+   "overflowX": false,
+   "install": "For full screen: tap Share, then Add to Home Screen.",
+   "p_at_400ms": "0.443",
+   "after_early_release": [
+    "idle",
+    "welcome"
+   ],
+   "errors": []
+  },
+  "mouse": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1642,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Space": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1639,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Enter": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1643,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "Space_page": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1640,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "short-space": {
+   "screen": "welcome",
+   "hash": "",
+   "started": false,
+   "audioContext": [],
+   "phases": [
+    "idle",
+    "holding",
+    "idle"
+   ],
+   "problem": "",
+   "errors": [],
+   "hold_ms": 300
+  },
+  "mouse_reduced": {
+   "screen": "setup",
+   "hash": "#setup",
+   "started": true,
+   "audioContext": [
+    {
+     "t": 1370,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "running"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "done"
+   ],
+   "problem": null,
+   "errors": [],
+   "hold_ms": 1300
+  },
+  "mouse_denied": {
+   "screen": "welcome",
+   "hash": "",
+   "started": false,
+   "audioContext": [
+    {
+     "t": 1675,
+     "active": true,
+     "phase": "starting",
+     "state0": "suspended",
+     "state1500": "closed"
+    }
+   ],
+   "phases": [
+    "idle",
+    "holding",
+    "starting",
+    "failed"
+   ],
+   "problem": "Microphone blocked: allow it for this page (address bar \u2192 site settings \u2192 Microphone), then hold Start.",
+   "errors": [
+    "pageerror: InvalidStateError: Context is closed"
+   ],
+   "hold_ms": 1300
+  }
+ }
+}
