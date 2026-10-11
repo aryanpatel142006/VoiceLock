@@ -59,4 +59,4 @@ Only numbers that were measured, with their conditions (from `docs/CLAIMS.md`, s
 
 ## Team
 
-Aryan Patel, Joseph Roche, Ahmad Abbadi. Who worked on what: `docs/TEAM.md`.
+Aryan Patel, Joseph Roche, Ahmad Abbadi.
