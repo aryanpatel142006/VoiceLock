@@ -31,7 +31,7 @@ bash scripts/setup.sh            # creates .venv and installs the package
 bash scripts/demo.sh --judge --team --lan --app
 ```
 
-Without `--app` the demo opens the stage page at `/judge`. `--team` loads the two-voice preset from `config/demo-team.yaml`, which expects saved voice profiles for each person (`scripts/enroll_profiles.sh`). Voice recordings and profiles are not included in this repository. More in `docs/DEMO.md`, `docs/APP.md` and `docs/STAGE_CARD.md`.
+Without `--app` the demo opens the stage page at `/judge`. `--port 0` picks a free port and prints it, `--no-open` skips the browser, and `bash scripts/demo.sh --stop --port <port>` stops the server. `--team` loads the two-voice preset from `config/demo-team.yaml`, which expects saved voice profiles for each person (`scripts/enroll_profiles.sh`). Voice recordings and profiles are not included in this repository. More in `docs/DEMO.md`, `docs/APP.md` and `docs/STAGE_CARD.md`.
 
 ## Measured results
 
@@ -55,8 +55,8 @@ Only numbers that were measured, with their conditions (from `docs/CLAIMS.md`, s
 | `scripts/` | Demo launcher, setup, voice-profile enrollment and the GPU launcher |
 | `config/` | Presets and tier settings |
 | `third_party/` | Small borrowed source files with their licences |
-| `docs/` | Demo runbook, app guide, stage card, claims, benchmarks, architecture, contracts, models |
+| `docs/` | Demo runbook, app guide, stage card, claims, benchmarks, architecture, contracts, models, team |
 
 ## Team
 
-Aryan Patel, Joseph Roche, Ahmad Abbadi.
+Aryan Patel, Joseph Roche, Ahmad Abbadi. Who worked on what: `docs/TEAM.md`.
