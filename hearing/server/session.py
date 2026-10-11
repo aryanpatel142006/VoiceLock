@@ -82,6 +82,7 @@ import numpy as np
 import yaml
 
 from hearing import registry
+from hearing.audio import smooth as out_smooth
 from hearing.audio.agc import Agc, floor_rule_kwargs
 from hearing.audio.io import HOP, PIPELINE_SR, float_to_pcm16, pcm16_to_float
 from hearing.audio.stream import Chunker
@@ -214,6 +215,7 @@ _RAW = ""  # identity: what a failing fallback degrades to
 STAGE_MODULES = (
     "hearing.audio.basic",
     "hearing.audio.agc",
+    "hearing.audio.smooth",
     "hearing.enhance.dfn",
     "hearing.enhance.gtcrn",
     "hearing.fusion",
@@ -523,6 +525,8 @@ class Session:
         self.profile: str | None = None  # control.profile: "judge" locks the demo defaults (T-088)
         self.auto_calibrator = AutoCalibrator()  # on with the judge profile
         self.out_agc = Agc(PIPELINE_SR, **floor_rule_kwargs())  # T-135 output AGC + limiter (T-179 floor rule opt-in)
+        # T-484: cap-and-slew leveller after the AGC (HEARING_SMOOTH=1), None when off
+        self.out_smooth = out_smooth.Smoother(PIPELINE_SR, cap_db=out_smooth.cap_from_env()) if out_smooth.enabled() else None
         self.agc_enabled = True  # control.agc (T-169): false on the remote leg, the laptop levels once
         # T-135: the tap's out_pre_agc.wav (16 kHz sessions): separation is scored before output leveling
         self.pre_agc_sink: Callable[[bytes], None] | None = None
@@ -1302,6 +1306,8 @@ class Session:
             if self.pre_agc_sink is not None and self._from_16k is None:
                 self.pre_agc_sink(float_to_pcm16(y))
             y = self.out_agc.process_array(y)
+        if self.out_smooth is not None and len(y):
+            y = self.out_smooth.process_array(y)
         if self._from_16k is not None:
             y = self._from_16k.process(y)
         if len(y):
@@ -1665,7 +1671,8 @@ class Session:
                         "locked": bool(target.locked)}
         ours = self.ctx.telemetry.extras.get("tse") or {}
         # T-134 confidence; T-382 gated / soft_gated (the enrolled pick's last window) for the gate pill
-        tse = {"confidence": ours.get("confidence"), "gated": ours.get("gated"), "soft_gated": ours.get("soft_gated")}
+        tse = {"confidence": ours.get("confidence"), "gated": ours.get("gated"), "soft_gated": ours.get("soft_gated"),
+               "separator": ours.get("separator")}  # T-465: stock / team separator of the last enrolled window
         remote = self._remote_report(latency)
         if remote is not None and remote["source"] != "local":
             # T-156: the GPU's audio plays, so what it isolates is the remote session's state
@@ -1677,7 +1684,8 @@ class Session:
                 acquisition = {**theirs["acquisition"], "source": "remote"}
             if isinstance(theirs.get("tse"), dict):
                 tse = {"confidence": theirs["tse"].get("confidence"), "gated": theirs["tse"].get("gated"),
-                       "soft_gated": theirs["tse"].get("soft_gated"), "source": "remote"}
+                       "soft_gated": theirs["tse"].get("soft_gated"), "separator": theirs["tse"].get("separator"),
+                       "source": "remote"}
         rtt = self.remote_rtt_ms()
         hq = self.hq_status()
         return {
@@ -1708,7 +1716,8 @@ class Session:
             "enrollment": self._enrollment_status(),
             "tse": tse,
             "profile": self.profile,
-            "agc": self.out_agc.status() if self._agc_on else None,  # T-135: output gain under the judge profile
+            "agc": self.out_agc.status() if self._agc_on else None,
+            "smooth": None if self.out_smooth is None else self.out_smooth.status(),  # T-484  # T-135: output gain under the judge profile
             "auto_calibrate": self.auto_calibrator.status(),
             "preset": ({"name": "team", "pins": self._preset_pins, "video_dropped": self.video_dropped}
                        if self.preset is not None else None),

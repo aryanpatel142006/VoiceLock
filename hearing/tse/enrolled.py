@@ -12,7 +12,15 @@ from hearing import device, models
 from hearing.fusion.stream_vad import StreamVad
 from hearing.tse import fixed_gate
 from hearing.tse.base import SR, register_candidate
-from hearing.tse.blind import SEP_CKPT_ENV, BlindSeparator, fixed_slot, validate_audio
+from hearing.tse.blind import (
+    SEP_CKPT_ENV,
+    TEAM_CKPT_ENV,
+    TEAM_MODEL,
+    BlindSeparator,
+    fixed_slot,
+    team_slot,
+    validate_audio,
+)
 from hearing.tse.enroll import profile_name, profile_pieces
 from hearing.tse.team_head import from_env as team_head_from_env
 from hearing.tse.team_head import stream_features
@@ -132,6 +140,15 @@ SOFT_ENV = "HEARING_GATED_SOFT"  # "1" = on; unset / "0" = off (hard gate as bef
 SOFT_DB_ENV = "HEARING_GATED_SOFT_DB"  # D: the stream's attenuation at p = 0 in dB (Gmin = 10^(-D/20))
 SOFT_DB = 12.0
 SOFT_SPAN = 0.5  # p = 1 + (score - contrast) / SOFT_SPAN, clipped to [0, 1] (hand-set: false-gate picks sit at -0.01..-0.45)
+# T-484 slot soft cap (knob, default off): with a fixed-order / team slot the slot itself is reliable, so a gated
+# window whose target slot carries speech plays that slot instead of silence: at 0 dB, or SLOT_DUCK dB down when the
+# partner slot is louder by more than SLOT_PARTNER_DB (the other teammate talking). Silence in the slot stays muted.
+# The window keeps confidence 0, so the mixer still ducks the room (HEARING_GATED_FLOOR_DB). Live test Oct 11: the
+# 20 dB gated drop on every flip was the loud/quiet pumping.
+SLOT_DUCK_ENV = "HEARING_SLOT_DUCK_DB"  # e.g. 6: the most a gated slot with speech is ducked; unset = off (mute)
+SLOT_PARTNER_DB = 3.0  # partner slot louder than the target slot by this much = partner dominates
+SLOT_ACTIVE_DB = -20.0  # target slot RMS at least this far under the window mix RMS = it has speech energy
+SLOT_MIN_RMS = 1e-4  # and at least -80 dBFS
 CONTRAST_ENV = "HEARING_ENROLLED_CONTRAST"  # T-178: default ``contrast`` when the pipeline spec sets none
 WARM_ENV = "HEARING_WARM_ENROLLED"  # T-339: "1" = saved-profile embeddings computed once at server start, shared
 # T-339: (embedder id, clip key) -> (embedding, profile pieces info), filled by hearing.server.warm (knob on only)
@@ -147,6 +164,30 @@ def soft_db() -> float | None:
     except ValueError:
         d = SOFT_DB
     return d if math.isfinite(d) and d >= 0 else SOFT_DB
+
+
+def slot_duck_db() -> float | None:
+    """The slot soft cap in dB when ``$HEARING_SLOT_DUCK_DB`` is set (T-484), else None."""
+    raw = os.environ.get(SLOT_DUCK_ENV, "").strip()
+    if not raw:
+        return None
+    try:
+        d = float(raw)
+    except ValueError:
+        return None
+    return d if math.isfinite(d) and d >= 0 else None
+
+
+def slot_gain_db(slot, partner, mix, cap_db: float) -> float | None:
+    """Gain (dB, <= 0) for a gated fixed slot under the T-484 soft cap: None when the slot has no speech energy
+    (keep it muted), ``-cap_db`` when the partner slot is louder by more than SLOT_PARTNER_DB, else 0."""
+    def rms(x):
+        return float(np.sqrt(np.mean(np.square(np.asarray(x, np.float64))))) if len(x) else 0.0
+
+    rs, rp, rm = rms(slot), rms(partner), rms(mix)
+    if rs < max(SLOT_MIN_RMS, rm * 10.0 ** (SLOT_ACTIVE_DB / 20.0)):
+        return None
+    return -float(cap_db) if rp > rs * 10.0 ** (SLOT_PARTNER_DB / 20.0) else 0.0
 
 
 def soft_gain_db(score: float, contrast: float, d: float, p: float | None = None) -> float:
@@ -288,8 +329,12 @@ class EnrolledCandidate:
 
     def __init__(self, separator=None, embedder=None, margin=MARGIN, floor=None, purify=None,
                  clean_enroll=True, contrast=None, pause_floor=None, pause_p=None, pause_action="hold",
-                 pause_max_s=2.0, same_voice=SAME_VOICE, closed_set=True, f0_veto=True):
+                 pause_max_s=2.0, same_voice=SAME_VOICE, closed_set=True, f0_veto=True, team_separator=None):
         self.separator = separator if separator is not None else BlindSeparator()
+        # T-465: the fine-tuned fixed-order separator for saved team profiles ($HEARING_SEP_TEAM_CKPT; None = off)
+        if team_separator is None and os.environ.get(TEAM_CKPT_ENV, "").strip():
+            team_separator = BlindSeparator(model=TEAM_MODEL)
+        self.team_separator = team_separator
         self.embedder = embedder
         self.device = self.separator.device
         self.margin = float(margin)
@@ -339,8 +384,10 @@ class EnrolledCandidate:
         self._prev = None  # (mix, chosen stream) of the previous window
         self.soft_gated = False  # T-370: last gated window played its best stream at soft_gain_db
         self.soft_gain_db = None
+        self.slot_soft_db = None  # T-484: gain of the last gated window's slot under HEARING_SLOT_DUCK_DB (None = muted/off)
         self._soft_vad = StreamVad()  # running noise floor for the soft gate's overlap cue
         self.fixed_pick = False  # T-386: last window played the fine-tuned checkpoint's fixed slot
+        self.separator_active = None  # T-465: "stock" / "team", the separator of the last window (None before one)
         self._fixed_gate = None  # T-402: hearing.tse.fixed_gate.FixedGate while HEARING_FIXED_GATE=1
         self.fixed_gate_probs = None  # T-402: last window's p(target, partner, none) of the fixed-slot gate
         self.fixed_gate_stranger = False  # T-402: last window's target slot matched neither profile
@@ -348,6 +395,8 @@ class EnrolledCandidate:
 
     def load(self):
         self.separator.load()
+        if self.team_separator is not None:  # T-465: both separators load at start, so a switch never waits
+            self.team_separator.load()
         if self.embedder is None:
             self.embedder = models.load(MODEL)
         self.device = self.separator.device
@@ -471,6 +520,14 @@ class EnrolledCandidate:
         n = len(prev_mix) - d
         return int(np.argmax([_correlation(prev_out[d:], y[:n]) for y in streams])), d
 
+    def team_target(self, enroll, other=None) -> int | None:
+        """T-465: the team checkpoint's slot for this window's target, or None (stock separator, ECAPA pick):
+        on only with a team separator, for a saved profile named in ``$HEARING_FIXED_SLOTS`` whose partner,
+        when it is a saved profile too, is the other slot (:func:`hearing.tse.blind.team_slot`)."""
+        if self.team_separator is None:
+            return None
+        return team_slot(profile_name(enroll), None if other is None else profile_name(other))
+
     def _is_pause(self, similarities, asd):
         if self.pause_floor is None or max(similarities) >= self.pause_floor:
             return False
@@ -500,7 +557,9 @@ class EnrolledCandidate:
         else:
             self.pair_cos = None
         self.negative_active = negative is not None
-        streams = self.separator.separate(mix, sr)
+        team = self.team_target(enroll, other)
+        self.separator_active = "stock" if team is None else "team"
+        streams = (self.separator if team is None else self.team_separator).separate(mix, sr)
         embeddings = [_unit_embedding(self.embedder, y) for y in streams]
         similarities = [float(np.dot(target, e)) for e in embeddings]
         scores = similarities if negative is None else [
@@ -527,7 +586,7 @@ class EnrolledCandidate:
         self.margin_score = None if math.isinf(margin) else margin
         conf = 1.0 if math.isinf(margin) else min(max(margin / full, 0.0), 1.0)
         self.held = self.vetoed = False
-        fixed = fixed_target(enroll, len(streams))
+        fixed = team if team is not None and team < len(streams) else fixed_target(enroll, len(streams))
         self.fixed_pick = fixed is not None
         if fixed is not None:  # T-386: the slot is the identity; ECAPA only sets the gate and confidence
             choice = fixed
@@ -596,6 +655,13 @@ class EnrolledCandidate:
             self.fixed_gate_swapped = self._fixed_gate.swapped
         self.confidence = 0.0 if self.gated else conf
         self.soft_gated, self.soft_gain_db = False, None
+        self.slot_soft_db = None
+        cap = slot_duck_db()
+        if cap is not None and self.gated and not duck and fixed is not None and len(streams) == 2:
+            g = slot_gain_db(streams[fixed], streams[1 - fixed], mix, cap)
+            if g is not None:
+                self.slot_soft_db = g
+                return (streams[fixed] * np.float32(10.0 ** (g / 20.0))).astype(np.float32)
         d = soft_db()
         if d is not None and negative is not None and len(streams) == 2:
             overlap = bool(self._soft_vad.window(mix, streams)["overlap"])  # always fed: keeps the noise floor running
