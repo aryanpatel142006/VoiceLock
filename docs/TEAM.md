@@ -15,5 +15,5 @@ VoiceLock was built at HackRU Fall 2026 by Aryan Patel, Joseph Roche and Ahmad A
 - Coordinated discussion of speaker selection, generalization, and evaluation across the swarm.
 - Requested separate training, validation, and test data and checks for data leakage.
 - Reviewed the app screens and demo previews and raised usability questions.
-- Contributed paired model-evaluation statistics (T-381): seed variability summaries and strict paired wrong-speaker comparisons; published the utility with its statistical limitations.
-- Published the current shared web app to the submission repository from my account; the implementation includes contributions from the wider team.
+- My laptop-c worker completed T-381: ported Muse’s earlier analysis into a tested paired model-evaluation utility for seed variability and wrong-speaker comparisons. I published that utility with its statistical limitations.
+- Published missing web app documentation and the T-381 evaluation utility to the submission repository from my account. The web implementation was already present and was built by the wider team.
