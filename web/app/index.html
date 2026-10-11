@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07080a">
+  <meta name="description" content="Turn down the world without disconnecting from it: choose whose voice you hear.">
+  <!-- iOS: Add to Home Screen runs full screen under a translucent status bar (safe areas in app.css) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hearing">
+  <meta name="format-detection" content="telephone=no">
+  <title>Selective Hearing</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body data-screen="" data-state="idle">
+  <!-- T-345 app shell (M14). One page; app.js switches screens by the hash (#welcome, #setup, #people,
+       #listen, #about, #phone; #diag opens the sheet) and lazy-imports ./screens/<id>.js. A screen whose
+       module is not on the server shows a placeholder. -->
+  <a class="skip" href="#stage">Skip to content</a>
+  <header class="chrome" id="chrome">
+    <a class="brand" href="#welcome" aria-label="Selective Hearing, home">
+      <img src="icons/favicon-32.png" alt="" width="20" height="20">
+      <span class="brand-name">Selective Hearing</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Screens"></nav>
+  </header>
+  <main class="stage" id="stage" tabindex="-1"></main>
+  <aside class="sheet" id="sheet" aria-label="Diagnostics" hidden>
+    <div class="sheet-body" id="sheet-body"></div>
+  </aside>
+  <noscript><p class="noscript">This app needs JavaScript. The stage page <a href="/judge">/judge</a> needs it too.</p></noscript>
+</body>
+</html>

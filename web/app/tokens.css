@@ -1,0 +1,201 @@
+/*
+ * Selective Hearing app: design tokens (T-344). Spec: web/app/DESIGN_SPEC.md.
+ *
+ * Linked by the shell after app.css, so these values override its placeholders. Names follow the
+ * shell's (T-345): --color-*, --font-*, --text-display/--text-title, --space-1..6, --ease-film,
+ * --ease-out, --dur-cut. Everything else here is additive.
+ *
+ * Two colours carry the product: amber = RAW (the room, unprocessed), green = Focus (the chosen
+ * person, isolated). They wash the whole frame so the A/B state reads from the back of the room.
+ * Neither is ever used for decoration, warnings or brand: amber means "you hear the room", green
+ * means "you hear the person". Contrast of every text colour on --color-bg is >= 7:1 except
+ * --color-faint (hairlines, disabled and small secondary text, 5.0:1).
+ */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("./fonts/archivo-var-latin.woff2") format("woff2-variations"),
+       url("./fonts/archivo-var-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/jetbrains-mono-var-latin.woff2") format("woff2-variations"),
+       url("./fonts/jetbrains-mono-var-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Colour: stage ---- */
+  --color-bg: #060708;          /* the stage; never pure #000 so OLED smear stays off */
+  --color-bg-raise: #101215;    /* sheets, the diagnostics drawer, cards */
+  --color-bg-sunk: #030304;     /* behind the sound field's vignette */
+  --color-line: #23272c;        /* hairlines, card edges */
+  --color-fg: #f3f4f1;          /* type, 18.6:1 */
+  --color-dim: #a4aab0;         /* secondary type, 8.6:1 */
+  --color-faint: #7d838b;       /* hairlines, disabled and small secondary text, 5.0:1 (T-388: was 4.1:1 on the stage) */
+
+  /* ---- Colour: the two states (A/B) ---- */
+  --color-raw: #ffb23e;         /* RAW, the room. 11.2:1 */
+  --color-raw-deep: #7a4300;    /* wash core under RAW */
+  --color-raw-wash: rgb(255 178 62 / 0.22);
+  --color-focus: #4bf08e;       /* Focus, the chosen person. 13.3:1 */
+  --color-focus-deep: #00592b;  /* wash core under Focus */
+  --color-focus-wash: rgb(75 240 142 / 0.2);
+  --color-on-state: #060708;    /* text on a filled amber/green control */
+
+  /* ---- Colour: honesty states (each has its own look, see DESIGN_SPEC.md#states) ---- */
+  --color-replay: #b9a6ff;      /* REPLAY badge and frame rule; never shown as live. 9.3:1 */
+  --color-replay-wash: rgb(185 166 255 / 0.12);
+  --color-warn: #f2e15b;        /* keys off, Bluetooth delay, too quiet. Not amber: amber = RAW. 14.6:1 */
+  --color-bad: #ff7266;         /* mic not streaming, blocked, engine unreachable. 7.4:1 */
+  --color-idle: #3a3f45;        /* the flat, unlit field before the mic streams */
+
+  /* ---- Type ---- */
+  --font-display: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-ui: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Archivo's width axis does the hierarchy: condensed for the giant words, normal for UI,
+     expanded for the small names and labels that need presence without size. */
+  --stretch-display: 72%;
+  --stretch-ui: 100%;
+  --stretch-wide: 118%;
+  --weight-display: 640;
+  --weight-title: 560;
+  --weight-ui: 440;
+  --weight-strong: 600;
+
+  /* Scale: 390 px -> 1920 px, linear between (vw-based clamps). Display stays >= 96 px at 1920. */
+  --text-display: clamp(4.5rem, 1.3rem + 13vw, 16rem);     /* name / state word: 72 px @390, 256 px @1920 */
+  --text-hero: clamp(3.25rem, 1.6rem + 6vw, 8.5rem);      /* Welcome line: 52 px @390, 136 px @1920 */
+  --text-title: clamp(1.75rem, 1.2rem + 2.2vw, 3.5rem);   /* "Hearing", pill word, screen title: 28 @390, 56 @1920 */
+  --text-lead: clamp(1.125rem, 0.95rem + 0.75vw, 1.75rem);/* captions body, honest delay line */
+  --text-caption: clamp(1.5rem, 0.9rem + 2.6vw, 4rem);    /* Quiet captions: 24 @390, 64 @1920 */
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-micro: 0.75rem;
+  --text-number: clamp(1rem, 0.85rem + 0.6vw, 1.5rem);    /* truth strip values */
+
+  --leading-display: 0.86;
+  --leading-title: 1.02;
+  --leading-body: 1.45;
+  --leading-caption: 1.18;
+  --tracking-display: -0.035em;
+  --tracking-title: -0.015em;
+  --tracking-label: 0.01em;
+  --numeric: tabular-nums slashed-zero;  /* font-variant-numeric for every live number */
+
+  /* ---- Space (4 px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 144px;
+  --gutter: clamp(20px, 4.2vw, 88px);          /* frame edge: 20 px @390, 80 px @1920 */
+  --safe-top: max(var(--space-4), env(safe-area-inset-top));
+  --safe-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  --safe-left: max(var(--gutter), env(safe-area-inset-left));
+  --safe-right: max(var(--gutter), env(safe-area-inset-right));
+  --tap: 48px;                                  /* minimum touch target */
+  --tap-stage: 72px;                            /* Listen's primary controls */
+
+  /* ---- Shape: radius follows hierarchy, not one value for everything ---- */
+  /* T-388: one instrument-like shape. Controls are near-square (a pill on every control is the template look and
+     stops shape from telling controls apart); only the hold-to-start disc and status dots stay round. */
+  --radius-pill: 4px;       /* status labels, the gate outline, chips */
+  --radius-control: 4px;    /* buttons, segmented groups, person cards */
+  --radius-sheet: 10px;     /* diagnostics sheet, phone companion panels */
+  --hairline: 1px;
+
+  /* ---- Depth: hairlines, not glow (T-388: the colour halos were removed; a state is a fill or an outline) ---- */
+  --glow-raw: 0 0 0 1px rgb(255 178 62 / 0.6);
+  --glow-focus: 0 0 0 1px rgb(75 240 142 / 0.6);
+  --grain-opacity: 0.06;
+
+  /* ---- Motion ---- */
+  --ease-film: cubic-bezier(0.7, 0, 0.2, 1);     /* screen cuts: hold, then cut */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);     /* things arriving */
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);     /* things leaving */
+  --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121 24.3%, 1.137 27%, 1.128 30.5%, 1.063 39.2%, 1.017 48.9%, 0.996 58.4%, 1.001 79.8%, 1);
+  --dur-instant: 80ms;      /* key press acknowledgement */
+  --dur-wash: 140ms;        /* A/B colour wash: follows the audible flip, never lags it by more */
+  --dur-quick: 180ms;       /* hover, pill text change inside a state */
+  --dur-ui: 260ms;          /* sheets, banners in/out */
+  --dur-cut: 520ms;         /* View-Transition screen cut (400-600 ms) */
+  --dur-hold: 240ms;        /* stillness before a cut starts */
+  --dur-hold-to-start: 900ms; /* Welcome's press-and-hold ring fill */
+  --dur-pill-hold: 500ms;   /* = PILL_HOLD_MS in web/console/judge-pill.js; documented, not a timer */
+  --motion-distance: 24px;  /* largest translate an entrance may use */
+  --motion-blur: 10px;      /* blur-fade start */
+
+  /* ---- Sound scene contract (read by scene.js via getComputedStyle; numbers, no units) ---- */
+  --scene-release-db-per-s: 24;   /* same meter release as web/console/devices.js */
+  --scene-floor-db: -60;          /* level drawn as a flat field */
+  --scene-ceiling-db: -6;
+  --scene-dpr-max: 2;
+  --scene-budget-ms: 4;
+  --scene-animate: 1;             /* 0 = draw one static frame per telemetry tick */
+  --scene-quiet-dim: 0.18;        /* field opacity in Quiet */
+
+  /* ---- Layers ---- */
+  --z-scene: 0;
+  --z-content: 10;
+  --z-truth: 20;
+  --z-banner: 30;
+  --z-sheet: 40;
+  --z-toast: 50;
+}
+
+/* Reduced motion: cross-fades only, no travel, no blur, a static field. Durations stay non-zero so
+   transitionend/animationend handlers still fire. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-cut: 200ms;
+    --dur-hold: 0ms;
+    --dur-ui: 160ms;
+    --dur-quick: 120ms;
+    --dur-wash: 120ms;
+    --dur-hold-to-start: 600ms;
+    --ease-film: linear;
+    --ease-spring: var(--ease-out);
+    --motion-distance: 0px;
+    --motion-blur: 0px;
+    --scene-animate: 0;
+    --grain-opacity: 0;
+  }
+}
+
+/* High-contrast preference: drop the washes to flat fills and lift the faint colour to body-safe. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-faint: #9aa0a6;
+    --color-line: #4a5058;
+    --color-raw-wash: rgb(255 178 62 / 0.24);
+    --color-focus-wash: rgb(75 240 142 / 0.22);
+    --grain-opacity: 0;
+  }
+}
+
+/* The shared device picker (web/console/devices.css) scopes its colours on .devices; re-point them
+   at the app palette. `body .devices` outranks `.devices` whatever order the sheets load in. Meter
+   "good" is white, not green: green is reserved for Focus. */
+body .devices {
+  --dev-good: var(--color-fg);
+  --dev-warn: var(--color-warn);
+  --dev-bad: var(--color-bad);
+  --dev-dim: var(--color-dim);
+}
