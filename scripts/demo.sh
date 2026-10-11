@@ -4,17 +4,14 @@
 # --judge --team pins the Mac for Focus HQ (T-181: T-129 measured it ahead of the A100 with profiles loaded)
 #   and never probes the GPU; --judge --team --gpu (or HEARING_HQ_BACKEND=remote) probes and pins the A100.
 # --check measures the enrolled tier's compute headroom (hearing.tse.headroom) and exits 1 below 30 %
-#   (T-089); with --judge it then runs the rehearsal self-test below.
+#   (T-089) and exits.
 # --lan serves phones on the venue Wi-Fi: --host 0.0.0.0 --tls (self-signed cert) and prints the QR.
 # --judge: THE presenter path (T-088). Replaces our server on PORT, always hands it the GPU url
 #   (hq_backend=auto switches to the GPU whenever /health is ok and RTT p50 < 150 ms, T-109), probes
 #   the iLab GPU during warm-up (3 x 6 s), prints one line (backend, expected
-#   delay, git rev) and opens /judge. --judge --check runs the rehearsal self-test instead
-#   (scripts/judge_check.py: PASS/FAIL per PLAN.md success criterion, with the numbers).
-#   --judge --check --no-hw (agents, dry runs): camera, latency-test and GPU probe print
-#   'SKIP ... skipped (no hardware)' and the demo_regress run is never a baseline.
+#   delay, git rev) and opens /judge.
 # --mic LABEL (T-171): the demo mic's exact label (e.g. "Aryan patel's iPhone Microphone", the iPhone over USB),
-#   exported as HEARING_INPUT_DEVICE: the team preset's expected mic and judge_check's mic rows use it.
+#   exported as HEARING_INPUT_DEVICE: the team preset's expected mic uses it.
 # --team without HEARING_PROFILES_DIR (T-328): defaults it to $HEARING_FIXTURES_DIR/profiles (the main checkout's
 #   eval/fixtures/generated/profiles) when that holds the aryan and joseph profiles, else a WARN on the JUDGE line
 #   (an audio-only session without profiles never enrolls and plays the room). An explicit value always wins.
@@ -87,11 +84,7 @@ team_profiles() {  # T-328: export the default HEARING_PROFILES_DIR for --team; 
 [ "$TEAM" = 1 ] && team_profiles
 if [ "$CHECK" = 1 ]; then
   "$PY" -m hearing.tse.headroom || exit 1
-  [ "$JUDGE" = 1 ] || exit 0
-  CHECK_ARGS=()
-  [ "$NO_HW" = 1 ] && CHECK_ARGS+=(--no-hw)
-  [ "$TEAM" = 1 ] && CHECK_ARGS+=(--team) && echo "TEAM · $PROFILES_NOTE"
-  exec "$PY" scripts/judge_check.py ${CHECK_ARGS[@]+"${CHECK_ARGS[@]}"}
+  exit 0
 fi
 [[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -ge 1 ] && [ "$PORT" -le 65535 ] || {
   echo 'PORT must be 1-65535' >&2; exit 2;

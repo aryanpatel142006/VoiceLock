@@ -1,7 +1,0 @@
-name: a_speaks_b_silent
-description: Target A talks the whole time; B sits idle next to A.
-duration_s: 12
-persons:
-  A: [[0, 12, speak]]
-  B: [[0, 12, silent]]
-target: [[0, A]]

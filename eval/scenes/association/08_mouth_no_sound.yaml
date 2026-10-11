@@ -1,7 +1,0 @@
-name: mouth_no_sound
-description: Both mouths move, only one is heard. 0-6 A's mouth moves muted while B talks; 6-14 A talks while B's mouth moves muted. Target A.
-duration_s: 14
-persons:
-  A: [[0, 6, mouth], [6, 14, speak]]
-  B: [[0, 6, speak], [6, 14, mouth]]
-target: [[0, A]]

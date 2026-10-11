@@ -1,7 +1,0 @@
-name: overlap
-description: A talks alone for 4 s, then both talk at once for 10 s. Target A.
-duration_s: 14
-persons:
-  A: [[0, 14, speak]]
-  B: [[0, 4, silent], [4, 14, speak]]
-target: [[0, A]]

@@ -60,7 +60,7 @@ from hearing.tse.enroll import (
 
 RATES = (16000, 44100, 48000)  # the Mac mic, an iPhone over USB, a 16 kHz rehearsal file
 MIN_TAKE_S = 20.0  # a take shorter than this is a mistake (the protocol is 25-30 s per take)
-MIN_SPEECH_S = 10.0  # voiced audio per take (scripts/record_take.py MIN_SPEECH_S["profile"])
+MIN_SPEECH_S = 10.0  # voiced audio per take
 MIN_SPEECH_DB = -40.0  # active speech level (RMS of voiced 10 ms hops); quieter: closer / more gain
 CLIP_PEAK = 0.99
 CLIP_SHARE = 1e-4  # share of samples at |x| >= CLIP_PEAK that counts as a clipped take

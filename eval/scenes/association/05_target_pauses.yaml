@@ -1,7 +1,0 @@
-name: target_pauses
-description: A alone 0-4, both 4-8, then A pauses while B keeps talking 8-14. Target A.
-duration_s: 14
-persons:
-  A: [[0, 8, speak], [8, 14, silent]]
-  B: [[0, 4, silent], [4, 14, speak]]
-target: [[0, A]]

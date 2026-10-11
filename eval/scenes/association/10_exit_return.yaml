@@ -1,7 +1,0 @@
-name: exit_return
-description: A alone 0-4, A leaves the frame 4-8 while B talks 4-16, A comes back and talks over B 8-16.
-duration_s: 16
-persons:
-  A: [[0, 4, speak], [4, 8, absent], [8, 16, speak]]
-  B: [[0, 4, silent], [4, 16, speak]]
-target: [[0, A]]

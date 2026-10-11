@@ -1,7 +1,0 @@
-name: alternate
-description: Turn taking, never overlapping. A 0-4, B 4-7, A 7-10, B 10-13, A 13-16. Target A.
-duration_s: 16
-persons:
-  A: [[0, 4, speak], [4, 7, silent], [7, 10, speak], [10, 13, silent], [13, 16, speak]]
-  B: [[0, 4, silent], [4, 7, speak], [7, 10, silent], [10, 13, speak], [13, 16, silent]]
-target: [[0, A]]

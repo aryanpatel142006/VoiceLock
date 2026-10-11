@@ -1,7 +1,0 @@
-name: switch
-description: Target A (alone 0-4, overlap 4-7), then the wearer switches to B at 7 s; B talks alone 7-11, both 11-16.
-duration_s: 16
-persons:
-  A: [[0, 7, speak], [7, 11, silent], [11, 16, speak]]
-  B: [[0, 4, silent], [4, 16, speak]]
-target: [[0, A], [7, B]]

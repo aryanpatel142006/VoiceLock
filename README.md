@@ -24,7 +24,6 @@ Requirements: macOS or Linux, Python 3.11+, `ffmpeg`, `libsndfile`. Model weight
 
 ```bash
 bash scripts/setup.sh            # creates .venv and installs the package
-bash scripts/verify_fast.sh      # lint + unit tests, no weights needed
 
 # the demo (opens the app; phones on the same Wi-Fi get a QR code)
 bash scripts/demo.sh --judge --team --lan --app

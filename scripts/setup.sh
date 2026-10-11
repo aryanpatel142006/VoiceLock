@@ -72,11 +72,6 @@ else
   echo "libsndfile: MISSING (import soundfile failed): $(os_hint libsndfile libsndfile1)"
 fi
 
-# 3b. One chromium for every worktree's scripts/screenshot.sh (HEARING_PLAYWRIGHT in scripts/_py.sh).
-if "$PY" -c 'import playwright' >/dev/null 2>&1; then
-  "$PY" -m playwright install chromium >/dev/null 2>&1 || echo "playwright: chromium install failed; run: $PY -m playwright install chromium"
-fi
-
 # 4. Compute device (hearing.device is written by another task; tolerate its absence).
 if "$PY" -c 'import importlib.util, sys; sys.exit(importlib.util.find_spec("hearing.device") is None)' >/dev/null 2>&1; then
   if out="$("$PY" -m hearing.device 2>&1)"; then
@@ -88,4 +83,4 @@ if "$PY" -c 'import importlib.util, sys; sys.exit(importlib.util.find_spec("hear
 else
   echo "device: not available yet"
 fi
-echo "setup: done. Next: bash scripts/verify_fast.sh"
+echo "setup: done. Next: bash scripts/demo.sh --judge --team --lan --app"

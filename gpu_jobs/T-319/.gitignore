@@ -1,5 +1,0 @@
-data/
-outputs/
-*.pt
-*.npz
-__pycache__/
