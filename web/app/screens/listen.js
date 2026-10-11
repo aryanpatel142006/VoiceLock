@@ -17,6 +17,7 @@ import { KEYS_OFF_TEXT, KEY_HINTS, bindKeys, watchKeyFocus } from "../keys.js";
 import { mountPhoneLink } from "../connect.js";
 import { captionWords, dialValue, dropAction, haptic, roomLabel } from "../delight.js";
 import { pulseFor } from "../transitions.js";
+import { BUSY_TEXT, busyState } from "../preflight.js";
 import { scenePrompt, touchDevice } from "../platform.js";
 
 export const title = "Listen";
@@ -40,6 +41,7 @@ export const STATE_WORDS = {
  * SOLO (or reports nothing, an engine without the field); UNSURE and OVERLAP-DUCKED take the warn tone.
  */
 export const GATE_WORDS = {
+  locked: { word: "Locked", tone: "focus" }, // T-487: the team slot is the person; steady, never flips on a pause
   unsure: { word: "Listening", tone: "warn" },
   ducked: { word: "Overlap", tone: "warn" },
 };
@@ -98,6 +100,7 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
   const quiet = s.mode === "quiet";
   const raw = s.ab === "raw";
   const gate = pill.state === "isolated" && !raw && !quiet ? gateState(t) : null;
+  const loudest = gate === "loudest"; // HEARING_PICK=loudest: the person at the mic plays; no profile, never UNSURE
   const doubt = GATE_WORDS[gate] || null; // T-463: never a green "Isolated" next to UNSURE
   // T-463: right after Start the ladder is still climbing (an overrun, no voice yet): say Starting, not "fell behind"
   const starting = Boolean(warming) && !raw && (WARMUP_STATES.has(pill.state) || Boolean(doubt));
@@ -108,13 +111,15 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
   const rawWord = raw && live && !quiet;
   const word = connecting ? "Connecting" : rawWord ? "Raw" : look.word;
   // who the frame is about: the targeted saved person, else a calibrated voice, else nobody
-  const who = person.currentLabel || (person.calibrated ? "Calibrated voice" : "");
+  const who = loudest ? "Person at the mic" : person.currentLabel || (person.calibrated ? "Calibrated voice" : "");
   // a touch screen has no Space key: name the control instead (finish review)
   const back = keys ? "Space to hear" : "Tap Selective to hear";
   const name = who || "the chosen voice";
   let sentence = rawWord ? (who ? `${back} ${who} alone.` : `${back} the chosen voice alone.`)
     : plainSentence(pill, { word: look.word, who: person.currentLabel || person.lastLabel || "" });
   if (starting && !rawWord) sentence = "Warming up the engine…";
+  else if (loudest) sentence = "Only the loudest voice, the person at the mic, plays. Everything else is silenced.";
+  else if (gate === "locked") sentence = `Locked on ${name}: their voice plays steadily until you pick someone else.`;
   else if (gate === "unsure") sentence = `Waiting to hear ${name} clearly: they may be quiet, or another voice is louder.`;
   else if (gate === "ducked") sentence = "Two voices overlap, so the engine plays its best guess softened.";
   let hear;
@@ -122,6 +127,8 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
   else if (quiet) hear = "Quiet: nothing plays, captions only";
   else if (raw) hear = "You hear the room, unprocessed (Raw)";
   else if (starting) hear = "Starting: the engine is warming up";
+  else if (loudest) hear = "You hear the loudest voice";
+  else if (gate === "locked") hear = `You hear ${name}, locked`;
   else if (gate === "unsure") hear = `Not sure it is ${name} yet`;
   else if (gate === "ducked") hear = `You hear ${name}, softened`;
   else if (pill.state === "isolated") hear = who ? `You hear ${who}` : "You hear the isolated voice";
@@ -133,6 +140,7 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
   const people = (person.names || []).length ? person.labels : [];
   return {
     gate,
+    loudest,
     starting,
     word,
     tone: rawWord ? "raw" : look.tone,
@@ -142,10 +150,10 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
     detail: pillDetail(pill.text),
     who,
     // the hero's name line: "for Joseph" under "Listening" (the name is not what plays yet), else the name
-    whoLine: who && gate === "unsure" && !starting ? `for ${who}` : who,
+    whoLine: who && gate === "unsure" && !starting ? `for ${who}` : who && gate === "locked" && !starting ? `on ${who}` : who,
     hear,
     live,
-    targetLine: person.released ? releasedLine(keys) : person.line || "Target: —",
+    targetLine: loudest ? "Person at the mic" : person.released ? releasedLine(keys) : person.line || "Target: —",
     modeNote: MODE_NOTES[quiet ? "quiet" : "focus_hq"],
     ab: raw ? "raw" : "processed",
     mode: quiet ? "quiet" : "focus_hq",
@@ -162,6 +170,9 @@ export function listenModel(s, { keysOff = false, keys = true, warming = false }
       keysOff: keysOff ? KEYS_OFF_TEXT : "",
       mic: s.mic?.banner || "",
       engine: retry,
+      // T-485: under the team preset, the server's load or the enrolled tier overrunning (real telemetry only)
+      busy: s.telemetry?.preset?.pins && busyState(s.telemetry).busy ? BUSY_TEXT : "",
+      busyWhy: s.telemetry?.preset?.pins ? busyState(s.telemetry).why : "",
     },
     replay: s.replaying ? (s.replayClip ? `Replay · ${String(s.replayClip).split("/")[0]}` : "Replay") : "",
     captions: {
@@ -300,7 +311,8 @@ export function mount(root, ctx = {}) {
     h("p", { class: "ls-banner", "data-kind": "mic", hidden: true },
       h("span", { class: "ls-banner-text" }),
       h("button", { type: "button", class: "ls-banner-action", "data-act": "start", text: "Start again" })),
-    h("p", { class: "ls-banner", "data-kind": "keys", hidden: true }));
+    h("p", { class: "ls-banner", "data-kind": "keys", hidden: true }),
+    h("p", { class: "ls-banner", "data-kind": "busy", hidden: true }));
   const replayBadge = h("p", { class: "ls-replay", hidden: true, "aria-live": "polite" },
     h("span", { class: "ls-replay-dot", "aria-hidden": "true" }), h("span", { class: "ls-replay-text" }));
 
@@ -399,7 +411,7 @@ export function mount(root, ctx = {}) {
   const el = {
     hear: q(".ls-hear"), word: q(".ls-word"), who: q(".ls-who"), gate: q(".ls-gate"), sentence: q(".ls-sentence"), note: q(".ls-note"),
     target: q(".ls-target"), engine: q('[data-kind="engine"]'), mic: q('[data-kind="mic"]'), micText: q('[data-kind="mic"] .ls-banner-text'),
-    keys: q('[data-kind="keys"]'), replayText: q(".ls-replay-text"), capSpeaker: q(".ls-cap-speaker"), capWarn: q(".ls-cap-warn"),
+    keys: q('[data-kind="keys"]'), busy: q('[data-kind="busy"]'), replayText: q(".ls-replay-text"), capSpeaker: q(".ls-cap-speaker"), capWarn: q(".ls-cap-warn"),
     capLines: q(".ls-cap-lines"), startLabel: q(".ls-start-label"),
   };
 
@@ -457,7 +469,7 @@ export function mount(root, ctx = {}) {
       clearTimeout(warmTimer);
       warmTimer = setTimeout(() => { if (!signal?.aborted) render(); }, WARMUP_MS + 50);
     }
-    if (st.pill?.state === "isolated" && ["solo", null].includes(gateState(st.telemetry))) healthy = true;
+    if (st.pill?.state === "isolated" && ["solo", "locked", "loudest", null].includes(gateState(st.telemetry))) healthy = true;
     return !healthy && performance.now() - streamSince < WARMUP_MS;
   }
 
@@ -467,6 +479,7 @@ export function mount(root, ctx = {}) {
     frame.dataset.tone = m.tone;
     frame.dataset.state = m.state;
     frame.dataset.mode = m.mode;
+    frame.dataset.loudest = String(m.loudest);
     frame.dataset.live = String(m.live);
     frame.dataset.replay = String(Boolean(m.replay));
     frame.dataset.captions = String(m.captions.show);
@@ -498,6 +511,9 @@ export function mount(root, ctx = {}) {
     el.mic.hidden = !m.banners.mic;
     el.keys.hidden = !m.banners.keysOff;
     setText(el.keys, m.banners.keysOff);
+    setText(el.busy, m.banners.busy);
+    el.busy.hidden = !m.banners.busy;
+    setAttr(el.busy, "title", m.banners.busyWhy || null);
     setText(el.replayText, m.replay);
     replayBadge.hidden = !m.replay;
 

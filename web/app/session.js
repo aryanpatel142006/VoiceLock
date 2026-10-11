@@ -12,6 +12,7 @@ import { MIC_START_TIMEOUT_MS, micProblem, withTimeout } from "../console/judge-
 import { isStageRig, platformMicProblem, platformOf } from "./platform.js";
 import { RELEASE_CONTROL, personControl, savedPeople } from "../console/judge-targets.js";
 import { mountDevices, peakDb } from "../console/devices.js";
+import { preflightApplies, preflightStep } from "./preflight.js";
 import {
   KIND_AUDIO_IN, KIND_AUDIO_OUT, audioContextOptions, control, floatToPcm16, hello, packFrame, pcm16ToFloat,
   sessionUrl, unpackFrame,
@@ -107,6 +108,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
     play: -60,
     hqActive: null,
     sent: [], // every control sent (devtools and tests)
+    preflight: false, // T-485: the team preset's Start check is running (output muted, frames held)
     closed: false,
     outputGain: 1, // T-460 master gain (SOS); kept across Stop/Start so a restart under SOS stays silent
   };
@@ -289,6 +291,16 @@ export function createSession({ store = appStore, url = null, devices = null, en
       return false;
     }
     if (!st().telemetry && st().connection === "open") await firstTelemetry(FIRST_TELEMETRY_MS);
+    if (preflightApplies(st().telemetry, env.stageRig)) {
+      const problem = await preflight();
+      if (token !== rt.startToken || !rt.audio) return false; // Stop or a newer Start during the check
+      if (problem) {
+        stopMedia();
+        note(`pre-flight: ${problem}`);
+        set({ starting: false, mic: { ...st().mic, banner: problem } });
+        return false;
+      }
+    }
     sendHello();
     set({ starting: false, started: true });
     tick();
@@ -307,7 +319,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
       if (e.data?.type !== "frame" || st().replaying) return;
       devices?.feed(e.data.samples);
       meter(e.data.samples);
-      if (rt.ws?.readyState !== WS_OPEN) return;
+      if (rt.ws?.readyState !== WS_OPEN || rt.preflight) return; // T-485: held while the pre-flight runs
       rt.ws.send(packFrame(KIND_AUDIO_IN, rt.seq++, env.wallNow(), floatToPcm16(e.data.samples)));
       rt.frameAt = env.perfNow();
     };
@@ -336,6 +348,29 @@ export function createSession({ store = appStore, url = null, devices = null, en
     rt.play = meterStep(rt.play, peakDb(samples), rt.playAt ? (now - rt.playAt) / 1000 : 0).db;
     rt.playAt = now;
     store.emit("playback", { db: rt.play });
+  }
+
+  /**
+   * T-485: the team preset's pre-flight (preflight.js): while it runs nothing plays and no frame goes to the engine;
+   * resolves "" when the output is headphones and the mic peaked above -45 dBFS within 3 s, else the problem.
+   */
+  function preflight() {
+    rt.preflight = true;
+    const master = rt.audio?.master?.gain;
+    if (master) master.value = 0;
+    const t0 = env.perfNow();
+    return new Promise((resolve) => {
+      const poll = () => {
+        const r = preflightStep({ elapsedMs: env.perfNow() - t0, level: rt.audio ? rt.level : -90,
+          output: devices?.outputLabel?.() || "", expectedOutput: st().telemetry?.preset?.pins?.output_device || null });
+        if (!rt.audio || r.done) {
+          rt.preflight = false;
+          if (master && rt.audio?.master?.gain === master) master.value = rt.outputGain;
+          resolve(rt.audio ? r.problem : "");
+        } else env.setTimeout(poll, 50);
+      };
+      poll();
+    });
   }
 
   function firstTelemetry(ms) {
