@@ -33,6 +33,7 @@
 
 import { store as appStore } from "./store.js";
 import { gateState } from "../console/gate-state.js";
+import { roomAmount } from "./delight.js";
 
 export const WINDOW_MS = 10_000; // stats window (the acceptance's "over 10 s")
 export const FRAME_BUDGET_MS = 16.7; // one 60 Hz frame
@@ -107,10 +108,13 @@ export function lookStyle(look, cfg = DEFAULTS) {
  * voice is what plays: in Focus by the engine's confidence (unknown counts as the floor), a little while it looks
  * for someone. RAW, Quiet, idle and the rest keep the room where it is.
  */
-export function recedeTarget(look, confidence) {
+export function recedeTarget(look, confidence, room = 1) {
   if (look === "focus") {
     const c = typeof confidence === "number" && Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0;
-    return 0.45 + 0.55 * c;
+    // T-427: scaled by the room dial (delight.js roomAmount: 0 = room as it is, 1 = silent), so the room comes
+    // forward as the listener turns it up; the dial is the control's own position, never a measurement
+    const r = typeof room === "number" && Number.isFinite(room) ? Math.max(0, Math.min(1, room)) : 1;
+    return (0.45 + 0.55 * c) * r;
   }
   if (look === "searching" || look === "loading") return 0.15;
   return 0;
@@ -355,6 +359,9 @@ export function mountScene({ store = appStore, app = globalThis.hearingApp, host
         || k === "released" || k === "ab" || k === "truth")) {
         rt.dirty = true;
         schedule(true);
+      } else if (keys.includes("suppression")) { // the room dial (T-427): eased, and throttled under reduced motion
+        rt.dirty = true;
+        schedule();
       }
     }),
   ];
@@ -386,7 +393,7 @@ export function mountScene({ store = appStore, app = globalThis.hearingApp, host
     step(rt.alpha, style.alpha, SPRING_S.look);
     step(rt.weight, style.formWeight, SPRING_S.look);
     step(rt.gate, look === "focus" ? gateWeight(tel) : 1, SPRING_S.look);
-    step(rt.recede, recedeTarget(look, s.truth?.confidence), SPRING_S.recede);
+    step(rt.recede, recedeTarget(look, s.truth?.confidence, roomAmount(s.suppression ?? 100)), SPRING_S.recede);
     step(rt.conf, conf, SPRING_S.conf);
     const sDb = streamDb(rt.playDb, (now - rt.playAt) / 1000, cfg);
     const db = style.flat ? cfg.floorDb : releasedDb(rt.peakDb, (now - rt.peakAt) / 1000, cfg);

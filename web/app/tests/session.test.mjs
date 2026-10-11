@@ -429,3 +429,20 @@ test("replay: playback only, the server's default clip, RAW fed from the replaye
   assert.equal(store.state.replaying, false);
   assert.equal(store.state.truth.replay, false);
 });
+
+test("room dial (T-427): setSuppression sends control.suppression, clamps, and survives a reconnect", () => {
+  const { session, fe, store } = makeSession();
+  session.connect();
+  FakeWS.all[0].open();
+  assert.equal(store.state.suppression, 100, "the judge profile's own value until the listener turns the room up");
+  assert.equal(session.setSuppression(55), 55);
+  assert.equal(store.state.suppression, 55);
+  assert.deepEqual(FakeWS.all[0].json().at(-1), { type: "control", suppression: 55 });
+  assert.equal(session.setSuppression(140), 100);
+  assert.equal(session.setSuppression(-3), 0);
+  FakeWS.all[0].drop();
+  fe.timers.at(-1).fn();
+  FakeWS.all.at(-1).open();
+  const profile = FakeWS.all.at(-1).json().find((m) => m.profile === "judge");
+  assert.equal(profile.suppression, 0, "a reconnect re-sends the dial, since the profile resets it to 100");
+});

@@ -23,8 +23,8 @@
   --spring-reveal: linear(0, 0.0521, 0.1679, 0.3056, 0.4418, 0.5643, 0.6684, 0.7531, 0.82, 0.8713, 0.9099, 0.9382, 0.9586, 0.973, 0.983, 0.9897, 0.9941, 0.997, 0.9987, 0.9997, 1.0003, 1);
   --spring-reveal-dur: 650ms;
   /* camera moves of a cut (scale of the outgoing / incoming snapshot) */
-  --cut-push: 1.025;
-  --cut-pull: 0.975;
+  --cut-push: 1.06;  /* T-427: a deeper camera move (was 1.025 / 0.975); the live scene counter-moves (parallax) */
+  --cut-pull: 0.95;
 }
 
 /* ---------- 1. Scene ---------- */
@@ -50,8 +50,12 @@
   left: 0;
   top: 0;
   translate: calc(var(--scene-x) * 100vw - 50%) calc(var(--scene-y) * 100dvh - 50%);
-  transition: translate var(--dur-cut, 520ms) var(--ease-film, ease);
+  transition: translate var(--dur-cut, 520ms) var(--ease-film, ease), scale var(--dur-cut, 520ms) var(--ease-film, ease);
 }
+/* T-427 parallax: through a cut the field behind moves a third as far as the stage, so the screens read as layers in
+   depth. Only while html[data-cut-dir] is set (motion.js, one cut); then it settles back. */
+html[data-cut-dir="forward"] .scene canvas { scale: 1.02; }
+html[data-cut-dir="back"] .scene canvas { scale: 0.983; }
 .scene canvas {
   display: block;
   width: var(--scene-box);
@@ -187,9 +191,19 @@ html[data-cut-dir="dissolve"]::view-transition-new(stage) { animation-name: mo-d
   height: 100%; /* pills of different widths: keep the glyphs' aspect, do not stretch them */
 }
 
+/* ---------- 2b. Micro-interactions (T-427): every control answers a press on the press spring ---------- */
+/* zero specificity (:where), so a screen's own transition list wins; the independent `scale` never fights a transform */
+:where(button:not(.wl-disc, .ls-voice), .nav-item, a.link, .ls-dial) {
+  transition: scale var(--spring-press-dur, 400ms) var(--spring-press, ease-out), background-color .3s var(--ease-out, ease),
+    color .3s var(--ease-out, ease), box-shadow .3s var(--ease-out, ease), opacity .3s var(--ease-out, ease);
+}
+:where(button:not(.wl-disc, .ls-voice, :disabled), .nav-item, a.link):active { scale: 0.96; transition-duration: 90ms; }
+
 /* ---------- 3. Reduced motion: cross-fades only ---------- */
 @media (prefers-reduced-motion: reduce) {
   .scene, .scene canvas, .scene-label { transition: none; }
+  html[data-cut-dir] .scene canvas { scale: none; }
+  :where(button, .nav-item, a.link):active { scale: none; }
   ::view-transition-old(stage),
   ::view-transition-old(root) {
     animation: mo-fade-out var(--dur-cut) linear both !important;

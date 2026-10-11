@@ -178,7 +178,9 @@ export function createSession({ store = appStore, url = null, devices = null, en
   function sendProfile(fields = {}) {
     rt.controlAt = env.perfNow();
     const iso = st().isolation;
-    sendControl({ profile: "judge", ...(iso ? { isolation: iso } : {}), ...fields });
+    // the room dial survives a reconnect: the profile resets suppression to 100, so a turned-up room is re-sent (T-427)
+    const sup = st().suppression;
+    sendControl({ profile: "judge", ...(iso ? { isolation: iso } : {}), ...(sup !== 100 && sup != null ? { suppression: sup } : {}), ...fields });
     if (st().released) sendControl(RELEASE_CONTROL);
   }
 
@@ -503,6 +505,16 @@ export function createSession({ store = appStore, url = null, devices = null, en
     tick();
   }
 
+  /** The room dial (T-427): how far the room is turned down, 0 (as it is) .. 100 (silent), the T-093 curve. */
+  function setSuppression(value) {
+    const suppression = Math.max(0, Math.min(100, Math.round(Number(value))));
+    if (!Number.isFinite(suppression)) return st().suppression;
+    rt.controlAt = env.perfNow();
+    set({ suppression });
+    sendControl({ suppression });
+    return suppression;
+  }
+
   function setIsolation(isolation) {
     set({ isolation });
     sendControl({ isolation });
@@ -553,6 +565,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
     choosePerson,
     release,
     calibrate,
+    setSuppression,
     setIsolation,
     replay,
     retryMic: () => devices?.retryMic(),

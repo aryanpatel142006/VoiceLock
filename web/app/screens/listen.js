@@ -15,6 +15,8 @@ import { createSession } from "../session.js";
 import { METER_FLOOR_DB, store as appStore } from "../store.js";
 import { KEYS_OFF_TEXT, KEY_HINTS, bindKeys, watchKeyFocus } from "../keys.js";
 import { mountPhoneLink } from "../connect.js";
+import { captionWords, dialValue, dropAction, haptic, roomLabel } from "../delight.js";
+import { pulseFor } from "../transitions.js";
 
 export const title = "Listen";
 
@@ -274,6 +276,17 @@ export function mount(root, ctx = {}) {
     seg("Person 1", KEY_HINTS.person0, { "data-person": "0", disabled: true }),
     seg("Person 2", KEY_HINTS.person1, { "data-person": "1", disabled: true }),
     seg("Release", KEY_HINTS.release, { "data-act": "release", class: "ls-seg ls-release" }));
+  // T-427 direct manipulation: the room dial (control.suppression, the T-093 curve) and the saved voices in the
+  // sound scene (drag or tap one into the ring = the same choosePerson the Person buttons send)
+  const dial = h("div", { class: "ls-dial", role: "slider", tabindex: "0", "aria-label": "Room turned down",
+    "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "100", "aria-valuetext": "silent" },
+  h("span", { class: "ls-dial-track", "aria-hidden": "true" }, h("span", { class: "ls-dial-fill" }), h("span", { class: "ls-dial-thumb" })));
+  const dialValueText = h("output", { class: "ls-dial-value", text: "silent" });
+  const voiceBtn = (i) => h("button", { type: "button", class: "ls-voice", "data-voice": String(i), "aria-pressed": "false", disabled: true },
+    h("span", { class: "ls-voice-dot", "aria-hidden": "true" }), h("span", { class: "ls-voice-name", text: `Person ${i + 1}` }));
+  const voices = h("div", { class: "ls-voices", role: "group", "aria-label": "Sound scene: drag a saved person into the ring, or tap them", "data-has": "0" },
+    h("span", { class: "ls-voices-ring", "aria-hidden": "true" }), voiceBtn(0), voiceBtn(1),
+    h("p", { class: "ls-voices-hint", "aria-hidden": "true", text: "Drag a person into the ring" }));
   const startBtn = h("button", { type: "button", class: "ls-start", "data-act": "start" },
     h("span", { class: "ls-start-label", text: "Start listening" }));
 
@@ -281,6 +294,7 @@ export function mount(root, ctx = {}) {
     h("div", { class: "ls-rail-cell" }, h("span", { class: "ls-rail-label", text: "Hear" }), abGroup),
     h("div", { class: "ls-rail-cell" }, h("span", { class: "ls-rail-label", text: "Mode" }), modeGroup, modeNote),
     h("div", { class: "ls-rail-cell ls-rail-people" }, h("span", { class: "ls-rail-label", text: "Person" }), peopleGroup),
+    h("div", { class: "ls-rail-cell ls-rail-room" }, h("span", { class: "ls-rail-label" }, "Room ", dialValueText), dial),
     h("div", { class: "ls-rail-cell ls-rail-start" }, startBtn));
 
   // the keys once, in a legend under the rail, instead of a chip in every button (T-365 anti-template)
@@ -301,7 +315,7 @@ export function mount(root, ctx = {}) {
   const frame = h("div", { class: "listen", "data-ab": "processed", "data-tone": "idle", "data-mode": "focus_hq" },
     h("div", { class: "ls-wash", "aria-hidden": "true" }),
     h("div", { class: "ls-top" }, banners, replayBadge),
-    h("div", { class: "ls-body" }, hero, halo, captions),
+    h("div", { class: "ls-body" }, hero, halo, captions), voices,
     rail, legend, truth, srState, srCaption);
   root.classList.add("screen-listen");
   root.replaceChildren(frame);
@@ -345,6 +359,7 @@ export function mount(root, ctx = {}) {
     if (b.dataset.ab) act.ab(b.dataset.ab);
     else if (b.dataset.mode) act.mode(b.dataset.mode);
     else if (b.dataset.person) act.person(Number(b.dataset.person));
+    else if (b.dataset.voice) { if (!dragged) chooseVoice(Number(b.dataset.voice)); dragged = false; }
     else if (b.dataset.act) act[b.dataset.act]?.();
   }, { signal });
 
@@ -426,20 +441,150 @@ export function mount(root, ctx = {}) {
       const dd = truth.querySelector(`[data-fact="${key}"] dd`);
       if (dd) setText(dd, key === "rtt" && m.truth.gpuRtt ? `${value} · GPU ${m.truth.gpuRtt}` : value);
     }
+    renderVoices(m);
+    renderDial(store.state.suppression);
+    const pulse = pulseFor("listen", lastState, m.state);
+    if (pulse === "lock") haptic("isolate", { reduced: reducedMotion.matches }); // the engine said Isolated, not a tap
+    lastState = m.state;
     halo.dataset.live = m.live ? "on" : "off";
     halo.style.setProperty("--conf", m.confidence == null ? "0" : m.confidence.toFixed(2));
     if (!m.live) setLevel(null);
   }
 
   let shownCaptions = "";
+  let shownTexts = [];
   function renderCaptions(lines) {
     const key = JSON.stringify(lines);
     if (key === shownCaptions) return;
     shownCaptions = key;
+    // T-427: a word fades in when the engine's text first carries it (delight.js captionWords); words already on
+    // screen stay still, and nothing is drawn ahead of the recogniser
+    const prev = shownTexts;
+    shownTexts = lines.map((c) => c.text);
     el.capLines.replaceChildren(...(lines.length
-      ? lines.map((c) => h("p", { class: c.final ? "ls-cap" : "ls-cap partial", text: c.text }))
+      ? lines.map((c) => {
+        let fresh = 0;
+        const spans = captionWords(c.text, prev).map(({ word, fresh: isNew }) => {
+          const w = h("span", { class: isNew ? "ls-w is-new" : "ls-w", text: word });
+          if (isNew) w.style.setProperty("--i", String(Math.min(fresh++, 6)));
+          return w;
+        });
+        const line = h("p", { class: c.final ? "ls-cap" : "ls-cap partial" });
+        spans.forEach((w, i) => line.append(...(i ? [" ", w] : [w])));
+        return line;
+      })
       : [h("p", { class: "ls-cap empty", text: "No captions yet. They appear when the target speaks." })]));
   }
+
+  // ---- T-427: the saved voices in the scene. Their place says what the engine reports (aria-pressed = the target
+  // the telemetry names); a tap or a drop only asks, and shows "asked" until the engine answers
+  let lastState = null;
+  let dragged = false;
+  let askedTimer = 0;
+  function renderVoices(m) {
+    const has = m.people.some((p) => p.enabled);
+    voices.dataset.has = has ? "1" : "0";
+    voices.dataset.live = String(m.live);
+    voices.dataset.isolated = String(m.state === "isolated" && m.ab !== "raw" && m.mode !== "quiet");
+    for (const b of voices.querySelectorAll("[data-voice]")) {
+      const p = m.people[Number(b.dataset.voice)];
+      setText(b.querySelector(".ls-voice-name"), p.label);
+      b.disabled = !p.enabled;
+      setAttr(b, "aria-pressed", p.pressed);
+      setAttr(b, "aria-label", p.pressed ? `${p.label}: chosen. Drag out of the ring to release` : `Hear ${p.label}`);
+      if (p.pressed && b.dataset.asked) delete b.dataset.asked;
+    }
+  }
+  function chooseVoice(i) {
+    const b = voices.querySelector(`[data-voice="${i}"]`);
+    if (!b || b.disabled || b.getAttribute("aria-pressed") === "true") return;
+    for (const o of voices.querySelectorAll("[data-asked]")) delete o.dataset.asked;
+    b.dataset.asked = "true";
+    clearTimeout(askedTimer);
+    askedTimer = setTimeout(() => { delete b.dataset.asked; }, 4000); // no answer: drop the "asked" look, never fake one
+    haptic("press", { reduced: reducedMotion.matches });
+    act.person(i);
+  }
+  // drag: the voice follows the finger (translate only, compositor); on release it lands by dropAction
+  let drag = null;
+  voices.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("[data-voice]");
+    if (!b || b.disabled || (e.pointerType === "mouse" && e.button !== 0)) return;
+    drag = { b, id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
+    try { b.setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+  }, { signal });
+  voices.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x0;
+    const dy = e.clientY - drag.y0;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    drag.moved = true;
+    drag.b.dataset.dragging = "true";
+    drag.b.style.translate = `${dx}px ${dy}px`;
+    const r = ringRect();
+    const bb = drag.b.querySelector(".ls-voice-dot").getBoundingClientRect();
+    const over = dropAction({ dx: bb.x + bb.width / 2 - r.cx, dy: bb.y + bb.height / 2 - r.cy, r: r.r,
+      current: drag.b.getAttribute("aria-pressed") === "true" });
+    voices.dataset.over = over;
+  }, { signal });
+  const endDrag = (e, cancel = false) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const { b, moved } = drag;
+    drag = null;
+    const over = voices.dataset.over;
+    delete voices.dataset.over;
+    delete b.dataset.dragging;
+    b.style.translate = ""; // springs home (CSS transition); home is wherever the engine's answer puts it
+    if (!moved) return;
+    dragged = true; // the click that follows a drag is not a tap
+    if (cancel) return;
+    if (over === "choose") chooseVoice(Number(b.dataset.voice));
+    else if (over === "release") act.release();
+  };
+  voices.addEventListener("pointerup", (e) => endDrag(e), { signal });
+  voices.addEventListener("pointercancel", (e) => endDrag(e, true), { signal });
+  function ringRect() {
+    const ring = voices.querySelector(".ls-voices-ring").getBoundingClientRect();
+    return { cx: ring.x + ring.width / 2, cy: ring.y + ring.height / 2, r: Math.max(24, ring.width / 2) };
+  }
+
+  // ---- T-427: the room dial. Its position is what this page sent (control.suppression); the sound it makes is the
+  // engine's (the scene's form follows the played stream)
+  function renderDial(v) {
+    const value = dialValue(v);
+    setAttr(dial, "aria-valuenow", value);
+    setAttr(dial, "aria-valuetext", `room ${roomLabel(value)}`);
+    dial.style.setProperty("--v", String(value / 100));
+    setText(dialValueText, roomLabel(value));
+  }
+  const setDial = (v) => {
+    const value = dialValue(v);
+    if (value !== store.state.suppression) session?.setSuppression(value);
+  };
+  const dialFromX = (x) => {
+    const r = dial.querySelector(".ls-dial-track").getBoundingClientRect();
+    return ((x - r.x) / Math.max(1, r.width)) * 100;
+  };
+  let dialPtr = null;
+  dial.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    dialPtr = e.pointerId;
+    dial.dataset.dragging = "true";
+    try { dial.setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+    setDial(dialFromX(e.clientX));
+  }, { signal });
+  dial.addEventListener("pointermove", (e) => { if (e.pointerId === dialPtr) setDial(dialFromX(e.clientX)); }, { signal });
+  const dialEnd = (e) => { if (e.pointerId === dialPtr) { dialPtr = null; delete dial.dataset.dragging; } };
+  dial.addEventListener("pointerup", dialEnd, { signal });
+  dial.addEventListener("pointercancel", dialEnd, { signal });
+  dial.addEventListener("keydown", (e) => {
+    const v = store.state.suppression;
+    const next = { ArrowRight: v + 5, ArrowUp: v + 5, ArrowLeft: v - 5, ArrowDown: v - 5, PageUp: v + 20, PageDown: v - 20,
+      Home: 0, End: 100 }[e.key];
+    if (next == null || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    setDial(next);
+  }, { signal });
 
   // ---- level halo: the real mic peak (or the replayed room), at most once per frame
   let pendingLevel = null;
@@ -463,6 +608,7 @@ export function mount(root, ctx = {}) {
   function cleanup() {
     offs.splice(0).forEach((off) => off());
     cancelAnimationFrame(raf);
+    clearTimeout(askedTimer);
     delete document.body.dataset.ab;
     if (devBanner?.isConnected) document.body.append(devBanner);
   }

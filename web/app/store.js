@@ -179,6 +179,7 @@ export function initialState() {
     effectiveMode: null,
     jitter: "focus_hq",
     released: false,
+    suppression: 100, // the room dial (T-427): what this page last sent; the judge profile's own value is 100
     isolation: null,
     person: personState(null),
     pill: { state: "idle", text: "Press Start", note: "" },
