@@ -74,7 +74,7 @@ export function dropAction({ dx, dy, r, current = false }) {
 }
 
 /** Haptic patterns (ms) for the two real events that earn one. */
-export const HAPTICS = { start: [12, 40, 18], isolate: 14, press: 8 };
+export const HAPTICS = { start: [12, 40, 18], isolate: 14, press: 8, nudge: [6, 60, 6] }; // nudge: a tap on Hold to start (T-458)
 
 /**
  * Vibrate for a real event where the device supports it (Android Chrome; iOS Safari has no vibrate and is a no-op).

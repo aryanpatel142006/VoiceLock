@@ -390,7 +390,10 @@ async function boot() {
     if (!app.files.modules.includes(name)) return null;
     try { return await import(`./${name}`); } catch (err) { console.warn(`[app] ${name} failed to load`, err); return null; }
   };
-  [app.store, motionModule] = await Promise.all([optional("store.js"), optional("motion.js")]);
+  let platform;
+  [app.store, motionModule, platform] = await Promise.all([optional("store.js"), optional("motion.js"), optional("platform.js")]);
+  // T-458: a touch-first device (CSS keys phone-only fixes on it; some Android browsers report a fine pointer)
+  document.documentElement.toggleAttribute("data-touch", Boolean(platform?.touchDevice()));
   addEventListener("hashchange", () => show(route()));
   await show(route());
   app.ready = true;

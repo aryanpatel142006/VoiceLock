@@ -75,7 +75,7 @@
   white-space: nowrap;
   pointer-events: none;
 }
-.wl[data-cold="play"] .wl-field-label { animation: wl-fade-in 600ms linear 1200ms backwards; }
+.wl[data-cold="play"] .wl-field-label { animation: wl-fade-in 600ms linear calc(1200ms * var(--wl-k, 1)) backwards; }
 
 /* the shared sound scene (scene.js, z 0) sits under this opaque field on Welcome: not drawn here, so a phone does not
    raster two full canvases per level frame (measured: 33 ms frames at DPR 3 on a 4x-throttled CPU, T-429). It is
@@ -150,9 +150,9 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   align-items: center;
   gap: var(--space-6, 32px) var(--space-8, 64px);
 }
-.wl[data-cold="play"] .wl-row { animation: wl-arrive 640ms var(--ease-out) 4400ms backwards; }
+.wl[data-cold="play"] .wl-row { animation: wl-arrive 640ms var(--ease-out) calc(4400ms * var(--wl-k, 1)) backwards; } /* --wl-k: 0.6 on a phone (T-458) */
 .wl[data-cold="play"] .wl-key,
-.wl[data-cold="play"] .wl-sound { animation: wl-arrive 640ms var(--ease-out) 4640ms backwards; }
+.wl[data-cold="play"] .wl-sound { animation: wl-arrive 640ms var(--ease-out) calc(4640ms * var(--wl-k, 1)) backwards; }
 .wl-start { display: grid; justify-items: center; gap: var(--space-3, 12px); padding-left: 12px; } /* room for the ring */
 .wl-key { margin: 0; font-size: var(--text-small, 14px); color: var(--color-dim); }
 .wl-key kbd {
@@ -292,4 +292,26 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; transition: --wl-p 0ms; }
   .wl-hero, .wl-facts { transition: none; }
   .wl-ripple { display: none; }
+}
+
+/* ================= T-458 phone fixes (touch review, docs/ux-review-shots/PHONE_FIXES.md) ================= */
+/* a quick tap on the disc: a small shake while the label says to keep holding (welcome.js nudge) */
+.wl-disc.wl-nudge { animation: wl-nudge 240ms var(--ease-out, ease) 1; }
+@keyframes wl-nudge { 25% { translate: -4px 0; } 75% { translate: 4px 0; } }
+/* Android: Chrome's install prompt as a real button (beforeinstallprompt) */
+.wl-install-btn {
+  justify-self: start; min-height: 44px; padding: 0 16px; border: 1px solid var(--color-line); border-radius: var(--radius-control, 4px);
+  background: none; color: var(--color-fg); font: 600 var(--text-small, 14px)/1 var(--font-ui); cursor: pointer; touch-action: manipulation;
+}
+.wl-install-btn[hidden] { display: none; }
+/* touch: Skip sits in thumb reach at the bottom centre, and says any tap skips */
+:root[data-touch] .wl-skip { top: auto; right: auto; left: 50%; bottom: calc(var(--safe-b, 0px) + 16px); translate: -50% 0; }
+/* a phone on its side: the line left, the disc and its facts right, all inside one screen */
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl { --disc: 112px; align-content: center; min-height: calc(100dvh - 60px - var(--safe-t, 0px)); padding-bottom: calc(var(--safe-b, 0px) + 12px); }
+  .wl-main { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px clamp(20px, 4vw, 40px); }
+  .wl-hero { font-size: clamp(28px, 9vh, 56px); max-width: 14ch; }
+  .wl-row { flex-wrap: nowrap; align-items: center; gap: 20px; }
+  .wl-facts { max-width: 240px; font-size: var(--text-small, 14px); }
+  .wl-facts p { margin: 0 0 6px; }
 }

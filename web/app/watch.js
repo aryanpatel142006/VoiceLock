@@ -10,13 +10,68 @@
 // stops ticking reads "Stage not streaming", never a frozen Isolated.
 
 import { Store, addCaption, backoffMs, modeFields, nextAb } from "./store.js";
-import { RELEASE_CONTROL, personControl, savedPeople } from "../console/judge-targets.js";
+import { RELEASE_CONTROL, personControl, personLabel, savedPeople } from "../console/judge-targets.js";
 
 /** The `hello.client` names of a stage session (`/judge`, the app). Solo refuses while one is open. */
 export const STAGE_CLIENTS = ["judge", "app"];
 /** No mirrored telemetry for this long: the stage is not streaming (judge-pill's MIC_STALL_MS rule). */
 export const STALE_MS = 1500;
 const TICK_MS = 100;
+
+/**
+ * Whether the mirrored stage is streaming audio (T-458). Telemetry ticks at 10 Hz even for an idle session, but its
+ * `seq` is the last audio frame the engine received, so only a seq that moved within STALE_MS means audio flows.
+ * `track` is {seq, at}: the last seq seen and when it last changed (null until it changes once after joining).
+ */
+export function seqStep(track, seq, nowMs) {
+  if (!Number.isFinite(seq)) return track;
+  if (!track) return { seq, at: null }; // the joining snapshot says nothing about now
+  return seq === track.seq ? track : { seq, at: nowMs };
+}
+
+/** ms since the stage's audio last moved, Infinity when it has not moved since we joined. */
+export function sinceAudioMs(track, nowMs) {
+  return track?.at == null ? Infinity : nowMs - track.at;
+}
+
+/** What a short look at a session's telemetry says: {live: true|false|null (no telemetry), who: "Aryan"|""}. */
+export function probeVerdict(telemetries) {
+  const last = telemetries[telemetries.length - 1];
+  const who = last?.enrollment?.source === "profile" ? personLabel(last.enrollment.profile) : "";
+  if (telemetries.length < 2) return { live: null, who };
+  // a session that never received audio reports seq null: that is idle too
+  const seqs = telemetries.map((t) => (Number.isFinite(t?.seq) ? t.seq : null));
+  return { live: seqs[seqs.length - 1] != null && seqs[seqs.length - 1] !== seqs[0], who };
+}
+
+/**
+ * Watch session `id` for `ms` (read-only; closing a watcher never touches the stage) and say whether its audio
+ * moves (probeVerdict). The lobby labels idle sessions with it, and Solo waits only for a live one (T-458).
+ */
+export function probeSession(id, { loc = globalThis.location, WS = globalThis.WebSocket, ms = 1300, setTimer = setTimeout } = {}) {
+  return new Promise((resolve) => {
+    const seen = [];
+    let sock;
+    const done = () => { try { sock?.close(1000); } catch { /* closed */ } resolve(probeVerdict(seen)); };
+    try { sock = new WS(watchUrl(loc, id)); } catch { resolve({ live: null, who: "" }); return; }
+    sock.onmessage = (e) => {
+      if (typeof e.data !== "string") return;
+      try { const m = JSON.parse(e.data); if (m.type === "telemetry") seen.push(m); } catch { /* not JSON */ }
+    };
+    sock.onerror = () => undefined;
+    setTimer(done, ms);
+  });
+}
+
+/** "3 min" since an ISO start time (the /sessions `started` field), "" when unknown. */
+export function ageText(started, nowMs = Date.now()) {
+  const t = Date.parse(started || "");
+  if (!Number.isFinite(t)) return "";
+  const s = Math.max(0, Math.round((nowMs - t) / 1000));
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.round(s / 60)} min`;
+  return `${Math.round(s / 3600)} h`;
+}
 
 /** wss://host/ws/watch?session=<id> for a page at `loc`. */
 export function watchUrl(loc, sessionId) {
@@ -74,14 +129,19 @@ export function createWatch(sessionId, { loc = globalThis.location, WS = globalT
   let attempt = 0;
   let retryTimer = 0;
   let lastTelemetry = null;
+  let seqTrack = null;
   let sent = 0;
   const watch = (patch) => store.set({ watch: { ...store.state.watch, ...patch } });
-  store.set({ sessionId, started: true, watch: { state: "connecting", reason: "", stale: true, sinceMs: null, sent: 0 } });
+  store.set({ sessionId, started: true, watch: { state: "connecting", reason: "", stale: true, streaming: false, sinceMs: null, sent: 0 } });
 
   function derive() {
     const since = lastTelemetry == null ? Infinity : now() - lastTelemetry;
-    // the stage's frames are invisible to us; its telemetry is the heartbeat (STALE_MS = MIC_STALL_MS)
-    store.derive(now(), { sinceFrameMs: since });
+    // the stage's frames are invisible to us; its telemetry is the link's heartbeat (STALE_MS = MIC_STALL_MS) and
+    // its seq the audio's (T-458: an idle stage still ticks, so the heartbeat alone read as live)
+    const audioMs = store.state.replaying ? 0 : sinceAudioMs(seqTrack, now());
+    const streaming = audioMs <= STALE_MS;
+    store.derive(now(), { sinceFrameMs: Math.max(since, audioMs), streaming });
+    if (streaming !== store.state.watch.streaming) watch({ streaming });
     const stale = !(since <= STALE_MS);
     if (stale !== store.state.watch.stale) watch({ stale });
   }
@@ -91,6 +151,7 @@ export function createWatch(sessionId, { loc = globalThis.location, WS = globalT
     try { msg = JSON.parse(text); } catch { return; }
     if (msg.type === "telemetry") {
       lastTelemetry = now();
+      seqTrack = seqStep(seqTrack, msg.seq, lastTelemetry);
       store.set(telemetryPatch(msg));
       derive();
       store.emit("telemetry", msg);
@@ -128,6 +189,7 @@ export function createWatch(sessionId, { loc = globalThis.location, WS = globalT
       store.set({ connection: closed ? "idle" : "reconnecting", telemetry: null, attempt: attempt + 1 });
       store.resetEngine();
       lastTelemetry = null;
+      seqTrack = null;
       if (closed || e.code === 1000) {
         closed = true;
         if (store.state.watch.state !== "ended") watch({ state: "ended", reason: "The stage session ended. Scan the new code on the laptop." });

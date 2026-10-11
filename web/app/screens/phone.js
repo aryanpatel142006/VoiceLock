@@ -13,13 +13,22 @@
 // Honesty: every word and number here is mirrored telemetry, a caption message, or this page's own state. A mirror
 // that stops ticking says so; nothing animates to look alive.
 
-import { createWatch, listSessions, stageSessions } from "../watch.js";
+import { ageText, createWatch, listSessions, probeSession, stageSessions } from "../watch.js";
 import { listenModel } from "./listen.js";
 import { modeFields } from "../store.js";
 
 export const title = "Phone";
 
 const POLL_MS = 2000;
+
+/** Pure: one lobby row's words for a session and its probe ({live, who}). */
+export function sessionRow(s, probe = null, nowMs = Date.now()) {
+  const kind = s.client === "judge" ? "Stage · /judge" : "Stage · app";
+  const age = ageText(s.started, nowMs);
+  const live = probe ? probe.live : null;
+  const state = live === true ? (probe.who ? `hears ${probe.who}` : "live") : live === false ? "idle, not listening" : "checking…";
+  return { title: kind, state, age: age ? `open ${age}` : "", live, go: live === false ? "Follow anyway" : "Follow" };
+}
 
 /** Pure: what the companion shows for its mirror store state. */
 export function companionModel(s) {
@@ -36,13 +45,18 @@ export function companionModel(s) {
     word = w.state === "reconnecting" ? "Reconnecting" : "Connecting";
     tone = w.state === "reconnecting" ? "bad" : "idle";
     sentence = w.reason || "Joining the stage session…";
-  } else if (m.state === "nomic") {
+  } else if (w.stale) {
     word = "Not streaming";
-    sentence = "No telemetry from the stage for 1.5 s: its mic is stopped or the engine is busy.";
+    sentence = "No telemetry from the stage for 1.5 s: the engine is busy or the link dropped.";
+  } else if (m.state === "nomic" || w.streaming === false) {
+    // T-458: telemetry ticks but no audio reaches the stage's engine (seq stands still): idle, not "Searching"
+    word = "Not listening";
+    tone = "idle";
+    sentence = "This stage isn't listening right now: its mic is off. Press Start on the laptop.";
   }
   // the companion has no Selective button: the way back to one voice is on the laptop
   if (m.tone === "raw" && w.state === "open") sentence = m.who ? `Selective on the laptop plays ${m.who} alone.` : "";
-  const live = w.state === "open" && !w.stale;
+  const live = w.state === "open" && !w.stale && w.streaming !== false;
   let stage = "";
   if (live) {
     if (m.mode === "quiet") stage = "Stage is in Quiet: captions only";
@@ -69,9 +83,12 @@ export function companionModel(s) {
   };
 }
 
-/** Pure: Solo is refused while a stage session is open; the reason names it. */
+/**
+ * Pure: Solo is refused while a stage session is live; the reason names it. A session `live: false` (probed: its
+ * audio does not move) is idle and does not block (T-458); an unprobed one (`live` null/undefined) still does.
+ */
 export function soloGate(sessions) {
-  const stage = stageSessions(sessions);
+  const stage = stageSessions(sessions).filter((s) => s.live !== false);
   if (!stage.length) return { allowed: true, reason: "" };
   const s = stage[0];
   const who = s.client === "judge" ? "/judge" : "the app";
@@ -244,14 +261,29 @@ function mountLobby(root, ctx) {
   import("/sdk/hearing-client.js").then((m) => { sdk = m; }, (err) => console.warn("[phone] SDK not loaded", err));
   const signal = ctx.signal;
 
+  // T-458: each row says whether that stage is listening (its telemetry seq moves) and for how long it has been open;
+  // live sessions first, idle ones greyed and labelled idle
+  const probes = new Map();
   function renderSessions(sessions) {
-    const stage = stageSessions(sessions);
-    list.replaceChildren(...(stage.length ? stage.map((s) => h("li", { class: "ph-session" },
-      h("a", { href: `/app/?watch=${encodeURIComponent(s.id)}`, class: "ph-session-link" },
-        h("span", { class: "ph-session-client", text: s.client === "judge" ? "Stage · /judge" : "Stage · app" }),
-        h("span", { class: "ph-session-id", text: String(s.id).slice(0, 8) }),
-        h("span", { class: "ph-session-go", text: "Follow" }))))
+    const rank = (s) => ({ true: 0, null: 1, false: 2 })[String(probes.get(s.id)?.live ?? null)];
+    const stage = stageSessions(sessions).sort((a, b) => rank(a) - rank(b));
+    list.replaceChildren(...(stage.length ? stage.map((s) => {
+      const r = sessionRow(s, probes.get(s.id));
+      return h("li", { class: "ph-session", "data-live": String(r.live) },
+        h("a", { href: `/app/?watch=${encodeURIComponent(s.id)}`, class: "ph-session-link" },
+          h("span", { class: "ph-session-main" },
+            h("span", { class: "ph-session-client", text: r.title }),
+            h("span", { class: "ph-session-state", text: [r.state, r.age].filter(Boolean).join(" · ") })),
+          h("span", { class: "ph-session-id", text: String(s.id).slice(0, 8) }),
+          h("span", { class: "ph-session-go", text: r.go })));
+    })
       : [h("li", { class: "ph-session empty", text: "No stage session is open on the laptop." })]));
+  }
+  async function probeAll(sessions) {
+    const stage = stageSessions(sessions).slice(0, 6);
+    const seen = await Promise.all(stage.map((s) => probeSession(s.id).then((p) => [s.id, p])));
+    for (const [id, p] of seen) probes.set(id, p);
+    for (const id of [...probes.keys()]) if (!stage.some((s) => s.id === id)) probes.delete(id);
   }
   function renderGate() {
     soloBtn.disabled = Boolean(solo) || !gate.allowed;
@@ -264,7 +296,11 @@ function mountLobby(root, ctx) {
     const sessions = await listSessions();
     if (signal?.aborted) return;
     renderSessions(sessions);
-    gate = soloGate(sessions);
+    await probeAll(sessions);
+    if (signal?.aborted) return;
+    const probed = sessions.map((s) => ({ ...s, live: probes.get(s.id)?.live ?? null }));
+    renderSessions(probed);
+    gate = soloGate(probed);
     if (gate.allowed && !solo) gate.reason = "No stage session is open. Solo can start.";
     renderGate();
     timer = setTimeout(poll, POLL_MS);
@@ -328,7 +364,9 @@ function mountLobby(root, ctx) {
     solo.lock = lk.lock;
     soloLive.querySelector(".ph-solo-lock").textContent = lk.text;
     // a stage session that opened while we were starting wins: the phone steps back
-    const after = soloGate(await listSessions());
+    const listed = await listSessions();
+    await probeAll(listed);
+    const after = soloGate(listed.map((s) => ({ ...s, live: probes.get(s.id)?.live ?? null })));
     if (!after.allowed && solo) stopSolo(after.reason);
   }
 

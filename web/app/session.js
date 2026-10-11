@@ -9,6 +9,7 @@
 // Everything that touches the browser is injectable (`env`), so node --test drives it with fakes.
 
 import { MIC_START_TIMEOUT_MS, micProblem, withTimeout } from "../console/judge-pill.js";
+import { isStageRig, platformMicProblem, platformOf } from "./platform.js";
 import { RELEASE_CONTROL, personControl, savedPeople } from "../console/judge-targets.js";
 import { mountDevices, peakDb } from "../console/devices.js";
 import {
@@ -74,6 +75,9 @@ function browserEnv() {
     wallNow: () => (g.performance.timeOrigin + g.performance.now()) / 1000, // capture_ts, client clock (s)
     location: g.location,
     openAudio: browserAudio,
+    // T-458: the demo-device check (preset mic / output pins) runs on the stage rig only, never on a visitor's phone
+    stageRig: typeof g.matchMedia === "function" ? isStageRig() : true,
+    platform: platformOf(g.navigator),
   };
 }
 
@@ -225,7 +229,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
   function onTelemetry(t) {
     set({ telemetry: t, ...adoptRemote(t) });
     // T-287: before the next render, so a Start right after the first telemetry opens the preset's demo mic
-    devices?.setExpected({ input: t.preset?.pins?.input_device || null, output: t.preset?.pins?.output_device || null });
+    if (env.stageRig !== false) devices?.setExpected({ input: t.preset?.pins?.input_device || null, output: t.preset?.pins?.output_device || null });
     postAb();
     setJitter(jitterFor(t));
     watchBackend(t);
@@ -281,7 +285,7 @@ export function createSession({ store = appStore, url = null, devices = null, en
       rt.startToken++; // abandon: if it resolves later, startAudio tears it down
       stopMedia();
       note(`microphone unavailable: ${e?.message || e}`);
-      set({ starting: false, mic: { ...st().mic, banner: micProblem(e) } });
+      set({ starting: false, mic: { ...st().mic, banner: platformMicProblem(micProblem(e), e, env.platform || "other") } });
       return false;
     }
     if (!st().telemetry && st().connection === "open") await firstTelemetry(FIRST_TELEMETRY_MS);

@@ -17,6 +17,7 @@ import { KEYS_OFF_TEXT, KEY_HINTS, bindKeys, watchKeyFocus } from "../keys.js";
 import { mountPhoneLink } from "../connect.js";
 import { captionWords, dialValue, dropAction, haptic, roomLabel } from "../delight.js";
 import { pulseFor } from "../transitions.js";
+import { scenePrompt, touchDevice } from "../platform.js";
 
 export const title = "Listen";
 
@@ -156,6 +157,13 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
   };
 }
 
+/** A touch on the room dial: "drag" once it moves sideways past 8 px, "scroll" once it moves up or down, else "wait". */
+export function dialGesture(dx, dy, slop = 8) {
+  if (Math.abs(dx) > slop && Math.abs(dx) > Math.abs(dy)) return "drag";
+  if (Math.abs(dy) > slop) return "scroll";
+  return "wait";
+}
+
 /** Quiet's pause notice in plain words: never "Captions paused: … captions paused". */
 export function pausedCopy(paused, who) {
   if (!paused) return "";
@@ -224,6 +232,7 @@ export function mount(root, ctx = {}) {
   const session = ensureSession(app);
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
+  const touch = touchDevice(); // T-458: tap hints, the dial's horizontal-only drag, the inline scene's prompt
   let keysOff = false;
 
   // ---- structure
@@ -281,12 +290,14 @@ export function mount(root, ctx = {}) {
   const dial = h("div", { class: "ls-dial", role: "slider", tabindex: "0", "aria-label": "Room turned down",
     "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "100", "aria-valuetext": "silent" },
   h("span", { class: "ls-dial-track", "aria-hidden": "true" }, h("span", { class: "ls-dial-fill" }), h("span", { class: "ls-dial-thumb" })));
+  // T-458: the dial's two ends named (phones; right = the room turned down, the opposite of a volume slider)
+  const dialEnds = h("p", { class: "ls-dial-ends", "aria-hidden": "true" }, h("span", { text: "room as it is" }), h("span", { text: "room silent" }));
   const dialValueText = h("output", { class: "ls-dial-value", text: "silent" });
   const voiceBtn = (i) => h("button", { type: "button", class: "ls-voice", "data-voice": String(i), "aria-pressed": "false", disabled: true },
     h("span", { class: "ls-voice-dot", "aria-hidden": "true" }), h("span", { class: "ls-voice-name", text: `Person ${i + 1}` }));
   const voices = h("div", { class: "ls-voices", role: "group", "aria-label": "Sound scene: drag a saved person into the ring, or tap them", "data-has": "0" },
     h("span", { class: "ls-voices-ring", "aria-hidden": "true" }), voiceBtn(0), voiceBtn(1),
-    h("p", { class: "ls-voices-hint", "aria-hidden": "true", text: "Drag a person into the ring" }));
+    h("p", { class: "ls-voices-hint", "aria-hidden": "true", text: scenePrompt(touch) }));
   const startBtn = h("button", { type: "button", class: "ls-start", "data-act": "start" },
     h("span", { class: "ls-start-label", text: "Start listening" }));
 
@@ -294,7 +305,7 @@ export function mount(root, ctx = {}) {
     h("div", { class: "ls-rail-cell" }, h("span", { class: "ls-rail-label", text: "Hear" }), abGroup),
     h("div", { class: "ls-rail-cell" }, h("span", { class: "ls-rail-label", text: "Mode" }), modeGroup, modeNote),
     h("div", { class: "ls-rail-cell ls-rail-people" }, h("span", { class: "ls-rail-label", text: "Person" }), peopleGroup),
-    h("div", { class: "ls-rail-cell ls-rail-room" }, h("span", { class: "ls-rail-label" }, "Room ", dialValueText), dial),
+    h("div", { class: "ls-rail-cell ls-rail-room" }, h("span", { class: "ls-rail-label" }, "Room ", dialValueText), dial, dialEnds),
     h("div", { class: "ls-rail-cell ls-rail-start" }, startBtn));
 
   // the keys once, in a legend under the rail, instead of a chip in every button (T-365 anti-template)
@@ -375,7 +386,7 @@ export function mount(root, ctx = {}) {
 
   // ---- render
   function render() {
-    const m = listenModel(store.state, { keysOff, keys: finePointer.matches });
+    const m = listenModel(store.state, { keysOff, keys: finePointer.matches && !touch });
     frame.dataset.ab = m.ab;
     frame.dataset.tone = m.tone;
     frame.dataset.state = m.state;
@@ -391,6 +402,11 @@ export function mount(root, ctx = {}) {
     setText(el.who, m.tone === "raw" || !m.live ? "" : m.who);
     el.who.hidden = !el.who.textContent;
     renderGate(el.gate, store.state.telemetry, m.state === "isolated" && m.ab !== "raw" && m.mode !== "quiet");
+    // T-458: on a phone an unsure window is not "Isolated in green next to a red UNSURE": the word takes the warn tone
+    // (listen.css) and the chip says what it means
+    const unsure = el.gate.dataset.gate === "unsure";
+    frame.dataset.unsure = String(unsure);
+    if (unsure && touch) setText(el.gate, "low confidence: still checking");
     setText(el.sentence, m.sentence);
     el.sentence.hidden = !m.sentence;
     setText(el.note, m.note);
@@ -565,18 +581,36 @@ export function mount(root, ctx = {}) {
     const r = dial.querySelector(".ls-dial-track").getBoundingClientRect();
     return ((x - r.x) / Math.max(1, r.width)) * 100;
   };
+  // T-458: a finger may only be scrolling past the dial (touch-action: pan-y in listen.css), so a touch moves it only
+  // once the drag is horizontal (dialGesture); a tap without a move sets it where it landed. A mouse grabs at once.
   let dialPtr = null;
-  dial.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
+  let dialTouch = null;
+  const grabDial = (e) => {
     dialPtr = e.pointerId;
     dial.dataset.dragging = "true";
     try { dial.setPointerCapture(e.pointerId); } catch { /* synthetic */ }
     setDial(dialFromX(e.clientX));
+  };
+  dial.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.pointerType === "mouse") grabDial(e);
+    else dialTouch = { id: e.pointerId, x0: e.clientX, y0: e.clientY };
   }, { signal });
-  dial.addEventListener("pointermove", (e) => { if (e.pointerId === dialPtr) setDial(dialFromX(e.clientX)); }, { signal });
-  const dialEnd = (e) => { if (e.pointerId === dialPtr) { dialPtr = null; delete dial.dataset.dragging; } };
-  dial.addEventListener("pointerup", dialEnd, { signal });
-  dial.addEventListener("pointercancel", dialEnd, { signal });
+  dial.addEventListener("pointermove", (e) => {
+    if (e.pointerId === dialPtr) { setDial(dialFromX(e.clientX)); return; }
+    if (!dialTouch || e.pointerId !== dialTouch.id) return;
+    const g = dialGesture(e.clientX - dialTouch.x0, e.clientY - dialTouch.y0);
+    if (g === "drag") { dialTouch = null; grabDial(e); } else if (g === "scroll") dialTouch = null;
+  }, { signal });
+  const dialEnd = (e, cancel = false) => {
+    if (dialTouch && e.pointerId === dialTouch.id) { // a tap: no move past the slop
+      dialTouch = null;
+      if (!cancel) setDial(dialFromX(e.clientX));
+    }
+    if (e.pointerId === dialPtr) { dialPtr = null; delete dial.dataset.dragging; }
+  };
+  dial.addEventListener("pointerup", (e) => dialEnd(e), { signal });
+  dial.addEventListener("pointercancel", (e) => dialEnd(e, true), { signal });
   dial.addEventListener("keydown", (e) => {
     const v = store.state.suppression;
     const next = { ArrowRight: v + 5, ArrowUp: v + 5, ArrowLeft: v - 5, ArrowDown: v - 5, PageUp: v + 20, PageDown: v - 20,

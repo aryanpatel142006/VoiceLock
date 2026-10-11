@@ -35,6 +35,7 @@ import { MIC_KEY, loadChoice } from "../../console/devices.js";
 import { seeded } from "../scene.js";
 import { sharedSession } from "./setup.js";
 import { haptic } from "../delight.js";
+import { installHint as platformInstallHint, platformOf, touchDevice } from "../platform.js";
 
 export const title = "Welcome";
 
@@ -60,6 +61,14 @@ export const COLD_OPEN = Object.freeze({
   settle: 4600, // drift starts to calm
   end: 6000, // still
 });
+/** T-458: on a phone the cold open runs at this share of its length (the UI arrives at ~2.6 s, not 4.4 s). */
+export const TOUCH_COLD_SCALE = 0.6;
+
+/** The cold open's shot list with every time (and the word gap and beat) scaled by `k`; word rise kept. */
+export function scalePlan(plan = COLD_OPEN, k = 1) {
+  if (k === 1) return plan;
+  return Object.freeze(Object.fromEntries(Object.entries(plan).map(([key, v]) => [key, key === "wordMs" ? v : Math.round(v * k)])));
+}
 export const GRAINS = 720; // three depth bands of 240
 export const BANDS = [0.38, 0.66, 1]; // depth of each band: far bands are smaller, dimmer and move less
 export const REDUCED_MIN_MS = 250; // reduced motion: at most 4 static redraws a second
@@ -124,9 +133,23 @@ export function activationLive(nav = globalThis.navigator) {
   return ua ? ua.isActive !== false : true;
 }
 
-/** Where a successful Start cuts to: Listen when a microphone choice is already saved, else Setup. */
-export function startTarget(storage = globalThis.localStorage) {
+/**
+ * Where a successful Start cuts to: Listen when a microphone choice is already saved, else Setup. On a phone
+ * (`touch`) always Listen (T-458): Start resolves once the mic streams, and Setup's checklist is the laptop's.
+ */
+export function startTarget(storage = globalThis.localStorage, { touch = false } = {}) {
+  if (touch) return "listen";
   try { return loadChoice(MIC_KEY, storage) ? "listen" : "setup"; } catch { return "setup"; }
+}
+
+/** A press let go before this share of the ring is a tap: the disc nudges and says to keep holding (T-458). */
+export const TAP_NUDGE_BELOW = 0.3;
+export const NUDGE_MS = 1500;
+export const NUDGE_COPY = ["Keep holding", "about 1 s"];
+
+/** True when a release from `prev` (holding at `prev.progress`) was a quick tap, not an early let-go. */
+export function wasTap(prev, next) {
+  return prev?.phase === "holding" && next?.phase === "idle" && prev.progress < TAP_NUDGE_BELOW;
 }
 
 /** 0..1 light of the field for a mic peak in dBFS (the scene contract's floor/ceiling); null/NaN = 0. */
@@ -141,10 +164,12 @@ export function releasedDb(db, dtS) {
   return Math.max(LEVEL_FLOOR_DB, db - LEVEL_RELEASE_DB_PER_S * Math.max(0, dtS));
 }
 
-/** The install hint, or null when the app already runs installed (display-mode standalone / iOS home screen). */
-export function installHint({ standalone, ios }) {
-  if (standalone) return null;
-  return ios ? "For full screen: tap Share, then Add to Home Screen." : "On iPhone: Share, then Add to Home Screen.";
+/**
+ * The install hint, or null when the app already runs installed (display-mode standalone / iOS home screen) or the
+ * platform is not iOS (T-458: Android gets the beforeinstallprompt button instead, never iPhone steps).
+ */
+export function installHint({ standalone, ios = false, platform = ios ? "ios" : "other" }) {
+  return platformInstallHint({ standalone, platform });
 }
 
 /** micProblem()'s lines say "press Start" (the /judge button); here Start is held. */
@@ -394,11 +419,14 @@ export function mount(root, { app, signal }) {
   const store = session.store;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const platform = platformOf();
+  const touch = touchDevice();
   const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
-  // the stage laptop needs no install line (T-365 P2-1): phones and tablets only
-  const hint = ios || matchMedia("(pointer: coarse)").matches ? installHint({ standalone, ios }) : null;
+  // the stage laptop needs no install line (T-365 P2-1); iPhone steps on iPhone only, Android gets a button (T-458)
+  const hint = platform === "ios" || touch ? installHint({ standalone, platform }) : null;
   const playCold = !coldOpenPlayed && !reduced.matches && !document.hidden;
+  const coldK = touch ? TOUCH_COLD_SCALE : 1;
+  const plan = scalePlan(COLD_OPEN, coldK);
   coldOpenPlayed = true;
 
   const label = h("span", { class: "wl-disc-label" });
@@ -416,17 +444,21 @@ export function mount(root, { app, signal }) {
   try { soundOn = localStorage.getItem(SOUND_KEY) === "1"; } catch { /* private mode */ }
   const soundBtn = h("button", { type: "button", class: "wl-sound", "aria-pressed": String(soundOn) }, svgIcon(ICON_SPEAKER),
     h("span", { class: "wl-sound-text", text: soundOn ? "Sound on" : "Sound off" }));
-  const skipBtn = h("button", { type: "button", class: "wl-skip", text: "Skip intro" });
+  // T-458: on a phone the skip sits in thumb reach (welcome.css) and says that any tap skips
+  const skipBtn = h("button", { type: "button", class: "wl-skip", text: touch ? "Tap to skip" : "Skip intro" });
+  // Android Chrome: an Install button once the browser offers the prompt (never shown on iOS, never on a laptop)
+  const installBtn = h("button", { type: "button", class: "wl-install-btn", hidden: true, text: "Install the app" });
 
   const hero = h("h1", { id: "wl-title", class: "wl-hero" });
   const words = heroWords();
   words.forEach((w, i) => {
-    const outer = h("span", { class: "wl-w", style: `--wl-d: ${wordDelay(i)}ms` }, h("span", { class: "wl-wi", text: w }));
+    const outer = h("span", { class: "wl-w", style: `--wl-d: ${wordDelay(i, 4, plan)}ms` }, h("span", { class: "wl-wi", text: w }));
     hero.append(outer, i < words.length - 1 ? " " : "");
   });
 
   root.classList.add("screen-welcome");
-  const section = h("section", { class: "wl", "data-phase": "idle", "data-cold": playCold ? "play" : "done", "aria-labelledby": "wl-title" },
+  const section = h("section", { class: "wl", "data-phase": "idle", "data-cold": playCold ? "play" : "done", "aria-labelledby": "wl-title",
+    style: `--wl-k: ${coldK}` },
     canvas, vignette, grain, fieldLabelEl,
     h("div", { class: "wl-main" },
       hero,
@@ -437,6 +469,7 @@ export function mount(root, { app, signal }) {
           h("p", { text: "Pick one voice. The room goes quiet around it." }),
           h("p", {}, h("strong", { text: "About 1.5 s behind" }), ", like live captions."),
           hint ? h("p", { class: "wl-install", text: hint }) : null,
+          installBtn,
           problem)),
       status),
     soundBtn, // outside .wl-main: that block translates with the pointer, which would anchor a fixed child to it
@@ -462,7 +495,7 @@ export function mount(root, { app, signal }) {
     if (prev && prev.phase === s.phase) return;
     disc.dataset.phase = s.phase;
     section.dataset.phase = s.phase;
-    const [a, b] = discCopy(s.phase);
+    const [a, b] = nudgeTimer && s.phase === "idle" ? NUDGE_COPY : discCopy(s.phase);
     label.textContent = a;
     sub.textContent = b;
     disc.setAttribute("aria-busy", String(s.phase === "starting" || s.phase === "full"));
@@ -489,6 +522,7 @@ export function mount(root, { app, signal }) {
     if (s.phase !== "holding" && raf) { cancelAnimationFrame(raf); raf = 0; }
     // T-427 haptics (Android; a no-op elsewhere): a tick when the press lands, a double beat when the hold completes
     if (s.phase === "holding" && prev.phase !== "holding") haptic("press", { reduced: reduced.matches });
+    if (wasTap(prev, s)) nudge();
     if (s.phase === "full") haptic("start", { reduced: reduced.matches });
     if (s.phase === "full") dispatch({ type: activationLive() ? "start" : "arm" });
     else if (s.phase === "starting" && prev.phase !== "starting") begin();
@@ -505,7 +539,7 @@ export function mount(root, { app, signal }) {
   function begin() {
     app.emit("start");
     // synchronous inside this handler: session.start() creates the AudioContext before its first await
-    target = startTarget();
+    target = startTarget(globalThis.localStorage, { touch });
     let p;
     try { p = session.start(); } catch (err) { p = Promise.reject(err); }
     Promise.resolve(p).then((ok) => {
@@ -515,6 +549,19 @@ export function mount(root, { app, signal }) {
     }, (err) => {
       if (!signal.aborted) dispatch({ type: "started", ok: false, error: String(err?.message || err) });
     });
+  }
+
+  // T-458: a quick tap gets an answer: a small shake, "Keep holding, about 1 s" for 1.5 s and a short buzz
+  let nudgeTimer = 0;
+  function nudge() {
+    clearTimeout(nudgeTimer);
+    disc.classList.remove("wl-nudge");
+    void disc.offsetWidth; // restart the shake on a second tap
+    if (!reduced.matches) disc.classList.add("wl-nudge");
+    nudgeTimer = setTimeout(() => { nudgeTimer = 0; disc.classList.remove("wl-nudge"); render({ phase: "" }); }, NUDGE_MS);
+    render({ phase: "" });
+    status.textContent = "Keep holding the disc for about 1 second to start.";
+    haptic("nudge", { reduced: reduced.matches });
   }
 
   function cut() {
@@ -583,13 +630,27 @@ export function mount(root, { app, signal }) {
     field.cold(false);
   }
   skipBtn.addEventListener("click", skipCold, { signal });
+  let installPrompt = null;
+  addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // our button asks instead of Chrome's mini-infobar
+    installPrompt = e;
+    installBtn.hidden = standalone;
+  }, { signal });
+  addEventListener("appinstalled", () => { installBtn.hidden = true; installPrompt = null; }, { signal });
+  installBtn.addEventListener("click", async () => {
+    if (!installPrompt) return;
+    const p = installPrompt;
+    installPrompt = null;
+    installBtn.hidden = true;
+    try { await p.prompt(); } catch { /* dismissed or already used */ }
+  }, { signal });
   if (playCold) {
     addEventListener("pointerdown", (e) => { if (e.target !== disc && !disc.contains(e.target)) skipCold(); }, { signal, capture: true });
-    setTimeout(() => { if (!signal.aborted && !coldDone) { skipCold(); } }, COLD_OPEN.end);
+    setTimeout(() => { if (!signal.aborted && !coldDone) { skipCold(); } }, plan.end);
   }
 
   // ---- the field: Canvas 2D, 720 grains in three depth bands; still unless something drives it
-  const field = makeField({ canvas, disc, section, labelEl: fieldLabelEl, store, reduced, coldT0, playCold, fine, signal });
+  const field = makeField({ canvas, disc, section, labelEl: fieldLabelEl, store, reduced, coldT0, playCold, fine, signal, plan });
   field.cold(playCold);
   field.phase("idle", 0);
 
@@ -601,11 +662,12 @@ export function mount(root, { app, signal }) {
     if (sound) { sound.close(); sound = null; }
     cancelAnimationFrame(raf);
     clearTimeout(cutTimer);
+    clearTimeout(nudgeTimer);
   };
 }
 
 /** The grain field. Draws only when something drives it: the cold open, the hold, the spring, the mic, the pointer. */
-function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, playCold, fine, signal }) {
+function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, playCold, fine, signal, plan = COLD_OPEN }) {
   const g = canvas.getContext("2d", { alpha: false, desynchronized: true });
   const grains = grainTable();
   const n = grains.x.length;
@@ -666,8 +728,8 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
       rt.springing = rt.collapse.x !== rt.target || rt.collapse.v !== 0;
     }
     const c = rt.collapse.x;
-    const intro = rt.cold ? introAt(t) : { line: 1, scatter: 1 };
-    const ambient = rt.cold && !reduced.matches ? ambientAt(t) : 0;
+    const intro = rt.cold ? introAt(t, plan) : { line: 1, scatter: 1 };
+    const ambient = rt.cold && !reduced.matches ? ambientAt(t, plan) : 0;
     const db = rt.live ? releasedDb(rt.db, (now - rt.dbAt) / 1000) : null;
     rt.shownDb = db; // the label prints the same released value the light shows
     const level = rt.live ? levelLight(db) : 0;
@@ -738,7 +800,7 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
     if (cText !== rt.lastC) { rt.lastC = cText; section.style.setProperty("--wl-c", cText); } // a style recalc only on change
     if (now - rt.labelAt >= LABEL_MIN_MS) { rt.labelAt = now; label(); } // the dBFS readout at 10 Hz, not per frame
 
-    const keep = (rt.cold && t < COLD_OPEN.end) || rt.phase === "holding" || rt.springing || (rt.live && now - rt.dbAt < 1200);
+    const keep = (rt.cold && t < plan.end) || rt.phase === "holding" || rt.springing || (rt.live && now - rt.dbAt < 1200);
     if (keep && !reduced.matches) rt.raf = requestAnimationFrame(draw);
     else rt.lastT = 0;
   }

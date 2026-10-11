@@ -238,7 +238,7 @@ export class Store {
    * Recompute pill, person, truth strip and caption state. `live`: {sinceFrameMs, rttMs} measured by the page.
    * Called on every telemetry and on a 100 ms render tick (the pill's mic rule needs time to pass).
    */
-  derive(nowMs, { sinceFrameMs = 0, rttMs = null } = {}) {
+  derive(nowMs, { sinceFrameMs = 0, rttMs = null, streaming: audioFlows = true } = {}) {
     const s = this.state;
     const t = s.telemetry;
     const connected = s.connection === "open";
@@ -247,7 +247,8 @@ export class Store {
     const pill = this.pill.update(raw, nowMs);
     const delay = this.steadyDelay.update(t?.latency_ms?.total);
     const rtt = rttMs == null ? null : this.steadyRtt.update(rttMs);
-    const streaming = connected && (s.started || s.replaying);
+    // `audioFlows` false: the caller knows no audio reaches the engine (the phone mirror's seq stopped, T-458)
+    const streaming = connected && (s.started || s.replaying) && audioFlows !== false;
     const truth = truthStrip(t, { connected, sessionId: s.sessionId, replaying: s.replaying, delayMs: delay, rttMs: rtt, streaming });
     const patch = { pillChanges: this.pill.changes, abDelayMs: abDelayMs(t), effectiveMode: t?.effective_mode || null };
     if (!same(pill, s.pill)) patch.pill = { state: pill.state, text: pill.text, note: pill.note || "" };

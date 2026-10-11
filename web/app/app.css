@@ -207,3 +207,5 @@ html:not(.ready) .stage { opacity: 0; }
 /* selection and caret carry the palette, not the browser's blue (T-388) */
 ::selection { background: color-mix(in oklab, var(--color-fg) 82%, transparent); color: var(--color-bg); }
 input, textarea, select { caret-color: var(--color-fg); }
+/* T-458: on a visitor's phone the device banner is a compact line (the stage-rig mic/output check never runs there) */
+:root[data-touch] [data-dev-banner] { font-size: 13px !important; padding: 8px 12px !important; gap: 8px !important; }

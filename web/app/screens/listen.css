@@ -350,7 +350,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
 .ls-dial {
   --v: 1;
   position: relative; display: grid; align-items: center; width: clamp(180px, 15vw, 280px); height: var(--rail-h, 56px);
-  padding: 0 14px; border-radius: calc(var(--radius-control, 4px) + 2px); cursor: ew-resize; touch-action: none;
+  padding: 0 14px; border-radius: calc(var(--radius-control, 4px) + 2px); cursor: ew-resize; touch-action: pan-y; /* T-458: a vertical swipe scrolls; listen.js grabs only a sideways drag */
   -webkit-user-select: none; user-select: none;
   background: color-mix(in oklab, var(--color-bg) 70%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-fg) 12%, transparent);
@@ -431,3 +431,47 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   .ls-dial[data-dragging] .ls-dial-thumb, .ls-dial:active .ls-dial-thumb { scale: 1; }
 }
 @keyframes ls-word-fade { from { opacity: 0; } }
+
+/* ================= T-458 phone fixes (touch review; docs/ux-review-shots/PHONE_FIXES.md) =================
+   Portrait phones only (max-width: 760px) unless named: the desktop and landscape layouts are untouched. */
+.ls-dial-ends { display: none; }
+@media (max-width: 760px) {
+  /* the state word is a headline, not a poster: the controls start inside the first screen */
+  .ls-word { font-size: min(clamp(44px, 13vw, 88px), calc(100cqi / (var(--chars, 6) * .5))); }
+  .listen[data-mode="quiet"] .ls-word { font-size: min(clamp(40px, 11vw, 72px), calc(100cqi / (var(--chars, 6) * .5))); }
+  .ls-who { font-size: clamp(26px, 8vw, 36px); }
+  .ls-sentence { font-size: 16px; }
+  .ls-body { min-height: 0; }
+  .listen { gap: 12px; }
+  /* the controls are a rail stuck to the bottom of the screen, over the home bar's safe area */
+  .ls-rail {
+    position: sticky; bottom: 0; z-index: 3;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: row dense; gap: 8px 10px;
+    margin: 0 calc(-1 * (var(--safe-r, 0px) + clamp(16px, 4vw, 64px))) 0 calc(-1 * (var(--safe-l, 0px) + clamp(16px, 4vw, 64px)));
+    padding: 22px calc(var(--safe-r, 0px) + clamp(16px, 4vw, 64px)) calc(var(--safe-b, 0px) + 12px) calc(var(--safe-l, 0px) + clamp(16px, 4vw, 64px));
+    background: linear-gradient(transparent, color-mix(in oklab, var(--color-bg) 94%, transparent) 22px);
+  }
+  .ls-rail-cell { gap: 6px; }
+  .ls-rail-label { font-size: 12px; }
+  .ls-rail > .ls-rail-cell:first-child, .ls-rail-people, .ls-rail-room { grid-column: 1 / -1; }
+  .ls-rail-start { order: 0; align-self: end; }
+  .ls-rail:has(.ls-start[data-kind="start"], .ls-start[data-kind="starting"]) .ls-rail-start { grid-column: 1 / -1; order: -1; }
+  .ls-ab .ls-seg { min-height: 56px; }
+  .ls-mode .ls-seg, .ls-people .ls-seg, .ls-start[data-kind="stop"] { min-height: var(--tap, 48px); font-size: 16px; }
+  .ls-start { min-height: 52px; }
+  .ls-rail .ls-mode-note { display: none; } /* the hear line above says what each mode plays */
+  .ls-dial { height: 44px; }
+  .ls-dial-ends { display: flex; justify-content: space-between; margin: 0; font: 500 12px/1 var(--font-ui); color: var(--color-dim); }
+  /* the sound scene comes inline: a 240 px stage of its own where a finger can tap or drag a saved person */
+  .ls-voices { display: block; position: relative; left: auto; top: auto; width: 100%; height: 240px; --s: min(240px, 70vw); pointer-events: auto; }
+  .ls-voices-ring, .ls-voice { left: 50%; top: 50%; }
+  .ls-voices-ring { width: calc(var(--s) * .42); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--color-fg) 26%, transparent); }
+  .ls-voices-hint { display: block; left: 50%; top: auto; bottom: 0; }
+  .ls-voice[aria-pressed="true"] { --hy: .1; }
+  /* the room's Phone (QR) button is for the laptop; a phone is the companion already */
+  :root[data-touch] .ls-top .pl { display: none; }
+}
+/* unsure: the word steps down from green to the warn tone, and the chip goes neutral (one signal, not two) */
+:root[data-touch] .listen[data-unsure="true"][data-tone="focus"] { --tone: var(--color-warn); }
+:root[data-touch] .listen[data-unsure="true"] .ls-gate[data-gate="unsure"] { color: var(--color-dim); letter-spacing: .02em; }
+@media (orientation: landscape) and (max-height: 540px) { :root[data-touch] .ls-top .pl { display: none; } }

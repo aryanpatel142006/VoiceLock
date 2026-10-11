@@ -179,3 +179,10 @@ body[data-phone="companion"] #nav { display: none; }
 
 /* T-388: on a laptop the companion column sits on the shared stage; an opaque column cut the scene with a hard edge */
 @media (min-width: 761px) { .phone { background: transparent; } }
+
+/* ---------- T-458: the lobby says which stage is listening; tap targets of at least 44 px ---------- */
+.ph-session-main { display: grid; gap: 4px; min-width: 0; }
+.ph-session-state { font: 500 var(--text-small)/1.2 var(--font-ui); color: var(--color-dim); }
+.ph-session[data-live="true"] .ph-session-state { color: var(--color-fg); }
+.ph-session[data-live="false"] .ph-session-client, .ph-session[data-live="false"] .ph-session-go { color: var(--color-faint); }
+:root[data-touch] .ph-leave { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; }

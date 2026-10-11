@@ -7,6 +7,8 @@
 // here. Warnings are `deviceWarnings` from the same module, checks come from the browser, `/health` and telemetry.
 
 import { createSession } from "../session.js";
+import { isStageRig, showDevFacts, touchDevice } from "../platform.js";
+import { SteadyWatch } from "./diag.js";
 import {
   CLIPPING_DB, MIC_LABEL_KEY, MIC_KEY, SINK_KEY, SINK_LABEL_KEY, TOO_QUIET_DB, deviceWarnings, isBluetoothName, loadChoice,
 } from "../../console/devices.js";
@@ -138,9 +140,30 @@ function h(tag, attrs = {}, ...children) {
 
 const TICKS = [-60, -48, -36, -24, -12, -2];
 
+/** The lede under the title: the laptop's stage setup, or what a phone visitor does (T-458). */
+export function setupLede(touch) {
+  return touch ? "Headphones on. Speak normally and watch the level." : "Headphones on, mic on the laptop. Speak normally and watch the level.";
+}
+
+/**
+ * Setup's "Delay now" line. `steady` is Diagnostics' SteadyWatch state: the engine's number is shown only once it
+ * has held for 4 s, so the EMA's warm-up (0.05 s seconds after Start) is never printed as the delay (T-458).
+ */
+export function delayNowCopy(truth, steady) {
+  const measured = truth?.delayMs;
+  if (measured == null) return "The measured delay shows here once sound flows.";
+  if (steady !== "steady") return "Delay now: — (settling; the engine's number shows once it holds for 4 s).";
+  return `Delay now: ${(measured / 1000).toFixed(2)} s, as the engine reports it (${truth.latencyPreset || "preset unknown"}), before device buffers.`;
+}
+
 export function mount(root, { app, signal }) {
   const session = sharedSession(app);
   const store = session.store;
+  // T-458: a visitor's phone gets phone copy; the stage checklist (engine revs, gpu_up) only on the laptop or ?dev=1
+  const touch = touchDevice();
+  const devFacts = showDevFacts({ touch });
+  const stageRig = isStageRig({ touch });
+  const delayWatch = new SteadyWatch(); // Diagnostics' rule: the delay is shown once it has held one value for 4 s
 
   // ---- meter (the one moving thing on this screen; only real frames move it)
   const word = h("p", { class: "su-word", "aria-live": "polite" });
@@ -170,14 +193,14 @@ export function mount(root, { app, signal }) {
   root.append(h("section", { class: "setup", "aria-labelledby": "setup-title" },
     h("header", { class: "su-head" },
       h("h1", { id: "setup-title", class: "su-title", text: "Set up the sound" }),
-      h("p", { class: "su-lede", text: "Headphones on, mic on the laptop. Speak normally and watch the level." })),
+      h("p", { class: "su-lede", text: setupLede(touch) })),
     h("div", { class: "su-grid" },
       h("section", { class: "su-meter", "aria-label": "Microphone level" }, word, reading, scale, bandNote,
         h("div", { class: "su-mic-row" }, micBtn, micBanner)),
       h("section", { class: "su-devices", "aria-labelledby": "su-devices-title" },
         h("h2", { id: "su-devices-title", class: "su-h2", text: "Microphone and output" }), pickers, saved, warnList),
-      h("section", { class: "su-check-panel", "aria-labelledby": "su-checks-title" },
-        h("h2", { id: "su-checks-title", class: "su-h2", text: "Before you go on stage" }), checkList, delay)),
+      h("section", { class: "su-check-panel", "aria-labelledby": devFacts ? "su-checks-title" : null, "aria-label": devFacts ? null : "Delay" },
+        devFacts ? h("h2", { id: "su-checks-title", class: "su-h2", text: "Before you go on stage" }) : null, devFacts ? checkList : null, delay)),
     h("footer", { class: "su-foot" },
       h("a", { href: "#people", class: "su-next" }, h("span", { text: "Choose who to hear" })))));
 
@@ -188,6 +211,7 @@ export function mount(root, { app, signal }) {
   let raf = 0;
   let warnSig = "";
   let checkSig = "";
+  let settleTimer = 0;
   const now = () => performance.now();
 
   function paintMeter() {
@@ -219,7 +243,7 @@ export function mount(root, { app, signal }) {
     const items = w.lines.map((l) => h("li", { class: "su-warn", "data-kind": l.kind }, h("span", { class: "su-warn-tag", text:
       { hfp: "HFP", speakers: "Feedback", missing: "Missing", output: "Wrong output", mic: "Wrong mic", other: "Check" }[l.kind] }),
     h("span", { text: l.text })));
-    if (w.bluetoothOut && !w.lines.length) {
+    if (w.bluetoothOut && !w.lines.length && stageRig) {
       items.push(h("li", { class: "su-warn", "data-kind": "info" }, h("span", { class: "su-warn-tag", text: "Bluetooth" }),
         h("span", { text: `Output is ${s.mic.output}: about 150–250 ms more delay. Expected for the demo AirPods; keep the mic on the laptop.` })));
     }
@@ -234,6 +258,7 @@ export function mount(root, { app, signal }) {
 
   function paintChecks() {
     const s = store.state;
+    const steady = delayWatch.push(s.truth.delayMs, now());
     const checks = setupChecks({ secure: globalThis.isSecureContext === true, worklet: { ...worklet, running: s.started && !s.replaying },
       health, connection: s.connection, truth: s.truth });
     const sig = JSON.stringify(checks);
@@ -246,11 +271,11 @@ export function mount(root, { app, signal }) {
         h("span", { class: "su-check-detail", text: c.detail }))));
     }
     root.querySelector(".setup").dataset.ready = String(checks.every((c) => c.status === "ok"));
-    const measured = s.truth.delayMs;
     delay.replaceChildren(h("span", { class: "su-delay-big", text: "About 1.5 s behind, like live captions." }),
-      h("span", { class: "su-delay-now", text: measured != null
-        ? `Delay now: ${(measured / 1000).toFixed(2)} s, as the engine reports it (${s.truth.latencyPreset || "preset unknown"}), before device buffers.`
-        : "The measured delay shows here once sound flows." }));
+      h("span", { class: "su-delay-now", text: delayNowCopy(s.truth, steady) }));
+    // a held value turns steady with no new telemetry change: look again in a second
+    clearTimeout(settleTimer);
+    if (steady === "settling" && !signal?.aborted) settleTimer = setTimeout(paintChecks, 1000);
   }
 
   async function poll() {
@@ -304,6 +329,7 @@ export function mount(root, { app, signal }) {
     offs.forEach((off) => off());
     clearInterval(stallTimer);
     clearInterval(healthTimer);
+    clearTimeout(settleTimer);
     cancelAnimationFrame(raf);
     session.devicesElement?.remove(); // the session keeps the element (and its choices) for the next visit
   };

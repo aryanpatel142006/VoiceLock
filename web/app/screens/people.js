@@ -8,6 +8,7 @@
 
 import { personLabel } from "../../console/judge-targets.js";
 import { sharedSession } from "./setup.js";
+import { showDevFacts } from "../platform.js";
 
 export const title = "People";
 export const CALIBRATE_S = 3;
@@ -98,7 +99,8 @@ export function mount(root, { app, signal }) {
     h("aside", { class: "pp-cal", "aria-labelledby": "pp-cal-title" },
       h("div", { class: "pp-cal-copy" },
         h("h2", { id: "pp-cal-title", class: "pp-cal-title", text: "Calibrate a new voice" }),
-        h("p", { class: "pp-cal-off", text: "Off the stage path. The demo uses the saved voices above." }),
+        // T-458: stage-crew copy; a visitor's phone sees it only with ?dev=1
+        showDevFacts() ? h("p", { class: "pp-cal-off", text: "Off the stage path. The demo uses the saved voices above." }) : null,
         calNote),
       h("div", { class: "pp-cal-do" }, calBtn, calBar)),
     h("footer", { class: "pp-foot" }, h("a", { href: "#listen", class: "pp-next" }, h("span", { text: "Go to Listen" })))));

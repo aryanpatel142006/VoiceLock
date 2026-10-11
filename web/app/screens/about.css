@@ -18,3 +18,4 @@
 }
 @keyframes claim-in { from { opacity: 0; transform: translateY(12px); } }
 @media (prefers-reduced-motion: reduce) { .claim { animation: none; } }
+:root[data-touch] .about .link { display: inline-flex; align-items: center; min-height: 44px; } /* T-458: a thumb-sized target (was 17 px tall) */
