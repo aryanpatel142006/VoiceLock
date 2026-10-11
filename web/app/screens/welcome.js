@@ -25,9 +25,15 @@
 //     events (the peak of each frame sent) with the meter's 24 dB/s release, and the label prints the dBFS.
 // Depth: the pointer (or the device's tilt) offsets the grain bands by their depth and the type by a few px, on
 // transforms only. Film grain and vignette are CSS; the grain tile only steps while something is happening.
-// Sound: off until the "Sound on" button is pressed (autoplay rules: that press is the gesture, and its tiny
-// AudioContext is separate from the session's); the hold then plays the collapse: a band of noise narrowing into one
-// tone, cut when the ring completes.
+// The Enter curtain (T-480, before the cold open, once per page load): a black frame, "This starts in a loud room. Turn
+// your sound on." and two doors, Enter with sound / Enter silently (Enter or Space = with sound, Esc = silently). That
+// click is the gesture the autoplay rules want: it creates the AudioContext and the cold open starts with its score
+// (web/app/welcome-audio.js: sub hum and a thin line, the cafe murmur swelling with the grains, a tick per word, the
+// hold turning the room down to one voice, a chord when the ring completes, silence when the mic opens). The choice is
+// the Sound on/off toggle's too (localStorage hearing.welcome.sound). Enter/Space on the focused disc goes straight
+// to the hold (the curtain steps aside with the saved choice), so a scripted or practised "focus Start, hold Enter"
+// still works. Cinema on top of the field: letterbox bars that open at the promise, a slow push-in, an anamorphic
+// flare on the hairline, film grain whose opacity follows the room's level.
 // Reduced motion: no cold open (everything is on screen at once, a 200 ms fade), no drift, no parallax, no grain
 // stepping; the hold still fills the ring and the field redraws at most 4 times a second with no easing.
 
@@ -37,6 +43,7 @@ import { sharedSession } from "./setup.js";
 import { haptic } from "../delight.js";
 import { expectedDelayCopy, fetchHealth } from "../store.js";
 import { installHint as platformInstallHint, platformOf, touchDevice } from "../platform.js";
+import { ROOM_BED, holdMix, makeLiveSound, roomLevelAt } from "../welcome-audio.js";
 
 export const title = "Welcome";
 
@@ -278,97 +285,43 @@ export function fieldLabel({ cold, live, replaying, phase, db }) {
   return "still, mic off";
 }
 
-/** The hold sound's parameters at ring progress `p`: noise narrowing (Hz, gain) into one tone (Hz, gain). */
-export function holdSoundAt(p) {
-  const x = Math.max(0, Math.min(1, p));
-  return { noiseHz: 140 + 3800 * (1 - x) ** 2, noiseGain: 0.09 * (1 - x), toneHz: 196 + 98 * x, toneGain: 0.05 * x * x };
+export const PUSH_IN = 0.08; // the camera's push-in on the field over the cold open (scale 1 -> 1.08)
+export const HOLD_PUSH = 0.05; // and a little further, toward the disc, as the ring fills
+export const GRAIN_MIN = 0.035; // film grain opacity with the room silent
+export const GRAIN_MAX = 0.11; // and with the murmur at its peak
+
+/** The camera's push-in 0..1 at `tMs`: a slow smoothstep from the hairline to the settle; 1 after. */
+export function pushAt(tMs, plan = COLD_OPEN) {
+  const x = Math.max(0, Math.min(1, (tMs - plan.line) / (plan.settle - plan.line)));
+  return x * x * (3 - 2 * x);
 }
 
-// ---------------------------------------------------------------- hold sound (opt-in, own tiny AudioContext)
+/** The anamorphic flare's strength 0..1: grows with the hairline, brightest as it reaches the edges, gone as the grains leave. */
+export function flareAt(tMs, plan = COLD_OPEN) {
+  if (tMs <= plan.line) return 0;
+  if (tMs <= plan.scatter) return ((tMs - plan.line) / (plan.scatter - plan.line)) ** 2;
+  return Math.max(0, 1 - (tMs - plan.scatter) / (0.6 * (plan.scattered - plan.scatter))) ** 2;
+}
 
-/** Created inside a user gesture. Nothing is audible until start(). */
-function makeHoldSound(Ctx = globalThis.AudioContext || globalThis.webkitAudioContext) {
-  const ctx = new Ctx();
-  const noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-  const data = noiseBuf.getChannelData(0);
-  const rnd = seeded(0x5afe);
-  for (let i = 0; i < data.length; i++) data[i] = rnd() * 2 - 1;
-  let nodes = null;
-  const stop = (afterS) => {
-    const n = nodes;
-    if (!n) return;
-    nodes = null;
-    const at = ctx.currentTime + afterS;
-    n.noise.stop(at);
-    n.tone.stop(at);
-    n.fifth.stop(at);
-  };
-  return {
-    ctx,
-    start() {
-      if (ctx.state === "suspended") ctx.resume().catch(() => undefined);
-      stop(0);
-      const t = ctx.currentTime;
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuf;
-      noise.loop = true;
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.Q.value = 0.8;
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.value = 0;
-      noise.connect(filter).connect(noiseGain).connect(ctx.destination);
-      const tone = ctx.createOscillator();
-      tone.type = "sine";
-      const toneGain = ctx.createGain();
-      toneGain.gain.value = 0;
-      tone.connect(toneGain).connect(ctx.destination);
-      const fifth = ctx.createOscillator(); // joins only at the resolve
-      fifth.type = "sine";
-      const fifthGain = ctx.createGain();
-      fifthGain.gain.value = 0;
-      fifth.connect(fifthGain).connect(ctx.destination);
-      noise.start(t);
-      tone.start(t);
-      fifth.start(t);
-      nodes = { noise, filter, noiseGain, tone, toneGain, fifth, fifthGain };
-      this.set(0);
-    },
-    set(p) {
-      const n = nodes;
-      if (!n) return;
-      const { noiseHz, noiseGain, toneHz, toneGain } = holdSoundAt(p);
-      const t = ctx.currentTime;
-      n.filter.frequency.setTargetAtTime(noiseHz, t, 0.03);
-      n.noiseGain.gain.setTargetAtTime(noiseGain, t, 0.03);
-      n.tone.frequency.setTargetAtTime(toneHz, t, 0.03);
-      n.toneGain.gain.setTargetAtTime(toneGain, t, 0.03);
-    },
-    release() { // let go early: the room comes back for a moment, then fades
-      const n = nodes;
-      if (!n) return;
-      const t = ctx.currentTime;
-      n.filter.frequency.setTargetAtTime(2400, t, 0.08);
-      n.noiseGain.gain.setTargetAtTime(0.05, t, 0.05);
-      n.noiseGain.gain.setTargetAtTime(0, t + 0.15, 0.1);
-      n.toneGain.gain.setTargetAtTime(0, t, 0.05);
-      stop(0.7);
-    },
-    resolve() { // the ring completed: the noise is cut, one clear tone rings out with its fifth
-      const n = nodes;
-      if (!n) return;
-      const t = ctx.currentTime;
-      n.noiseGain.gain.setTargetAtTime(0, t, 0.02);
-      n.tone.frequency.setTargetAtTime(294, t, 0.02);
-      n.toneGain.gain.setTargetAtTime(0.07, t, 0.02);
-      n.toneGain.gain.setTargetAtTime(0, t + 0.12, 0.25);
-      n.fifth.frequency.setValueAtTime(441, t);
-      n.fifthGain.gain.setTargetAtTime(0.035, t + 0.04, 0.02);
-      n.fifthGain.gain.setTargetAtTime(0, t + 0.16, 0.3);
-      stop(1.4);
-    },
-    close() { stop(0); ctx.close().catch(() => undefined); },
-  };
+/** Film grain opacity for the room's level 0..1 (the murmur's level, welcome-audio.js roomLevelAt). */
+export function grainOpacity(level) {
+  const x = Number.isFinite(level) ? Math.max(0, Math.min(1, level)) : 0;
+  return GRAIN_MIN + (GRAIN_MAX - GRAIN_MIN) * x;
+}
+
+/**
+ * What a key does while the Enter curtain is up: "bypass" (Enter/Space on the focused disc: the curtain steps aside
+ * and the hold starts), "sound" / "silent" (enter), "trap" (Tab stays inside the curtain), "swallow" (nothing behind
+ * the curtain reacts), "pass" (modified keys: browser shortcuts).
+ */
+export function curtainKey({ key, repeat = false, mod = false, onDisc = false, onQuiet = false }) {
+  if (mod) return "pass";
+  if (HOLD_KEYS.has(key) && onDisc) return "bypass";
+  if (key === "Tab") return "trap";
+  if (repeat) return "swallow";
+  if (key === "Escape") return "silent";
+  if (HOLD_KEYS.has(key)) return onQuiet ? "silent" : "sound";
+  return "swallow";
 }
 
 // ---------------------------------------------------------------- screen
@@ -413,6 +366,22 @@ function grainTile() {
   return `url(${c.toDataURL("image/png")})`;
 }
 
+/** The flare's sprite: a round white glow, drawn stretched (anamorphic) along the hairline. */
+function flareSprite() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const x = c.getContext("2d");
+  if (!x) return null;
+  const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, "rgba(255,255,255,0.95)");
+  gr.addColorStop(0.1, "rgba(255,255,255,0.42)");
+  gr.addColorStop(0.4, "rgba(255,255,255,0.1)");
+  gr.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = gr;
+  x.fillRect(0, 0, 128, 128);
+  return c;
+}
+
 let coldOpenPlayed = false; // once per page load
 
 export function mount(root, { app, signal }) {
@@ -425,7 +394,8 @@ export function mount(root, { app, signal }) {
   const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
   // the stage laptop needs no install line (T-365 P2-1); iPhone steps on iPhone only, Android gets a button (T-458)
   const hint = platform === "ios" || touch ? installHint({ standalone, platform }) : null;
-  const playCold = !coldOpenPlayed && !reduced.matches && !document.hidden;
+  const curtainUp = !coldOpenPlayed && !document.hidden; // the Enter curtain: once per page load, reduced motion too
+  const playCold = curtainUp && !reduced.matches;
   const coldK = touch ? TOUCH_COLD_SCALE : 1;
   const plan = scalePlan(COLD_OPEN, coldK);
   coldOpenPlayed = true;
@@ -441,6 +411,8 @@ export function mount(root, { app, signal }) {
   const canvas = h("canvas", { class: "wl-field", "aria-hidden": "true" });
   const grain = h("div", { class: "wl-grain", "aria-hidden": "true" });
   const vignette = h("div", { class: "wl-vignette", "aria-hidden": "true" });
+  // letterbox (2.39:1 on wide screens): closed through the black frame and the chaos, opening at the promise
+  const bars = playCold ? [h("div", { class: "wl-bar wl-bar-top", "aria-hidden": "true" }), h("div", { class: "wl-bar wl-bar-bottom", "aria-hidden": "true" })] : [];
   let soundOn = false;
   try { soundOn = localStorage.getItem(SOUND_KEY) === "1"; } catch { /* private mode */ }
   const soundBtn = h("button", { type: "button", class: "wl-sound", "aria-pressed": String(soundOn) }, svgIcon(ICON_SPEAKER),
@@ -452,15 +424,27 @@ export function mount(root, { app, signal }) {
 
   const hero = h("h1", { id: "wl-title", class: "wl-hero" });
   const words = heroWords();
+  const wordStartsMs = words.map((_, i) => wordDelay(i, 4, plan));
   words.forEach((w, i) => {
-    const outer = h("span", { class: "wl-w", style: `--wl-d: ${wordDelay(i, 4, plan)}ms` }, h("span", { class: "wl-wi", text: w }));
+    const outer = h("span", { class: "wl-w", style: `--wl-d: ${wordStartsMs[i]}ms` }, h("span", { class: "wl-wi", text: w }));
     hero.append(outer, i < words.length - 1 ? " " : "");
   });
 
+  // the Enter curtain: one line, two doors. Not a <dialog>.showModal(): that makes the disc inert, and "focus Start,
+  // hold Enter" (scripts/app_check.py, a presenter's habit) must keep working; Tab is trapped by hand instead.
+  const enterBtn = h("button", { type: "button", class: "wl-enter" }, svgIcon(ICON_SPEAKER), h("span", { text: "Enter with sound" }));
+  const quietBtn = h("button", { type: "button", class: "wl-enter-quiet", text: "Enter silently" });
+  const curtain = curtainUp ? h("div", { class: "wl-curtain", role: "dialog", "aria-modal": "true", "aria-labelledby": "wl-curtain-title" },
+    h("div", { class: "wl-curtain-in" },
+      h("span", { class: "wl-curtain-line", "aria-hidden": "true" }),
+      h("p", { id: "wl-curtain-title", class: "wl-curtain-title", text: "This starts in a loud room. Turn your sound on." }),
+      h("div", { class: "wl-curtain-acts" }, enterBtn, quietBtn),
+      fine ? h("p", { class: "wl-curtain-key" }, h("kbd", { text: "Enter" }), " with sound, ", h("kbd", { text: "Esc" }), " silently") : null)) : null;
+
   root.classList.add("screen-welcome");
-  const section = h("section", { class: "wl", "data-phase": "idle", "data-cold": playCold ? "play" : "done", "aria-labelledby": "wl-title",
+  const section = h("section", { class: "wl", "data-phase": "idle", "data-cold": playCold ? "wait" : "done", "aria-labelledby": "wl-title",
     style: `--wl-k: ${coldK}` },
-    canvas, vignette, grain, fieldLabelEl,
+    canvas, vignette, ...bars, grain, fieldLabelEl,
     h("div", { class: "wl-main" },
       hero,
       h("div", { class: "wl-row" },
@@ -474,15 +458,17 @@ export function mount(root, { app, signal }) {
           problem)),
       status),
     soundBtn, // outside .wl-main: that block translates with the pointer, which would anchor a fixed child to it
-    playCold ? skipBtn : null);
+    playCold ? skipBtn : null,
+    curtain);
   root.append(section);
+  if (curtain) enterBtn.focus({ preventScroll: true });
   // T-463: the delay line is the server's expected delay (/health tse_window, T-419), never a fixed "1.5 s"
   fetchHealth().then((health) => {
     const el = section.querySelector(".wl-delay");
     if (el && !signal.aborted) el.textContent = expectedDelayCopy(health);
   });
   grain.style.backgroundImage = grainTile();
-  if (playCold) document.body.dataset.wlCold = "1";
+  if (curtainUp) document.body.dataset.wlCold = "1"; // the chrome is out of the frame behind the curtain and the cold open
 
   // ---- hold state machine wiring
   let s = holdInit();
@@ -497,7 +483,7 @@ export function mount(root, { app, signal }) {
 
   const render = (prev) => {
     disc.style.setProperty("--wl-p", s.progress.toFixed(3));
-    if (sound && s.phase === "holding") sound.set(s.progress);
+    if (sound && s.phase === "holding") sound.hold(s.progress);
     if (prev && prev.phase === s.phase) return;
     disc.dataset.phase = s.phase;
     section.dataset.phase = s.phase;
@@ -508,10 +494,11 @@ export function mount(root, { app, signal }) {
     problem.textContent = s.phase === "failed" ? s.error : "";
     status.textContent = s.phase === "holding" ? "Holding. Keep holding to start." : s.phase === "armed" ? "Let go to start."
       : s.phase === "starting" ? "Opening the microphone." : s.phase === "done" ? "Microphone open." : "";
-    if (sound) {
-      if (s.phase === "holding" && prev?.phase !== "holding") sound.start();
-      else if (s.phase === "idle" && prev?.phase === "holding") sound.release();
+    if (sound && prev) {
+      if (s.phase === "holding" && prev.phase !== "holding") { sound.press(); sound.hold(s.progress); }
+      else if ((s.phase === "idle" && prev.phase === "holding") || (s.phase === "failed" && prev.phase !== "failed")) sound.release();
       else if (s.phase === "full") sound.resolve();
+      else if (s.phase === "done") { sound.silence(); sound.close(400); sound = null; } // the mic is open: silence
     }
     if (s.phase === "full" && !reduced.matches && typeof ripple.animate === "function") {
       ripple.animate([{ scale: 1, opacity: 0.7 }, { scale: 1.9, opacity: 0 }], { duration: 800, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
@@ -577,7 +564,7 @@ export function mount(root, { app, signal }) {
   const press = (source, e) => {
     if (s.phase !== "idle" && s.phase !== "failed") return false;
     skipCold();
-    if (soundOn && !sound) { try { sound = makeHoldSound(); } catch { sound = null; } } // inside the gesture
+    ensureSound(false); // inside the gesture: a hold with sound left on (or straight through the curtain) still sounds
     app.emit("start-gesture"); // the shell's contract: synchronous inside the pointerdown / keydown
     dispatch({ type: "press", source, at: e.timeStamp || performance.now() });
     return true;
@@ -598,6 +585,16 @@ export function mount(root, { app, signal }) {
 
   // keys: on the disc, or on the page when nothing focusable has focus (the judge can just hold Space)
   const keyTarget = (t) => t === disc || t === document.body || t === document.documentElement || t?.id === "stage" || root.contains(t) && !t.closest("a, input, select, textarea, button:not(#start)");
+  addEventListener("keydown", (e) => { // the curtain's keys: capture, so nothing behind it reacts first
+    if (!curtainOpen) return;
+    const act = curtainKey({ key: e.key, repeat: e.repeat, mod: e.metaKey || e.ctrlKey || e.altKey, onDisc: e.target === disc, onQuiet: e.target === quietBtn });
+    if (act === "pass") return;
+    if (act === "bypass") { enter(soundOn, { bypass: true }); return; } // the disc's own handler presses next
+    e.preventDefault();
+    e.stopPropagation();
+    if (act === "trap") (document.activeElement === enterBtn ? quietBtn : enterBtn).focus();
+    else if (act === "sound" || act === "silent") enter(act === "sound");
+  }, { signal, capture: true });
   addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (!HOLD_KEYS.has(e.key)) { if (!e.repeat && e.key !== "Tab" && e.key !== "Shift") skipCold(); return; }
@@ -612,28 +609,72 @@ export function mount(root, { app, signal }) {
     dispatch({ type: "release", source: `key:${e.key}` });
   }, { signal });
   addEventListener("blur", () => dispatch({ type: "cancel" }), { signal });
-  document.addEventListener("visibilitychange", () => { if (document.hidden) { dispatch({ type: "cancel" }); skipCold(); } }, { signal });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { dispatch({ type: "cancel" }); skipCold(); sound?.mute(true); } else if (soundOn) sound?.mute(false);
+  }, { signal });
 
-  // ---- sound on/off: the press is the gesture that may create the context (nothing plays until a hold)
-  soundBtn.addEventListener("click", () => {
-    soundOn = !soundOn;
+  // ---- sound: on/off is one choice (the curtain's door or the toggle), remembered; the engine exists only while on
+  function setSound(on) {
+    soundOn = on;
     soundBtn.setAttribute("aria-pressed", String(soundOn));
     soundBtn.querySelector(".wl-sound-text").textContent = soundOn ? "Sound on" : "Sound off";
     try { localStorage.setItem(SOUND_KEY, soundOn ? "1" : "0"); } catch { /* private mode */ }
-    if (soundOn && !sound) { try { sound = makeHoldSound(); } catch { sound = null; } }
     if (!soundOn && sound) { sound.close(); sound = null; }
-  }, { signal });
+  }
+  /** Creates and starts the soundtrack; call only inside a gesture (click, keydown, pointerdown). */
+  function ensureSound(cold) {
+    if (!soundOn || sound || s.phase === "done") return;
+    sound = makeLiveSound({ plan, wordStartsMs });
+    sound?.start({ cold });
+  }
+  soundBtn.addEventListener("click", () => { setSound(!soundOn); ensureSound(false); }, { signal });
+
+  // ---- the curtain: the click (or Enter/Space/Esc) chooses sound, creates the context and starts the film
+  let curtainOpen = Boolean(curtain);
+  function enter(withSound, { bypass = false } = {}) {
+    if (!curtainOpen) return;
+    curtainOpen = false;
+    curtain.dataset.state = "out";
+    setTimeout(() => curtain.remove(), reduced.matches ? 0 : 800);
+    setSound(withSound);
+    if (bypass || !playCold) { // straight to the still end state (reduced motion, or a hold on the disc)
+      ensureSound(false);
+      if (!playCold) delete document.body.dataset.wlCold;
+      if (!bypass) disc.focus({ preventScroll: true });
+      return;
+    }
+    coldT0 = performance.now();
+    section.dataset.cold = "play"; // the CSS timeline (word rises, letterbox, UI arrival) starts now
+    field.begin(coldT0);
+    ensureSound(true);
+    addEventListener("pointerdown", (e) => {
+      if (e.target !== disc && !disc.contains(e.target) && !soundBtn.contains(e.target)) skipCold();
+    }, { signal, capture: true });
+    setTimeout(() => { if (!signal.aborted && !coldDone) { skipCold(); } }, plan.end);
+    disc.focus({ preventScroll: true });
+  }
+  enterBtn.addEventListener("click", () => enter(true), { signal });
+  quietBtn.addEventListener("click", () => enter(false), { signal });
 
   // ---- the cold open: CSS owns the type and the UI (delays from COLD_OPEN); the canvas owns the light
   let coldDone = !playCold;
-  const coldT0 = performance.now();
+  let coldT0 = performance.now();
   function skipCold() {
-    if (coldDone) return;
+    if (coldDone || curtainOpen) return;
     coldDone = true;
+    for (const bar of bars) { // the letterbox opens from wherever it is, then leaves the DOM
+      const from = getComputedStyle(bar).translate;
+      const to = bar.classList.contains("wl-bar-top") ? "0 -101%" : "0 101%";
+      if (typeof bar.animate === "function" && !reduced.matches) {
+        bar.animate([{ translate: from === "none" ? "0 0" : from }, { translate: to }], { duration: 360, easing: "cubic-bezier(.2, .7, .1, 1)", fill: "forwards" })
+          .finished.then(() => bar.remove(), () => bar.remove());
+      } else bar.remove();
+    }
     section.dataset.cold = "done";
     delete document.body.dataset.wlCold;
     skipBtn.remove();
     field.cold(false);
+    sound?.skip();
   }
   skipBtn.addEventListener("click", skipCold, { signal });
   let installPrompt = null;
@@ -650,13 +691,9 @@ export function mount(root, { app, signal }) {
     installBtn.hidden = true;
     try { await p.prompt(); } catch { /* dismissed or already used */ }
   }, { signal });
-  if (playCold) {
-    addEventListener("pointerdown", (e) => { if (e.target !== disc && !disc.contains(e.target)) skipCold(); }, { signal, capture: true });
-    setTimeout(() => { if (!signal.aborted && !coldDone) { skipCold(); } }, plan.end);
-  }
 
   // ---- the field: Canvas 2D, 720 grains in three depth bands; still unless something drives it
-  const field = makeField({ canvas, disc, section, labelEl: fieldLabelEl, store, reduced, coldT0, playCold, fine, signal, plan });
+  const field = makeField({ canvas, disc, section, grain, labelEl: fieldLabelEl, store, reduced, coldT0, playCold, waiting: playCold, fine, signal, plan });
   field.cold(playCold);
   field.phase("idle", 0);
 
@@ -664,6 +701,7 @@ export function mount(root, { app, signal }) {
 
   return () => {
     delete document.body.dataset.wlCold;
+    curtainOpen = false;
     field.destroy();
     if (sound) { sound.close(); sound = null; }
     cancelAnimationFrame(raf);
@@ -673,11 +711,13 @@ export function mount(root, { app, signal }) {
 }
 
 /** The grain field. Draws only when something drives it: the cold open, the hold, the spring, the mic, the pointer. */
-function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, playCold, fine, signal, plan = COLD_OPEN }) {
+function makeField({ canvas, disc, section, grain, labelEl, store, reduced, coldT0, playCold, waiting = false, fine, signal, plan = COLD_OPEN }) {
   const g = canvas.getContext("2d", { alpha: false, desynchronized: true });
   const grains = grainTable();
   const n = grains.x.length;
+  const flare = flareSprite();
   const rt = {
+    t0: coldT0, waiting, lastGrain: "",
     w: 1, h: 1, dpr: 1, raf: 0, lastT: 0, cold: playCold, phase: "idle", progress: 0,
     collapse: { x: 0, v: 0 }, target: 0, springing: false,
     px: 0, py: 0, // pointer / tilt, -1..1
@@ -721,10 +761,15 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
     rt.raf = 0;
     const dt = rt.lastT ? Math.min(0.1, (now - rt.lastT) / 1000) : 0;
     rt.lastT = now;
-    const t = now - coldT0;
+    const t = now - rt.t0;
     const w = rt.w;
     const hgt = rt.h;
     const dpr = rt.dpr;
+    if (rt.waiting) { // behind the Enter curtain: the black frame, nothing else
+      g.fillStyle = rt.colors.bg;
+      g.fillRect(0, 0, w, hgt);
+      return;
+    }
 
     // what drives the frame
     if (reduced.matches) { rt.collapse.x = rt.target; rt.collapse.v = 0; rt.springing = false; }
@@ -751,6 +796,10 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
     const ts = now / 1000;
     const wave = 0.06 + level * 0.9; // the clear voice's wave: the real level once the mic streams
     const ce = c; // collapse (already eased while holding)
+    // the camera: a slow push-in over the cold open, then a little further toward the disc as the ring fills
+    const zoom = 1 + PUSH_IN * (rt.cold && !reduced.matches ? pushAt(t, plan) : 1) + HOLD_PUSH * ce;
+    const zx = w / 2 + (cx - w / 2) * ce;
+    const zy = hgt / 2 + (cy - hgt / 2) * ce;
     for (let b = 0; b < BANDS.length; b++) {
       const depth = BANDS[b];
       const [r, gg, bb] = rt.colors.idle;
@@ -781,6 +830,8 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
           hx = lx + (hx - lx) * e;
           hy = hgt * 0.5 + (hy - hgt * 0.5) * e;
         }
+        hx = zx + (hx - zx) * zoom;
+        hy = zy + (hy - zy) * zoom;
         let x = hx;
         let y = hy;
         if (ce > 0) {
@@ -802,6 +853,23 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
       const len = intro.line * w;
       g.fillRect((w - len) / 2, hgt / 2 - 0.5 * dpr, len, Math.max(1, dpr));
     }
+    const fl = rt.cold && !reduced.matches ? flareAt(t, plan) : 0;
+    if (fl > 0.002 && flare) {
+      // anamorphic flare: one round glow stretched wide along the line, and a hot core; additive, white only
+      const len = Math.max(intro.line, 0.2) * w * 1.35;
+      const fh = (46 + 40 * fl) * dpr;
+      g.globalCompositeOperation = "lighter";
+      g.globalAlpha = 0.5 * fl;
+      g.drawImage(flare, (w - len) / 2, hgt / 2 - fh / 2, len, fh);
+      g.globalAlpha = 0.7 * fl;
+      g.drawImage(flare, w / 2 - 34 * dpr, hgt / 2 - 34 * dpr, 68 * dpr, 68 * dpr);
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = "source-over";
+    }
+    // film grain follows the room: the murmur's level (the same breakpoints the sound uses), turned down by the hold
+    const room = (rt.cold && !reduced.matches ? roomLevelAt(t, plan) : ROOM_BED) * holdMix(ce).room;
+    const gr = grainOpacity(room).toFixed(3);
+    if (gr !== rt.lastGrain) { rt.lastGrain = gr; grain.style.opacity = gr; }
     const cText = ce.toFixed(3);
     if (cText !== rt.lastC) { rt.lastC = cText; section.style.setProperty("--wl-c", cText); } // a style recalc only on change
     if (now - rt.labelAt >= LABEL_MIN_MS) { rt.labelAt = now; label(); } // the dBFS readout at 10 Hz, not per frame
@@ -866,7 +934,8 @@ function makeField({ canvas, disc, section, labelEl, store, reduced, coldT0, pla
   resize();
 
   return {
-    cold(on) { rt.cold = Boolean(on); rt.labelAt = -Infinity; schedule(); },
+    cold(on) { rt.cold = Boolean(on); if (!on) rt.waiting = false; rt.labelAt = -Infinity; schedule(); },
+    begin(t0) { rt.waiting = false; rt.t0 = t0; rt.cold = true; rt.labelAt = -Infinity; schedule(); },
     phase(phase, progress) {
       rt.phase = phase;
       rt.progress = progress;

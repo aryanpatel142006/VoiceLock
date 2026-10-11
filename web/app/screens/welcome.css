@@ -151,8 +151,9 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   gap: var(--space-6, 32px) var(--space-8, 64px);
 }
 .wl[data-cold="play"] .wl-row { animation: wl-arrive 640ms var(--ease-out) calc(4400ms * var(--wl-k, 1)) backwards; } /* --wl-k: 0.6 on a phone (T-458) */
-.wl[data-cold="play"] .wl-key,
-.wl[data-cold="play"] .wl-sound { animation: wl-arrive 640ms var(--ease-out) calc(4640ms * var(--wl-k, 1)) backwards; }
+.wl[data-cold="play"] .wl-key { animation: wl-arrive 640ms var(--ease-out) calc(4640ms * var(--wl-k, 1)) backwards; }
+/* T-480: the sound toggle is in the frame early (with Skip), so the score can be muted while it plays */
+.wl[data-cold="play"] .wl-sound { animation: wl-fade-in 400ms linear calc(900ms * var(--wl-k, 1)) backwards; }
 .wl-start { display: grid; justify-items: center; gap: var(--space-3, 12px); padding-left: 12px; } /* room for the ring */
 .wl-key { margin: 0; font-size: var(--text-small, 14px); color: var(--color-dim); }
 .wl-key kbd {
@@ -284,10 +285,117 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   .wl-hero { font-size: clamp(40px, 9vh, 96px); }
 }
 
+/* ================= T-480: the Enter curtain, the letterbox (sound design: web/app/welcome-audio.js) ================= */
+/* behind the curtain the frame is black: the type, the disc and the corner controls wait for the door */
+/* (the disc stays focusable under the curtain: opacity, not visibility, so "focus Start, hold Enter" still works) */
+.wl[data-cold="wait"] .wl-main { opacity: 0; }
+.wl[data-cold="wait"] .wl-sound,
+.wl[data-cold="wait"] .wl-skip,
+.wl[data-cold="wait"] .wl-field-label { visibility: hidden; }
+.wl[data-cold="wait"] .wl-grain { opacity: 0; }
+
+.wl-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--safe-t, 0px) + 24px) var(--gutter, 24px) calc(var(--safe-b, 0px) + 24px);
+  background: #000;
+  color: var(--color-fg);
+  text-align: center;
+  /* the door: the words go first (blur out), then the black lifts into the cold open's own black frame */
+  transition: opacity 520ms var(--ease-out) 180ms, visibility 0s linear 700ms;
+}
+.wl-curtain[data-state="out"] { opacity: 0; visibility: hidden; pointer-events: none; }
+.wl-curtain-in {
+  display: grid;
+  justify-items: center;
+  gap: clamp(20px, 3.4vh, 32px);
+  max-width: 40rem;
+  animation: wl-fade-in 900ms linear 120ms backwards;
+  transition: opacity 240ms var(--ease-out), filter 240ms var(--ease-out), scale 240ms var(--ease-out);
+}
+.wl-curtain[data-state="out"] .wl-curtain-in { opacity: 0; filter: blur(6px); scale: 0.985; }
+/* a short hairline: the first thing the film will draw */
+.wl-curtain-line { width: 56px; height: 1px; background: var(--color-fg); opacity: 0.55; }
+.wl-curtain-title {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.6vw, 56px);
+  font-stretch: var(--stretch-display, 72%);
+  font-weight: var(--weight-display, 640);
+  line-height: 1;
+  letter-spacing: var(--tracking-display, -0.035em);
+  text-wrap: balance;
+}
+.wl-curtain-acts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 24px; }
+.wl-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 22px 0 18px;
+  border: 1px solid var(--color-fg);
+  border-radius: var(--radius-control, 4px);
+  background: none;
+  color: var(--color-fg);
+  font: 600 var(--text-lead, 20px)/1 var(--font-ui);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--dur-quick, 180ms) var(--ease-out);
+}
+.wl-enter:hover, .wl-enter:focus-visible { background: rgb(255 255 255 / 0.16); }
+.wl-enter .wl-ico { width: 20px; height: 20px; }
+.wl-enter-quiet {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--color-dim);
+  font: 500 var(--text-body, 16px)/1 var(--font-ui);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+  text-underline-offset: 5px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.wl-enter-quiet:hover { color: var(--color-fg); }
+.wl-enter:focus-visible, .wl-enter-quiet:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 4px; }
+.wl-curtain-key { margin: 0; color: var(--color-faint); font-size: var(--text-small, 14px); }
+.wl-curtain-key kbd {
+  font: 500 var(--text-micro, 12px)/1 var(--font-mono);
+  padding: 4px 7px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  color: var(--color-dim);
+}
+
+/* letterbox: 2.39:1 bars over the black frame and the chaos, opening as the promise begins (welcome.js COLD_OPEN.words,
+   150 ms early so the first word rises into open frame); a skip opens them from wherever they are (WAAPI) */
+.wl-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  height: max(0px, calc((100dvh - 100vw / 2.39) / 2));
+  background: #000;
+  pointer-events: none;
+}
+.wl-bar-top { top: 0; }
+.wl-bar-bottom { bottom: 0; }
+@media (max-aspect-ratio: 4/3) { .wl-bar { height: 11dvh; } } /* a phone held upright: a thinner frame, not a slot */
+.wl[data-cold="play"] .wl-bar-top { animation: wl-bar-top 1100ms var(--ease-film, ease-out) calc(2250ms * var(--wl-k, 1)) both; }
+.wl[data-cold="play"] .wl-bar-bottom { animation: wl-bar-bottom 1100ms var(--ease-film, ease-out) calc(2250ms * var(--wl-k, 1)) both; }
+@keyframes wl-bar-top { to { translate: 0 -101%; } }
+@keyframes wl-bar-bottom { to { translate: 0 101%; } }
+
 /* ---------- reduced motion: the calm still version ---------- */
 @media (prefers-reduced-motion: reduce) {
   .wl { animation: wl-fade-in 200ms linear; }
-  .wl-wi, .wl-row, .wl-key, .wl-sound, .wl-field-label, .wl-skip, .wl-grain { animation: none !important; }
+  .wl-wi, .wl-row, .wl-key, .wl-sound, .wl-field-label, .wl-skip, .wl-grain, .wl-curtain-in { animation: none !important; }
+  .wl-curtain, .wl-curtain-in { transition: none; }
   .wl-main { translate: none; transition: none; }
   .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; transition: --wl-p 0ms; }
   .wl-hero, .wl-facts { transition: none; }
