@@ -809,7 +809,7 @@ class EnrolledCandidate:
             mix_db, d0, d1 = blocks(mix), blocks(s0), blocks(s1)
             weak, strong = np.minimum(d0, d1), np.maximum(d0, d1)
             ov = (weak >= strong - SOLO_OVERLAP_DB) & (weak >= mix_db - SOLO_SHARE_DB)
-            overlap_now = int(ov.sum()) >= max(2, int(math.ceil(SOLO_OVERLAP_FRAC * n)))
+            overlap_now = int(ov.sum()) >= max(2, math.ceil(SOLO_OVERLAP_FRAC * n))
         else:
             lm, l0, l1 = _db(mix), _db(s0), _db(s1)
             weak, strong = min(l0, l1), max(l0, l1)
