@@ -1,8 +1,11 @@
 // Selective Hearing app service worker (T-345). Scope /app/.
 // Network-first: the demo always runs the JS on the server; the cache is only an offline fallback for
 // the shell. Never touches the engine (/ws, /health), the console files or the SDK: those go straight
-// to the network. Bump VERSION when the precache list changes; old caches are dropped on activate.
-const VERSION = "hearing-app-v1";
+// to the network. VERSION changes with every build: the server (hearing/server/static.py) replaces
+// BUILD with the git rev + a hash of web/app/ (T-452), so a new build drops the old caches on activate
+// instead of serving stale modules (Safari did). "dev" only when sw.js is served by something else.
+const BUILD = "dev";
+const VERSION = `hearing-app-${BUILD}`;
 const SHELL = [
   "./", "index.html", "app.js", "app.css", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png",

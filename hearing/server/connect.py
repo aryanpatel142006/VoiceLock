@@ -1,7 +1,8 @@
 """``/connect`` (QR code + URLs for phones), ``/hearing-ca.crt`` (the certificate to trust), ``/sdk/``.
 
 ``/sdk/hearing-client.js`` imports ``../console/protocol.js``, so the console directory is also
-mounted at ``/console/``: the same relative import works from the repo and over http.
+mounted at ``/console/``: the same relative import works from the repo and over http. Both go out
+with ``Cache-Control: no-cache`` (T-452) so a browser never runs a stale module after a merge.
 
 ``hearing serve`` puts a :class:`hearing.server.tls.ConnectInfo` in ``app.state.connect`` and the
 served certificate's path in ``app.state.cert_path``; without them (tests, ``uvicorn`` by hand)
@@ -16,8 +17,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.staticfiles import StaticFiles
 
+from hearing.server.static import ConsoleFiles
 from hearing.server.tls import ConnectInfo, qr_svg
 
 SDK_DIR = Path(__file__).resolve().parents[2] / "web" / "sdk"
@@ -82,6 +83,6 @@ def mount_connect(app: FastAPI, console_dir: Path) -> None:
         return FileResponse(path, media_type="application/x-x509-ca-cert", filename="hearing-ca.crt")
 
     if SDK_DIR.is_dir():
-        app.mount("/sdk", StaticFiles(directory=SDK_DIR), name="sdk")
+        app.mount("/sdk", ConsoleFiles(directory=SDK_DIR), name="sdk")
     if Path(console_dir).is_dir():
-        app.mount("/console", StaticFiles(directory=console_dir), name="console-files")
+        app.mount("/console", ConsoleFiles(directory=console_dir), name="console-files")
