@@ -17,3 +17,10 @@ VoiceLock was built at HackRU Fall 2026 by Aryan Patel, Joseph Roche and Ahmad A
 - Reviewed the app screens and demo previews and raised usability questions.
 - My laptop-c worker completed T-381: ported Muse’s earlier analysis into a tested paired model-evaluation utility for seed variability and wrong-speaker comparisons. I published that utility with its statistical limitations.
 - Published missing web app documentation and the T-381 evaluation utility to the submission repository from my account. The web implementation was already present and was built by the wider team.
+
+## Joseph Roche: what I worked on
+
+- **Research direction and product decisions.** I ran the overnight research swarm (worker muse-b): set the fine-tuning-only research scope, killed dead lines (projection head, soup, distillation), and made the shipping calls — frozen generalist as the demo default, identity-over-latency priority, the target-absence gate, and the end-to-end latency benchmark on judging hardware.
+- **Enrollment and evaluation.** I defined the short-enrollment question (how few seconds of voice calibrate strongly), ordered the noise breaking-curve and 0 dB evaluations, the checkpoint shootout against the fine-tuned models, and the release-decision table that turns parallel results into one shipping call.
+- **GPU operations.** I set the scheduling rules the swarm runs under: book-on-demand, no idle allocations, no speculative fine-tuning, and the OOM safeguard (two identical out-of-memory crashes block resubmission until a memory test passes).
+- **Listening tests.** My voice is one of the saved profiles; I did the live demo checks and reported the failure modes that became tasks — especially the mid-utterance confidence flicker that made the audio pump.
