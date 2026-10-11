@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060708">
+<link rel="preload" href="../fonts/archivo-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="comp.css">
+<title>Comp: Phone companion</title>
+</head>
+<body>
+<!-- Comp, sample values: the phone mirrors the stage session (/app/?watch=<id>); it is never the mic or the output. -->
+<main class="frame is-focus" style="--level:.55; --conf:.82; --field-x:50%; --field-y:28%">
+  <div class="field" aria-hidden="true"></div>
+  <header class="top">
+    <span class="pill" role="status"><span class="dot"></span>Isolated</span>
+    <span class="watch-badge">Mirroring the stage laptop, this phone is not a mic</span>
+  </header>
+  <div></div>
+  <section class="phone-main phone-layout">
+    <div class="companion phone-main">
+      <h1 class="hearing"><span class="lead">Hearing</span><span class="word">Joseph</span></h1>
+      <div class="phone-captions" aria-live="polite">
+        <p>We should get there before the doors close,</p>
+        <p class="final">so meet me by the fountain at noon.</p>
+      </div>
+      <div class="phone-buttons" role="group" aria-label="Control the stage session">
+        <button aria-pressed="true">Focus</button>
+        <button>Quiet</button>
+        <button>Joseph</button>
+        <button>Release</button>
+      </div>
+    </div>
+    <aside class="handoff" aria-label="Open on a phone">
+      <h2>Follow along on your phone</h2>
+      <div class="qr" role="img" aria-label="QR code area, filled by /connect?page=app at runtime"><svg viewBox="0 0 10 10" aria-hidden="true"><rect width="10" height="10" fill="none" stroke="#060708" stroke-width=".15" stroke-dasharray=".4 .3"/><text x="5" y="5.3" font-size=".9" text-anchor="middle" fill="#060708" font-family="JetBrains Mono, monospace">QR from /connect</text></svg></div>
+      <p>Scan with the iPhone camera. The phone shows the state and captions and can switch Focus, Quiet and the person. It does not listen.</p>
+      <code>https://10.75.113.217:8000/app/?watch=s-7f3a</code>
+    </aside>
+  </section>
+  <span class="comp-tag">Comp, sample values</span>
+</main>
+</body>
+</html>

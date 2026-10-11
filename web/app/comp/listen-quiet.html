@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060708">
+<link rel="preload" href="../fonts/archivo-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="comp.css">
+<title>Comp: Listen, Quiet</title>
+</head>
+<body>
+<!-- Comp, sample values: Quiet mode, audio silent, captions from caption messages only. -->
+<main class="frame is-quiet" style="--level:.40; --conf:.80">
+  <div class="field" aria-hidden="true"></div>
+  <header class="top">
+    <span class="pill" role="status"><span class="dot"></span>Quiet <span class="sub">audio off, captions for Joseph</span></span>
+  <dl class="truth" aria-label="Truth strip">
+    <div><dt>Backend</dt><dd>Mac</dd></div>
+    <div><dt>Delay</dt><dd>1.48 s</dd></div>
+    <div><dt>RTT</dt><dd>—</dd></div>
+    <div class="rec"><dt>Session</dt><dd>recording</dd></div>
+  </dl>
+  </header>
+  <section class="listen-main quiet">
+    <div class="captions" aria-live="polite">
+      <span class="meta">Captions for Joseph, 1 to 2 s behind</span>
+      <p>The coffee here is better than it looks.</p>
+      <p class="recent">We should get there before the doors close,</p>
+      <p class="final">so meet me by the fountain at noon.</p>
+    </div>
+    <div class="controls">
+    <div class="seg" role="group" aria-label="Mode">
+      <button class="mode" aria-pressed="false">Focus<kbd>⇧F</kbd></button>
+      <button class="mode" aria-pressed="true">Quiet<kbd>⇧Q</kbd></button>
+    </div>
+    <div class="people" role="group" aria-label="Saved person">
+      <button class="person"><kbd>1</kbd>Aryan</button>
+      <button class="person" aria-pressed="true"><kbd>2</kbd>Joseph</button>
+      <button class="person release"><kbd>⇧0</kbd>Release</button>
+    </div>
+    </div>
+  </section>
+  <span class="comp-tag">Comp, sample values</span>
+</main>
+</body>
+</html>

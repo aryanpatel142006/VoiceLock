@@ -1,0 +1,412 @@
+/*
+ * Static comps for the /app screens (T-344). No JS: every value on screen is a sample written into
+ * the HTML, flagged by the "Comp, sample values" tag. The real screens (T-345 shell, T-344's
+ * DESIGN_SPEC.md) drive the same classes from telemetry. Reuse freely; class names are the spec's.
+ * T-388: the glow halos and the radial wash cores were taken out to match the shipped rules (docs/DESIGN.md
+ * "App polish rules"): a state is a fill or a 1 px outline, never a coloured blur.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-stretch: var(--stretch-ui);
+  font-weight: var(--weight-ui);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+
+/* ---------- Frame: one full-viewport stage, layered ---------- */
+.frame {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  overflow: hidden;
+}
+
+/* Colour wash: the A/B state fills the whole frame. Green or amber light pools from the field's
+   centre and from the floor, the way a stage wash spills. */
+.frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(to bottom, transparent 55%, var(--wash, transparent)), /* T-388: no radial halo; the wash is a floor of light */
+    var(--color-bg);
+  transition: background var(--dur-wash) linear;
+}
+/* Film grain: a fixed SVG noise tile, not animated. */
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+.is-focus { --accent: var(--color-focus); --wash: var(--color-focus-wash); --wash-core: color-mix(in oklab, var(--color-focus-deep) 75%, transparent); }
+.is-raw   { --accent: var(--color-raw);   --wash: var(--color-raw-wash);   --wash-core: color-mix(in oklab, var(--color-raw-deep) 75%, transparent); }
+.is-quiet { --accent: var(--color-fg);    --wash: transparent;             --wash-core: rgb(0 89 43 / 0.12); }
+.is-idle  { --accent: var(--color-faint); --wash: transparent;             --wash-core: transparent; }
+
+/* ---------- Sound field (Canvas 2D in the app; drawn here with CSS at one sample level) ---------- */
+/* --level: 0..1, the mic peak after the 24 dB/s release mapped from --scene-floor-db..ceiling.
+   --conf: 0..1, tse confidence; sharpens the rings. In the app nothing here moves unless those move. */
+.field {
+  position: absolute;
+  z-index: -1;
+  left: var(--field-x, 64%);
+  top: var(--field-y, 42%);
+  width: var(--field-size, min(78vh, 62vw));
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  --ring: var(--accent);
+  background:
+    radial-gradient(circle, color-mix(in oklab, var(--ring) calc(var(--level, 0) * 70%), transparent) 0 calc(6% + var(--level, 0) * 6%), transparent calc(7% + var(--level, 0) * 10%)),
+    repeating-radial-gradient(circle, transparent 0 calc(5.4% - 1px), color-mix(in oklab, var(--ring) calc(18% + var(--conf, 0) * 50%), transparent) calc(5.4% - 1px) 5.4%);
+  mask-image: radial-gradient(circle, #000 calc(18% + var(--level, 0) * 30%), transparent calc(40% + var(--level, 0) * 30%));
+  -webkit-mask-image: radial-gradient(circle, #000 calc(18% + var(--level, 0) * 30%), transparent calc(40% + var(--level, 0) * 30%));
+}
+.field--idle {
+  background: repeating-radial-gradient(circle, transparent 0 calc(5.4% - 1px), color-mix(in oklab, var(--color-idle) 70%, transparent) calc(5.4% - 1px) 5.4%);
+  mask-image: radial-gradient(circle, #000 15%, transparent 42%);
+  -webkit-mask-image: radial-gradient(circle, #000 15%, transparent 42%);
+}
+.is-quiet .field { opacity: var(--scene-quiet-dim); }
+.field-label {
+  position: absolute;
+  left: var(--field-x, 64%);
+  top: var(--field-y, 42%);
+  translate: -50% -50%;
+  color: var(--color-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+}
+
+/* ---------- Top bar: pill (left) and truth strip (right) ---------- */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  position: relative;
+  z-index: var(--z-truth);
+}
+.wordmark {
+  font-stretch: var(--stretch-wide);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-small);
+  letter-spacing: var(--tracking-label);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: var(--hairline) solid color-mix(in oklab, var(--accent) 55%, transparent);
+  background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-small);
+}
+.pill .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.pill .sub { color: var(--color-dim); font-weight: var(--weight-ui); }
+
+.truth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  font-size: var(--text-micro);
+  color: var(--color-dim);
+}
+.truth div { display: flex; flex-direction: column; gap: 2px; }
+.truth dt { color: var(--color-faint); }
+.truth dd {
+  margin: 0;
+  color: var(--color-fg);
+  font-family: var(--font-mono);
+  font-variant-numeric: var(--numeric);
+  font-size: var(--text-number);
+  line-height: 1.1;
+}
+.truth .rec dd { display: inline-flex; align-items: center; gap: var(--space-2); }
+.truth .rec dd::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--color-bad); }
+
+.comp-tag {
+  position: absolute;
+  right: var(--safe-right);
+  bottom: calc(var(--safe-bottom) / 2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-faint);
+  z-index: var(--z-toast);
+}
+
+/* ---------- Listen: the hero word and controls ---------- */
+.listen-main {
+  display: grid;
+  align-content: end;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-6) var(--space-8);
+  padding-bottom: var(--space-6);
+  position: relative;
+  z-index: var(--z-content);
+}
+.hearing { grid-column: 1; align-self: end; }
+h1.hearing, .hearing h1 { margin: 0; font-weight: inherit; }
+.hearing .lead {
+  display: block;
+  font-size: var(--text-title);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+  font-weight: var(--weight-ui);
+  color: var(--color-dim);
+}
+.hearing .word {
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-stretch: var(--stretch-display);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
+  color: var(--accent);
+  text-wrap: balance;
+}
+.hearing .why {
+  margin: calc(var(--space-4) + 0.12 * var(--text-display)) 0 0;  /* clears the display descenders */
+  max-width: 34ch;
+  font-size: var(--text-lead);
+  color: var(--color-dim);
+}
+
+.controls {
+  grid-column: 2;
+  align-self: end;
+  display: grid;
+  gap: var(--space-4);
+  width: min(440px, 100%);
+}
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-bg-raise) 85%, transparent);
+  border: var(--hairline) solid var(--color-line);
+}
+.seg button {
+  min-height: var(--tap-stage);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-dim);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-lead);
+  font-stretch: var(--stretch-ui);
+  display: grid;
+  place-content: center;
+  line-height: 1.05;
+}
+.seg button kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-ui);
+  opacity: 0.7;
+}
+.seg button[aria-pressed="true"] { color: var(--color-on-state); }
+.seg .raw[aria-pressed="true"] { background: var(--color-raw); }
+.seg .sel[aria-pressed="true"] { background: var(--color-focus); }
+.seg .mode[aria-pressed="true"] { background: var(--color-fg); }
+
+.people { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-2); }
+.person {
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  border: var(--hairline) solid var(--color-line);
+  background: color-mix(in oklab, var(--color-bg-raise) 80%, transparent);
+  text-align: left;
+  font-stretch: var(--stretch-wide);
+  font-weight: var(--weight-strong);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.person kbd { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--color-dim); font-stretch: 100%; }
+@media (pointer: coarse) { .seg button kbd, .person kbd { display: none; } }
+.person[aria-pressed="true"] { border-color: var(--color-fg); box-shadow: inset 0 0 0 1px var(--color-fg); }  /* neutral: amber/green mean what you hear, not who is chosen */
+.person.release { color: var(--color-dim); font-stretch: var(--stretch-ui); }
+
+/* ---------- Quiet: captions take the frame ---------- */
+.captions {
+  grid-column: 1 / -1;
+  align-self: center;
+  max-width: 24ch;
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-ui);
+  letter-spacing: var(--tracking-title);
+}
+.captions p { margin: 0 0 0.35em; color: var(--color-faint); }
+.captions p.recent { color: var(--color-dim); }
+.captions p.final { color: var(--color-fg); }
+.captions .meta {
+  display: block;
+  margin-bottom: var(--space-5);
+  font-size: var(--text-small);
+  color: var(--color-dim);
+  letter-spacing: 0;
+}
+.listen-main.quiet { grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; }
+.listen-main.quiet .captions { grid-row: 1; }
+
+/* ---------- Welcome ---------- */
+.welcome-main {
+  display: grid;
+  align-content: end;
+  gap: var(--space-7);
+  padding-bottom: var(--space-7);
+  position: relative;
+  z-index: var(--z-content);
+}
+.hero {
+  margin: 0;
+  max-width: 13ch;
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  font-stretch: var(--stretch-display);
+  font-weight: var(--weight-display);
+  line-height: 0.92;
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+}
+.welcome-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6) var(--space-8); }
+.hold {
+  position: relative;
+  display: grid;
+  place-content: center;
+  width: 168px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  background: var(--color-fg);
+  color: var(--color-on-state);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-lead);
+  line-height: 1.1;
+  text-align: center;
+}
+.hold small { display: block; font-size: var(--text-micro); font-weight: var(--weight-ui); opacity: 0.7; }
+/* The fill ring: --hold 0..1 is the press progress (pointer time, not a fake loader). */
+.hold::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-fg) calc(var(--hold, 0) * 1turn), var(--color-line) 0);
+  mask: radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+.facts { display: grid; gap: var(--space-2); max-width: 38ch; color: var(--color-dim); font-size: var(--text-lead); }
+.facts strong { color: var(--color-fg); font-weight: var(--weight-strong); }
+.install { font-size: var(--text-small); color: var(--color-faint); }
+
+/* ---------- Phone companion ---------- */
+.phone-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: end;
+  gap: var(--space-5);
+  position: relative;
+  z-index: var(--z-content);
+  padding-bottom: var(--space-4);
+}
+.watch-badge {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: var(--text-small);
+  color: var(--color-dim);
+}
+.watch-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--color-dim); }
+.phone-captions {
+  margin: 0;
+  padding: var(--space-5);
+  border-radius: var(--radius-sheet);
+  background: color-mix(in oklab, var(--color-bg-raise) 82%, transparent);
+  border: var(--hairline) solid var(--color-line);
+  font-size: var(--text-lead);
+  line-height: var(--leading-caption);
+}
+.phone-captions p { margin: 0 0 0.4em; color: var(--color-dim); }
+.phone-captions p.final { color: var(--color-fg); margin: 0; }
+.phone-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.phone-buttons button {
+  min-height: var(--tap-stage);
+  border-radius: var(--radius-control);
+  border: var(--hairline) solid var(--color-line);
+  background: var(--color-bg-raise);
+  font-weight: var(--weight-strong);
+  font-size: var(--text-lead);
+}
+.phone-buttons button[aria-pressed="true"] { background: var(--color-fg); color: var(--color-on-state); border-color: transparent; }
+.handoff { display: none; }
+
+/* ---------- 390 px: one column, controls under the word ---------- */
+@media (max-width: 720px) {
+  .top { align-items: flex-start; }
+  .truth { gap: var(--space-2) var(--space-4); width: 100%; }
+  .listen-main, .listen-main.quiet { grid-template-columns: 1fr; gap: var(--space-5); padding-bottom: var(--space-4); }
+  .controls { grid-column: 1; width: 100%; }
+  .seg button { min-height: 60px; font-size: var(--text-body); }
+  .people { grid-template-columns: 1fr 1fr; }
+  .people .release { grid-column: 1 / -1; }
+  .hearing .why { display: none; }
+  .frame { --field-x: 50%; --field-y: 30%; --field-size: 120vw; }
+  .frame.is-idle { --field-y: 24%; }
+  .hold { width: 140px; font-size: var(--text-body); padding: var(--space-3); }
+  .seg button kbd, .person kbd { display: none; }
+  .captions { max-width: none; }
+}
+
+/* ---------- 1920 px desktop: the phone comp shows the laptop's handoff panel beside the companion ---------- */
+@media (min-width: 1100px) {
+  .phone-layout { grid-template-columns: minmax(0, 1fr) 420px; align-items: end; column-gap: var(--space-9); }
+  .phone-layout .companion { max-width: 520px; }
+  .handoff {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border-radius: var(--radius-sheet);
+    background: var(--color-bg-raise);
+    border: var(--hairline) solid var(--color-line);
+  }
+  .handoff h2 { margin: 0; font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--weight-title); letter-spacing: var(--tracking-title); }
+  .handoff p { margin: 0; color: var(--color-dim); }
+  .handoff code { font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-fg); word-break: break-all; }
+  .qr { width: 100%; aspect-ratio: 1; border-radius: var(--radius-control); background: var(--color-fg); color: var(--color-bg); padding: 18px; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+  .qr text { font-size: 0.55px; }
+}

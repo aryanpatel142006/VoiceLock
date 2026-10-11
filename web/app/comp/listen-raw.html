@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060708">
+<link rel="preload" href="../fonts/archivo-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="comp.css">
+<title>Comp: Listen, RAW</title>
+</head>
+<body>
+<!-- Comp, sample values: A/B on RAW while Joseph stays isolated in the engine; mic peak about -18 dBFS (--level .78). -->
+<main class="frame is-raw" style="--level:.78; --conf:.30">
+  <div class="field" aria-hidden="true"></div>
+  <header class="top">
+    <span class="pill" role="status"><span class="dot"></span>Raw room <span class="sub">Joseph still isolated, Space to switch</span></span>
+  <dl class="truth" aria-label="Truth strip">
+    <div><dt>Backend</dt><dd>Mac</dd></div>
+    <div><dt>Delay</dt><dd>1.48 s</dd></div>
+    <div><dt>RTT</dt><dd>—</dd></div>
+    <div class="rec"><dt>Session</dt><dd>recording</dd></div>
+  </dl>
+  </header>
+  <div></div>
+  <section class="listen-main">
+    <div class="hearing"><h1><span class="lead">Hearing</span><span class="word">The room</span></h1>
+      <p class="why">Nothing removed. This is what the microphone picks up.</p></div>
+    <div class="controls">
+    <div class="seg" role="group" aria-label="What you hear">
+      <button class="raw" aria-pressed="true">Raw room<kbd>Space</kbd></button>
+      <button class="sel" aria-pressed="false">Selective<kbd>Space</kbd></button>
+    </div>
+    <div class="seg" role="group" aria-label="Mode">
+      <button class="mode" aria-pressed="true">Focus<kbd>⇧F</kbd></button>
+      <button class="mode" aria-pressed="false">Quiet<kbd>⇧Q</kbd></button>
+    </div>
+    <div class="people" role="group" aria-label="Saved person">
+      <button class="person"><kbd>1</kbd>Aryan</button>
+      <button class="person" aria-pressed="true"><kbd>2</kbd>Joseph</button>
+      <button class="person release"><kbd>⇧0</kbd>Release</button>
+    </div>
+    </div>
+  </section>
+  <span class="comp-tag">Comp, sample values</span>
+</main>
+</body>
+</html>
