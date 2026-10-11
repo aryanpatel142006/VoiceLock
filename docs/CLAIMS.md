@@ -1,5 +1,7 @@
 # CLAIMS: what the slides may say (judging Sun Oct 11, 2026)
 
+> Note: file paths in this document (`eval/`, `experiments/`, `docs/research/`, `docs/decisions/`, branch names) refer to the team's working repository. Those files are not part of this demo-only repository; they remain in its earlier git history where they were imported.
+
 Rules: claim only what was measured, with its condition. Nothing prerecorded shown as live. No canned captions.
 Sources: app repo main at 3b233bd for sections 1-3 as first written; section 1b and the Oct 10 lines checked against main 5960c8e (line numbers are `git show origin/main:` lines).
 B = docs/BENCHMARKS.md, D = docs/DEMO.md, R = docs/REHEARSAL.md, PLC = docs/research/PROFILE_LEARNING_CURVE.md. "Notes" = orchestrator notes, Oct 9. Written Oct 9, 2026; offline results added Oct 10 ~04:00 UTC (previous version: CLAIMS-prev.md).
