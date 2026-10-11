@@ -108,3 +108,11 @@
   background: linear-gradient(to bottom, transparent, var(--color-bg) 45%);
 }
 :root:not([data-touch]) .pp-foot > * { pointer-events: auto; }
+
+/* T-482: Person 1-4 slots, rename, honest line */
+.pp-slot { display: grid; gap: 6px; align-content: start; }
+.pp-slot > .pp-card { width: 100%; }
+.pp-rename { justify-self: start; min-height: 44px; padding: 0 12px; background: none; border: 0; color: var(--color-fg); opacity: .7; font: 500 14px/1 var(--font-ui); text-decoration: underline; cursor: pointer; }
+.pp-slot-empty { border: 1px dashed color-mix(in oklab, var(--color-fg) 25%, transparent); border-radius: 8px; padding: 20px; place-content: center; }
+.pp-empty-slot { margin: 0; opacity: .7; font: 500 15px/1.4 var(--font-ui); }
+.pp-honest { margin: 0; opacity: .8; font: 500 15px/1.4 var(--font-ui); }

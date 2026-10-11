@@ -12,14 +12,16 @@ import { sharedSession } from "./setup.js";
 import { showDevFacts } from "../platform.js";
 
 export const title = "People";
-export const CALIBRATE_S = 3;
+export const CALIBRATE_S = 5;
+export const MAX_PEOPLE = 4; // Person 1-4 (T-482)
+const NAMES_KEY = "hearing.people.names";
 const STAGE_KEYS = 2; // keys 1 and 2 (judge-targets.js savedPeople)
 
 /** The cards: every saved profile, the first two with their stage key; `current` marks the one that plays. */
 export function peopleCards(t, { released = false, versions = {} } = {}) {
   const names = t?.enrollment?.profiles || [];
   const current = !released && t?.enrollment?.source === "profile" ? t.enrollment.profile || null : null;
-  return names.map((name, i) => ({
+  return names.slice(0, MAX_PEOPLE).map((name, i) => ({
     name,
     label: personLabel(name),
     key: i < STAGE_KEYS ? String(i + 1) : null,
@@ -27,6 +29,13 @@ export function peopleCards(t, { released = false, versions = {} } = {}) {
     version: versions?.[name] || null,
   }));
 }
+
+/** Inline renames, kept in this browser only (the engine's profile name is unchanged). */
+export function loadNames(storage = globalThis.localStorage) {
+  try { return JSON.parse(storage?.getItem(NAMES_KEY) || "{}") || {}; } catch { return {}; }
+}
+/** Empty "Person N" slots up to MAX_PEOPLE, so the list reads as four places to fill. */
+export function emptySlots(n) { return Array.from({ length: Math.max(0, MAX_PEOPLE - n) }, (_, i) => `Person ${n + i + 1}`); }
 
 const finePointer = typeof matchMedia === "function" && matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -61,7 +70,7 @@ export function calibrateView(t, { started = false, connected = false } = {}) {
       note: "A calibrated voice is the target now. Pick a saved person to go back to the stage setup." };
   }
   return { state: "ready", button: `Calibrate ${CALIBRATE_S} s`, disabled: false,
-    note: "Ask the new person to say one sentence alone, then press. The next 3 s become their voice." };
+    note: "Talk alone for about 5 seconds. The next 5 s become their voice." };
 }
 
 function h(tag, attrs = {}, ...children) {
@@ -81,6 +90,7 @@ export function mount(root, { app, signal }) {
   const store = session.store;
   let versions = {};
   let cardsSig = "";
+  let names = loadNames();
 
   const status = h("p", { class: "pp-status", "aria-live": "polite" });
   const cards = h("div", { class: "pp-cards" });
@@ -96,6 +106,7 @@ export function mount(root, { app, signal }) {
       h("h1", { id: "people-title", class: "pp-title", text: "Who do you want to hear?" }),
       status),
     cards,
+    h("p", { class: "pp-honest", text: "Hears two voices at a time." }),
     h("div", { class: "pp-actions" }, release, target),
     h("aside", { class: "pp-cal", "aria-labelledby": "pp-cal-title" },
       h("div", { class: "pp-cal-copy" },
@@ -124,10 +135,11 @@ export function mount(root, { app, signal }) {
     const held = s.mode === "quiet" ? "quiet" : s.ab === "raw" ? "raw" : "";
     // T-463: and the engine's gate is not doubting the pick (UNSURE / OVERLAP-DUCKED is not "Following now")
     const playing = streaming && !held && s.pill?.state === "isolated" && [null, "solo"].includes(gateState(t));
-    const sig = JSON.stringify([list, connected, Boolean(t), streaming, playing, held]);
+    const sig = JSON.stringify([list, names, connected, Boolean(t), streaming, playing, held]);
     if (sig === cardsSig) { /* unchanged */ } else if (list.length) {
       cardsSig = sig;
-      cards.replaceChildren(...list.map((c, i) => {
+      cards.replaceChildren(...list.map((c0, i) => {
+        const c = { ...c0, label: names[c0.name] || c0.label };
         const card = h("button", { type: "button", class: "pp-card", "data-person": c.name, "aria-pressed": String(c.current),
           "data-playing": String(c.current && playing),
           disabled: !connected, "aria-describedby": c.key ? null : "pp-extra" },
@@ -135,8 +147,17 @@ export function mount(root, { app, signal }) {
         h("span", { class: "pp-card-name", text: c.label }),
         h("span", { class: "pp-card-meta", text: cardMeta(c, { playing, streaming, keys: finePointer, held }) }));
         card.addEventListener("click", () => choose(i, c.name), { signal });
-        return card;
-      }));
+        const ren = h("button", { type: "button", class: "pp-rename", "aria-label": `Rename ${c.label}`, text: "Rename" });
+        ren.addEventListener("click", () => {
+          const v = globalThis.prompt?.("Name this person", c.label);
+          if (v == null) return;
+          names = { ...names, [c.name]: v.trim().slice(0, 24) || undefined };
+          try { localStorage.setItem(NAMES_KEY, JSON.stringify(names)); } catch { /* private mode */ }
+          paint();
+        }, { signal });
+        return h("div", { class: "pp-slot" }, card, ren);
+      }), ...emptySlots(list.length).map((label) => h("div", { class: "pp-slot pp-slot-empty" },
+        h("p", { class: "pp-empty-slot", text: `${label}: empty. Talk alone for about 5 seconds (Calibrate below).` }))));
       if (list.length > STAGE_KEYS) {
         cards.append(h("p", { id: "pp-extra", class: "pp-extra",
           text: "Keys 1 and 2 on Listen and /judge reach the first two; tap a card for the others." }));
