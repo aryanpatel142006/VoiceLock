@@ -60,12 +60,15 @@ export function mountPhoneLink(host, store, { signal } = {}) {
   const code = h("div", { class: "pl-code", "aria-hidden": "true" });
   const status = h("p", { class: "pl-status", role: "status" });
   const link = h("a", { class: "pl-url", target: "_blank", rel: "noopener" });
+  // the full link is long (a 32-hex session id): show only the host on one line; Copy and the href keep all of it
+  const copy = h("button", { type: "button", class: "pl-copy", text: "Copy link" });
+  const linkRow = h("div", { class: "pl-link" }, link, copy);
   const card = h("aside", { id: "pl-card", class: "pl-card", hidden: true, "aria-label": "Follow this session on a phone" },
     h("p", { class: "pl-eyebrow", text: "Companion" }),
     h("p", { class: "pl-title", text: "Scan to follow on a phone" }),
     code,
     status,
-    link,
+    linkRow,
     h("p", { class: "pl-fine", text: "The phone mirrors this session and can press Focus, Quiet, a person or Release. It never becomes the mic or the speaker." }));
   const wrap = h("div", { class: "pl", "data-open": "false" }, toggle, card);
   host.append(wrap);
@@ -80,7 +83,7 @@ export function mountPhoneLink(host, store, { signal } = {}) {
     wrap.dataset.session = id || "";
     if (!id) {
       code.replaceChildren();
-      link.hidden = true;
+      linkRow.hidden = true;
       status.textContent = "No session yet: the code appears once the engine answers.";
       return;
     }
@@ -90,13 +93,14 @@ export function mountPhoneLink(host, store, { signal } = {}) {
       if (mine !== token) return;
       code.innerHTML = out.svg; // the server's own SVG (hearing.server.tls.qr_svg), no user input in it
       link.href = out.urls[0];
-      link.textContent = out.urls[0].replace(/^https?:\/\//, "");
-      link.hidden = false;
+      link.title = out.urls[0];
+      link.textContent = new URL(out.urls[0]).host; // the session id is on the status line above
+      linkRow.hidden = false;
       status.textContent = out.tls ? `Session ${id.slice(0, 8)}` : `Session ${id.slice(0, 8)} · plain http: a phone needs --tls`;
     } catch (err) {
       if (mine !== token) return;
       code.replaceChildren();
-      link.hidden = true;
+      linkRow.hidden = true;
       status.textContent = `No code: ${err?.message || err}`;
     }
   }
@@ -107,6 +111,11 @@ export function mountPhoneLink(host, store, { signal } = {}) {
     if (open) draw();
   }
   toggle.addEventListener("click", () => setOpen(card.hidden), { signal });
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(link.href); copy.textContent = "Copied"; }
+    catch { copy.textContent = "Copy failed"; }
+    setTimeout(() => { copy.textContent = "Copy link"; }, 1500);
+  }, { signal });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !card.hidden) setOpen(false); }, { signal });
   const off = store.on("session", () => { if (!card.hidden) draw(); });
   const cleanup = () => { off(); wrap.remove(); };
