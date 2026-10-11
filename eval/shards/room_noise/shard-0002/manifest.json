@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "shard": 2,
+  "examples": [
+    {
+      "id": "00008_large_room_snr-5",
+      "sample_rate": 16000,
+      "duration_s": 3.0,
+      "snr_db": -5.0,
+      "measured_snr_db": -5.000000103010608,
+      "room_ir": {
+        "name": "large_room",
+        "sample_rate": 16000,
+        "length": 448
+      },
+      "paths": {
+        "mix": "00008_large_room_snr-5/mix.wav",
+        "target": "00008_large_room_snr-5/target.wav",
+        "noise": "00008_large_room_snr-5/noise.wav"
+      }
+    },
+    {
+      "id": "00009_small_room_snr0",
+      "sample_rate": 16000,
+      "duration_s": 3.0,
+      "snr_db": 0.0,
+      "measured_snr_db": -1.7882383901448507e-07,
+      "room_ir": {
+        "name": "small_room",
+        "sample_rate": 16000,
+        "length": 192
+      },
+      "paths": {
+        "mix": "00009_small_room_snr0/mix.wav",
+        "target": "00009_small_room_snr0/target.wav",
+        "noise": "00009_small_room_snr0/noise.wav"
+      }
+    },
+    {
+      "id": "00010_medium_room_snr5",
+      "sample_rate": 16000,
+      "duration_s": 3.0,
+      "snr_db": 5.0,
+      "measured_snr_db": 4.999999988300198,
+      "room_ir": {
+        "name": "medium_room",
+        "sample_rate": 16000,
+        "length": 288
+      },
+      "paths": {
+        "mix": "00010_medium_room_snr5/mix.wav",
+        "target": "00010_medium_room_snr5/target.wav",
+        "noise": "00010_medium_room_snr5/noise.wav"
+      }
+    },
+    {
+      "id": "00011_large_room_snr10",
+      "sample_rate": 16000,
+      "duration_s": 3.0,
+      "snr_db": 10.0,
+      "measured_snr_db": 10.000000309838484,
+      "room_ir": {
+        "name": "large_room",
+        "sample_rate": 16000,
+        "length": 448
+      },
+      "paths": {
+        "mix": "00011_large_room_snr10/mix.wav",
+        "target": "00011_large_room_snr10/target.wav",
+        "noise": "00011_large_room_snr10/noise.wav"
+      }
+    }
+  ]
+}

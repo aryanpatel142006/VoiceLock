@@ -1,0 +1,104 @@
+{
+  "scenario_id": "scenario_08",
+  "name": "accelerating_turn_gaps",
+  "category": "rapid_turn_taking",
+  "description": "Accelerating conversational cadence with diminishing gaps: 280ms -> 180ms -> 80ms",
+  "sample_rate": 16000,
+  "duration_s": 5.5,
+  "total_samples": 88000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.1,
+      "start_sample": 0,
+      "end_sample": 17600,
+      "duration_s": 1.1,
+      "gain_db": 0.0,
+      "description": "Speaker 1 turn 1"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 1.38,
+      "end_s": 2.48,
+      "start_sample": 22080,
+      "end_sample": 39680,
+      "duration_s": 1.1,
+      "gain_db": 0.0,
+      "description": "Speaker 2 turn 1 (280ms gap)"
+    },
+    {
+      "turn_id": 3,
+      "speaker": "speaker_1",
+      "start_s": 2.66,
+      "end_s": 3.76,
+      "start_sample": 42560,
+      "end_sample": 60160,
+      "duration_s": 1.1,
+      "gain_db": 0.0,
+      "description": "Speaker 1 turn 2 (180ms gap)"
+    },
+    {
+      "turn_id": 4,
+      "speaker": "speaker_2",
+      "start_s": 3.84,
+      "end_s": 4.94,
+      "start_sample": 61440,
+      "end_sample": 79040,
+      "duration_s": 1.1,
+      "gain_db": 0.0,
+      "description": "Speaker 2 turn 2 (80ms gap)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.1
+      ],
+      [
+        2.66,
+        3.76
+      ]
+    ],
+    "speaker_2": [
+      [
+        1.38,
+        2.48
+      ],
+      [
+        3.84,
+        4.94
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.1,
+      1.38
+    ],
+    [
+      2.48,
+      2.66
+    ],
+    [
+      3.76,
+      3.84
+    ],
+    [
+      4.94,
+      5.5
+    ]
+  ],
+  "params": {
+    "gaps_ms": [
+      280,
+      180,
+      80
+    ]
+  },
+  "seed": 29308
+}

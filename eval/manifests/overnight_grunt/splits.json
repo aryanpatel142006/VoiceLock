@@ -1,0 +1,51 @@
+{
+  "counts": {
+    "eligible": 2,
+    "excluded": 0,
+    "input": 2
+  },
+  "eligible": [
+    {
+      "asset_id": "1580-141084-0019",
+      "end_s": 3.125,
+      "partition": "enrollment",
+      "provenance": {
+        "dataset": "openslr/librispeech_asr",
+        "license": "CC BY 4.0 (LibriSpeech, Panayotov et al. 2015)",
+        "split": "test-clean"
+      },
+      "sha256": "c157d8212cbb5f161eae2c0bdf989da22c6d7625f97006975cdf9f865a76112b",
+      "source_id": "1580-141084-0019",
+      "speaker_id": "1580",
+      "start_s": 0.0,
+      "transcript": "YES MY DEAR WATSON I HAVE SOLVED THE MYSTERY",
+      "transcript_valid": true
+    },
+    {
+      "asset_id": "61-70968-0002",
+      "end_s": 2.97,
+      "partition": "development",
+      "provenance": {
+        "dataset": "openslr/librispeech_asr",
+        "license": "CC BY 4.0 (LibriSpeech, Panayotov et al. 2015)",
+        "split": "test-clean"
+      },
+      "sha256": "266b20f2883bdb2039d177b5a0a6a3be69bf4857e6c7b72b0d9b23ee27b41e77",
+      "source_id": "61-70968-0002",
+      "speaker_id": "61",
+      "start_s": 0.0,
+      "transcript": "A GOLDEN FORTUNE AND A HAPPY LIFE",
+      "transcript_valid": true
+    }
+  ],
+  "excluded": [],
+  "partition_seed": 229,
+  "schema": 1,
+  "source_manifests": [
+    "eval/fixtures/demo/demo-ff/manifest.json",
+    "eval/fixtures/demo/demo-mf-easy/manifest.json",
+    "eval/fixtures/demo/demo-mf-hard/manifest.json",
+    "eval/fixtures/demo/demo-mm/manifest.json",
+    "eval/fixtures/tiny/manifest.json"
+  ]
+}

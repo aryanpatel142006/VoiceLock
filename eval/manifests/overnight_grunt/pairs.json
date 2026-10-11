@@ -1,0 +1,247 @@
+{
+  "pairs": [
+    {
+      "interferer": {
+        "path": "eval/fixtures/tiny/speech_b.wav",
+        "provenance": {
+          "dataset": "openslr/librispeech_asr",
+          "license": "CC BY 4.0 (LibriSpeech, Panayotov et al. 2015)",
+          "manifest": "eval/fixtures/tiny/manifest.json",
+          "split": "test-clean"
+        },
+        "role": "interferer",
+        "source_id": "61-70968-0002",
+        "speaker_id": "61",
+        "stats": {
+          "duration_s": 3.0,
+          "frames": 48000,
+          "median_pitch_hz": 140.99,
+          "rms_dbfs": -26.707,
+          "sample_rate": 16000,
+          "sha256": "266b20f2883bdb2039d177b5a0a6a3be69bf4857e6c7b72b0d9b23ee27b41e77"
+        },
+        "transcript": "A GOLDEN FORTUNE AND A HAPPY LIFE"
+      },
+      "metadata_confidence": "documented",
+      "pair_id": "1580-141084-0019__61-70968-0002",
+      "pitch_match_status": "acoustic_candidate",
+      "proposed_crop_s": 3.0,
+      "proposed_onset_s": 0.0,
+      "sir_db": [
+        5,
+        0,
+        -5,
+        -10,
+        -15
+      ],
+      "source_overlap_excluded": true,
+      "speaker_group": "different_documented_sex",
+      "target": {
+        "path": "eval/fixtures/tiny/speech_a.wav",
+        "provenance": {
+          "dataset": "openslr/librispeech_asr",
+          "license": "CC BY 4.0 (LibriSpeech, Panayotov et al. 2015)",
+          "manifest": "eval/fixtures/tiny/manifest.json",
+          "split": "test-clean"
+        },
+        "role": "target",
+        "source_id": "1580-141084-0019",
+        "speaker_id": "1580",
+        "stats": {
+          "duration_s": 3.0,
+          "frames": 48000,
+          "median_pitch_hz": 233.59,
+          "rms_dbfs": -24.811,
+          "sample_rate": 16000,
+          "sha256": "c157d8212cbb5f161eae2c0bdf989da22c6d7625f97006975cdf9f865a76112b"
+        },
+        "transcript": "YES MY DEAR WATSON I HAVE SOLVED THE MYSTERY"
+      }
+    }
+  ],
+  "sample_rate": 16000,
+  "schema": "overnight-grunt-pairs/v1",
+  "source_overlap_excluded": true,
+  "target_absent_plans": [
+    {
+      "condition": "pause",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target pauses before interferer",
+      "plan_id": "absent-01",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "pause",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target pauses mid-utterance",
+      "plan_id": "absent-02",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "pause",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target pauses after utterance",
+      "plan_id": "absent-03",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "pause",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target absent during lead-in",
+      "plan_id": "absent-04",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "target_absent",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target absent, one talker enters",
+      "plan_id": "absent-05",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "target_absent",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target absent, two talkers alternate",
+      "plan_id": "absent-06",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "target_absent",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target absent, three talkers alternate",
+      "plan_id": "absent-07",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "target_absent",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "target leaves and returns",
+      "plan_id": "absent-08",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "two_vs_three_talker",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "two talkers active",
+      "plan_id": "absent-09",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "two_vs_three_talker",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "three talkers active",
+      "plan_id": "absent-10",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "two_vs_three_talker",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "two then three talkers",
+      "plan_id": "absent-11",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    },
+    {
+      "condition": "two_vs_three_talker",
+      "interval_provenance": "not collected: requires annotated multi-talker recording",
+      "intervals": [
+        {
+          "end_s": null,
+          "start_s": null,
+          "status": "proposed"
+        }
+      ],
+      "note": "three then two talkers",
+      "plan_id": "absent-12",
+      "source_overlap_excluded": true,
+      "target_words_status": "unverified"
+    }
+  ]
+}

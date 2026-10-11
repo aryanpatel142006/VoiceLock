@@ -1,0 +1,2144 @@
+{
+ "shard": "speech",
+ "task": "T-218",
+ "source": {
+  "url": "https://www.openslr.org/resources/12/dev-clean.tar.gz",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://www.openslr.org/12/",
+  "citation": "Panayotov et al., LibriSpeech: an ASR corpus based on public domain audio books, ICASSP 2015",
+  "content_length_bytes": 337926286
+ },
+ "media_location": "$HEARING_FIXTURES_DIR/overnight_grunt/speech (gitignored, not committed)",
+ "counts": {
+  "speakers": 12,
+  "utterances": 96,
+  "native_bytes": 13125843,
+  "total_duration_s": 721.6,
+  "by_role": {
+   "enrollment": 36,
+   "development": 24,
+   "holdout": 36
+  }
+ },
+ "acquisition": {
+  "network_bytes": 98600960,
+  "byte_limit": 209715200,
+  "aborted_at_budget": false,
+  "full_tarball_downloaded": false
+ },
+ "failed": [],
+ "utterances": [
+  {
+   "id": "2277-149874-0001",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149874",
+   "role": "enrollment",
+   "transcript": "TO CARRIE THE SOUND OF THE LITTLE BELLS UPON THE HORSE CARS AS THEY TINKLED IN AND OUT OF HEARING WAS AS PLEASING AS IT WAS NOVEL",
+   "transcript_normalized": "to carrie the sound of the little bells upon the horse cars as they tinkled in and out of hearing was as pleasing as it was novel",
+   "native": {
+    "path": "native/2277-149874-0001.flac",
+    "sha256": "6c093c721c01794f7de3fe711290321d78f505716223abd2ce2e1f76ffdf59fe",
+    "bytes": 131760,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.04
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149874-0001.wav",
+    "sha256": "fd2530b490a7f0ce674d79897ea49d820e6f53d3a213da72dcff624a36311cb3",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149874-0002",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149874",
+   "role": "development",
+   "transcript": "TO HIM THE PRESENCE OR ABSENCE OF HIS WIFE'S SISTER WAS A MATTER OF INDIFFERENCE",
+   "transcript_normalized": "to him the presence or absence of his wifes sister was a matter of indifference",
+   "native": {
+    "path": "native/2277-149874-0002.flac",
+    "sha256": "5ed9607968dcf4d5c81628676d7efa75e7397a6628174c6094e8e05ec5f205e2",
+    "bytes": 97760,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 5.095
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149874-0002.wav",
+    "sha256": "871ee83351530308ffc4c3aa493a3157921a2f99ba99f135770443f97dee7888",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149874-0003",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149874",
+   "role": "holdout",
+   "transcript": "HE WAS OF A CLEAN SAVING DISPOSITION AND HAD ALREADY PAID A NUMBER OF MONTHLY INSTALMENTS ON TWO LOTS FAR OUT ON THE WEST SIDE",
+   "transcript_normalized": "he was of a clean saving disposition and had already paid a number of monthly instalments on two lots far out on the west side",
+   "native": {
+    "path": "native/2277-149874-0003.flac",
+    "sha256": "bd5c8da2233e1b870fcabe316c1aba0e1ea311c0ce81f7a6e9de3a86aa0f1e22",
+    "bytes": 146238,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.7
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149874-0003.wav",
+    "sha256": "850df222d6375c261178e10d33e88e4a6db0440204ea3e69ee9052e1227a24a0",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149896-0000",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149896",
+   "role": "enrollment",
+   "transcript": "HE WAS IN A FEVERED STATE OF MIND OWING TO THE BLIGHT HIS WIFE'S ACTION THREATENED TO CAST UPON HIS ENTIRE FUTURE",
+   "transcript_normalized": "he was in a fevered state of mind owing to the blight his wifes action threatened to cast upon his entire future",
+   "native": {
+    "path": "native/2277-149896-0000.flac",
+    "sha256": "fead3e0c481f1c637fe6ec8edef42506c7c2d33a3fb7519bfdf5815b31150303",
+    "bytes": 127816,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.59
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149896-0000.wav",
+    "sha256": "20e10e583b4918e05cea91316f7bde65a345d2756e64abc7f7ee133e2a0547f5",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149896-0001",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149896",
+   "role": "development",
+   "transcript": "HE WOULD HAVE TO PAY HER THE MONEY WHICH SHE WOULD NOW REGULARLY DEMAND OR THERE WOULD BE TROUBLE IT DID NOT MATTER WHAT HE DID",
+   "transcript_normalized": "he would have to pay her the money which she would now regularly demand or there would be trouble it did not matter what he did",
+   "native": {
+    "path": "native/2277-149896-0001.flac",
+    "sha256": "f9c3371b4d1c6e95e7c01298a26215c2be97bee22c5408885d8d29b6e0e4171c",
+    "bytes": 133145,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.145
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149896-0001.wav",
+    "sha256": "2015beb0e883fac46113c4295bf26852dd4edf4db4f03992f7786162dacfbccf",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149896-0002",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149896",
+   "role": "holdout",
+   "transcript": "HURSTWOOD WALKED THE FLOOR MENTALLY ARRANGING THE CHIEF POINTS OF HIS SITUATION",
+   "transcript_normalized": "hurstwood walked the floor mentally arranging the chief points of his situation",
+   "native": {
+    "path": "native/2277-149896-0002.flac",
+    "sha256": "ade2caad47934462292358ba49acf7f048ced0595615492b4b20866d118bf901",
+    "bytes": 90701,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.835
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149896-0002.wav",
+    "sha256": "3e79d139f899ba281721ce9ed9a716c9c4b6491e7d88f45dad849ee74c7e0a29",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149897-0000",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149897",
+   "role": "enrollment",
+   "transcript": "WHEN HURSTWOOD GOT BACK TO HIS OFFICE AGAIN HE WAS IN A GREATER QUANDARY THAN EVER",
+   "transcript_normalized": "when hurstwood got back to his office again he was in a greater quandary than ever",
+   "native": {
+    "path": "native/2277-149897-0000.flac",
+    "sha256": "0a55b7ad334c84d74b93fcbc35319fc5ddd9e6be92a08d15382f810bff356927",
+    "bytes": 86991,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.395
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149897-0000.wav",
+    "sha256": "b968dd34cecd67f274e2656b1d456d172677c5b6d5dee97cce9d926b465f195a",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2277-149897-0001",
+   "speaker_id": "2277",
+   "sex": "F",
+   "chapter": "149897",
+   "role": "holdout",
+   "transcript": "HE COULD HARDLY REALISE HOW IT HAD ALL COME ABOUT",
+   "transcript_normalized": "he could hardly realise how it had all come about",
+   "native": {
+    "path": "native/2277-149897-0001.flac",
+    "sha256": "06ea43238e1c4a3ef1f8a70d6837081ebde7f2a9ace69134d153bebba4796e6e",
+    "bytes": 59373,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.755
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2277-149897-0001.wav",
+    "sha256": "a447be02c9f7d9a270e686a111c381e6e7d65715474e0c47840c4011e2939ead",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147960-0000",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147960",
+   "role": "enrollment",
+   "transcript": "SHE WAS FOUR YEARS OLDER THAN I TO BE SURE AND HAD SEEN MORE OF THE WORLD BUT I WAS A BOY AND SHE WAS A GIRL AND I RESENTED HER PROTECTING MANNER",
+   "transcript_normalized": "she was four years older than i to be sure and had seen more of the world but i was a boy and she was a girl and i resented her protecting manner",
+   "native": {
+    "path": "native/2035-147960-0000.flac",
+    "sha256": "0ee6731694bcc55349cf4f70123aaff81a7779c782c4a3ec4579b243b1552748",
+    "bytes": 175065,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.02
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147960-0000.wav",
+    "sha256": "b0bef79e65f00b31149169b5b9087eb378472a4251806dd6b1fabb998573813b",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147960-0001",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147960",
+   "role": "development",
+   "transcript": "THIS CHANGE CAME ABOUT FROM AN ADVENTURE WE HAD TOGETHER",
+   "transcript_normalized": "this change came about from an adventure we had together",
+   "native": {
+    "path": "native/2035-147960-0001.flac",
+    "sha256": "0b6b0ab9d07b226bb91c3051b3d8e674267207a1b2e93a8a26ef959ade711896",
+    "bytes": 76289,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.925
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147960-0001.wav",
+    "sha256": "1ed72e29c4de07706dd14d455f5b8585b550307bd1747de8508e47bbd2eb799c",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147960-0002",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147960",
+   "role": "holdout",
+   "transcript": "ONE DAY WHEN I RODE OVER TO THE SHIMERDAS I FOUND ANTONIA STARTING OFF ON FOOT FOR RUSSIAN PETER'S HOUSE TO BORROW A SPADE AMBROSCH NEEDED",
+   "transcript_normalized": "one day when i rode over to the shimerdas i found antonia starting off on foot for russian peters house to borrow a spade ambrosch needed",
+   "native": {
+    "path": "native/2035-147960-0002.flac",
+    "sha256": "9a6003d48d3f89f4f8a6099fcec13d4b87af5a0b9d37e5e233cef0620d55d9f4",
+    "bytes": 168342,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.84
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147960-0002.wav",
+    "sha256": "ca7cd13377adfa22348f016cdfb100cf472c67fac90a8edf7a98efe99ada502b",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147961-0001",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147961",
+   "role": "enrollment",
+   "transcript": "PETER COULD GIVE NO VERY CLEAR ACCOUNT OF HIS TRANSACTIONS WITH CUTTER",
+   "transcript_normalized": "peter could give no very clear account of his transactions with cutter",
+   "native": {
+    "path": "native/2035-147961-0001.flac",
+    "sha256": "abeead797fc0bdd47c12dc1ff3e9aed9e2c9287b44f6b40bc52332659f1c1f46",
+    "bytes": 84135,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.415
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147961-0001.wav",
+    "sha256": "1684228b42749bd72919587ff1c8ac90135dd722f398ec2140398d9acaec66e0",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147961-0002",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147961",
+   "role": "development",
+   "transcript": "SHE ASKED PETER TO WAIT A MOMENT AND WHEN SHE CAME BACK FROM THE KITCHEN SHE BROUGHT A BAG OF SANDWICHES AND DOUGHNUTS FOR US",
+   "transcript_normalized": "she asked peter to wait a moment and when she came back from the kitchen she brought a bag of sandwiches and doughnuts for us",
+   "native": {
+    "path": "native/2035-147961-0002.flac",
+    "sha256": "52bab8b06062158d3cd2d901a3bea5a80d14e627f6a4d4066ea489702b208dc3",
+    "bytes": 132951,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.995
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147961-0002.wav",
+    "sha256": "6a440bee2c23b48b8f360533773d9bc0c91dec3f9192beeb21566996d2721f7a",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-147961-0003",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "147961",
+   "role": "holdout",
+   "transcript": "WE LAY STILL AND DID NOT TALK",
+   "transcript_normalized": "we lay still and did not talk",
+   "native": {
+    "path": "native/2035-147961-0003.flac",
+    "sha256": "ab93853fa914ccef96199e07b7cb85a09861b73b73c49eb2ec9b627b6c53d855",
+    "bytes": 49282,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.695
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-147961-0003.wav",
+    "sha256": "450a504a564d205f12dd4e66c1b978827d6797a3b0c6c6f9a21fb884cd5c24a7",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-152373-0000",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "152373",
+   "role": "enrollment",
+   "transcript": "THROUGHOUT THIS CENTURY THE POWER OF THE CHURCH WAS CONSTANTLY ON THE INCREASE AND IS VISIBLE IN MANY IMPORTANT CHANGES",
+   "transcript_normalized": "throughout this century the power of the church was constantly on the increase and is visible in many important changes",
+   "native": {
+    "path": "native/2035-152373-0000.flac",
+    "sha256": "b3c5a79feb3d2b71fa8c65e4cbc29d3ef8f74f3ede28bb100557312ff53e3a84",
+    "bytes": 149130,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.875
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-152373-0000.wav",
+    "sha256": "77863052d728a1bfda66fc6940268de252af5e9d393d4e845fdf0cd0e7c4a362",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2035-152373-0002",
+   "speaker_id": "2035",
+   "sex": "F",
+   "chapter": "152373",
+   "role": "holdout",
+   "transcript": "IT IS PRETTY CLEAR ALSO THAT THE LAST RALLY OF DRUIDISM AGAINST CHRISTIANITY TOOK PLACE BEHIND HIS BANNER ON THE PLAIN OF MOIRA",
+   "transcript_normalized": "it is pretty clear also that the last rally of druidism against christianity took place behind his banner on the plain of moira",
+   "native": {
+    "path": "native/2035-152373-0002.flac",
+    "sha256": "276ef3bf423e5800ecf9417ecd43b06de93c7320180d728359727e802cd4c368",
+    "bytes": 168243,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.34
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2035-152373-0002.wav",
+    "sha256": "11ae30bfc8050a0c5c84f6f3fbd445151a05fd5d886574e2d7bb33bc1e0a71d4",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149214-0000",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149214",
+   "role": "enrollment",
+   "transcript": "THE NARRATIVE IT MAY BE IS WOVEN OF SO HUMBLE A TEXTURE AS TO REQUIRE THIS ADVANTAGE AND AT THE SAME TIME TO RENDER IT THE MORE DIFFICULT OF ATTAINMENT",
+   "transcript_normalized": "the narrative it may be is woven of so humble a texture as to require this advantage and at the same time to render it the more difficult of attainment",
+   "native": {
+    "path": "native/2086-149214-0000.flac",
+    "sha256": "eea381d7cfb33707d92d56bacb9222accd15a59c5b5ffa6a3bd22dfe5956b332",
+    "bytes": 166760,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.81
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149214-0000.wav",
+    "sha256": "d96edc071954466735c8b0270a5322728e49ec31ffcd8e70f8ec6c623da713b8",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149214-0001",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149214",
+   "role": "development",
+   "transcript": "IN GOOD FAITH HOWEVER HE IS NOT SUFFICIENTLY IMAGINATIVE TO FLATTER HIMSELF WITH THE SLIGHTEST HOPE OF THIS KIND",
+   "transcript_normalized": "in good faith however he is not sufficiently imaginative to flatter himself with the slightest hope of this kind",
+   "native": {
+    "path": "native/2086-149214-0001.flac",
+    "sha256": "66aeeda853ab8421f1df70deda5b5ff0b5b9564065f50e1c1ac9aff1457e72d7",
+    "bytes": 119811,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.97
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149214-0001.wav",
+    "sha256": "477863f6b63916f918a3ddf9f57ab8df9bf8e49b46f28b03f242bd54c5545497",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149214-0003",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149214",
+   "role": "holdout",
+   "transcript": "IF PERMITTED BY THE HISTORICAL CONNECTION WHICH THOUGH SLIGHT WAS ESSENTIAL TO HIS PLAN THE AUTHOR WOULD VERY WILLINGLY HAVE AVOIDED ANYTHING OF THIS NATURE",
+   "transcript_normalized": "if permitted by the historical connection which though slight was essential to his plan the author would very willingly have avoided anything of this nature",
+   "native": {
+    "path": "native/2086-149214-0003.flac",
+    "sha256": "cda6f9efb12201abbd2721d67e74e5cb1ec326128a161de4dff7b63433abc5ea",
+    "bytes": 152610,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.995
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149214-0003.wav",
+    "sha256": "1b152dcce70fa732fda1908b008c00d15c30795afcbf01868747ad75514ea0d3",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149220-0000",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149220",
+   "role": "enrollment",
+   "transcript": "THE ENCLOSURE HAD FORMERLY BEEN VERY EXTENSIVE BUT WAS NOW CONTRACTED WITHIN SMALL COMPASS AND HEMMED ABOUT PARTLY BY HIGH WOODEN FENCES AND PARTLY BY THE OUTBUILDINGS OF HOUSES THAT STOOD ON ANOTHER STREET",
+   "transcript_normalized": "the enclosure had formerly been very extensive but was now contracted within small compass and hemmed about partly by high wooden fences and partly by the outbuildings of houses that stood on another street",
+   "native": {
+    "path": "native/2086-149220-0000.flac",
+    "sha256": "714ce7eda0efdfa62d77dcd3cbe31493d2499089759f4bb08cf13cdf24a9c3fe",
+    "bytes": 200928,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 12.095
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149220-0000.wav",
+    "sha256": "e0aa888b26bce72cd68d3abcce715214fc74a219e383fade23e11185ba944b16",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149220-0004",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149220",
+   "role": "development",
+   "transcript": "PHOEBE WONDERED WHOSE CARE AND TOIL IT COULD HAVE BEEN THAT HAD PLANTED THESE VEGETABLES AND KEPT THE SOIL SO CLEAN AND ORDERLY",
+   "transcript_normalized": "phoebe wondered whose care and toil it could have been that had planted these vegetables and kept the soil so clean and orderly",
+   "native": {
+    "path": "native/2086-149220-0004.flac",
+    "sha256": "1aa8073a82e4faa84839d5310626560e35b77850cbaa4f4480ee21334cbf5192",
+    "bytes": 117836,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.22
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149220-0004.wav",
+    "sha256": "825a0491e1039d89f179ed207b1cdad21036ef54523b9155dcb812f9f9200035",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149220-0005",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149220",
+   "role": "holdout",
+   "transcript": "BEES TOO STRANGE TO SAY HAD THOUGHT IT WORTH THEIR WHILE TO COME HITHER POSSIBLY FROM THE RANGE OF HIVES BESIDE SOME FARM HOUSE MILES AWAY",
+   "transcript_normalized": "bees too strange to say had thought it worth their while to come hither possibly from the range of hives beside some farm house miles away",
+   "native": {
+    "path": "native/2086-149220-0005.flac",
+    "sha256": "38c678fef0ea298e730bfa9393ecee7d4e8e62b937b5a8631c14c5480d4f4390",
+    "bytes": 147825,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.09
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149220-0005.wav",
+    "sha256": "cb9aaf78f0a437393859b8341e45f56e1d8bf3c5042ec0ba1fa8dbc00d6fbe5e",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149220-0006",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149220",
+   "role": "enrollment",
+   "transcript": "THIS WAS A FOUNTAIN SET ROUND WITH A RIM OF OLD MOSSY STONES AND PAVED IN ITS BED WITH WHAT APPEARED TO BE A SORT OF MOSAIC WORK OF VARIOUSLY COLORED PEBBLES",
+   "transcript_normalized": "this was a fountain set round with a rim of old mossy stones and paved in its bed with what appeared to be a sort of mosaic work of variously colored pebbles",
+   "native": {
+    "path": "native/2086-149220-0006.flac",
+    "sha256": "541a967f3fda7977f2a24179742058a4323c62025da513273e0a137e48aa6d89",
+    "bytes": 163554,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.35
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149220-0006.wav",
+    "sha256": "9bced39888775e20854e2990db106f0de9ac919f5ce7287682a0457a3b432998",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "2086-149220-0007",
+   "speaker_id": "2086",
+   "sex": "M",
+   "chapter": "149220",
+   "role": "holdout",
+   "transcript": "IT NOW CONTAINED ONLY CHANTICLEER HIS TWO WIVES AND A SOLITARY CHICKEN",
+   "transcript_normalized": "it now contained only chanticleer his two wives and a solitary chicken",
+   "native": {
+    "path": "native/2086-149220-0007.flac",
+    "sha256": "d7228600d7cb69b535a9b5234651ae5d62a10bb261a97805dc5485229f1c0b14",
+    "bytes": 84937,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 5.24
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/2086-149220-0007.wav",
+    "sha256": "8a1e14409ab2381367ef1ba26057d64bc767dd8ce0bbfe88b095f663d50c1abf",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-105575-0000",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "105575",
+   "role": "enrollment",
+   "transcript": "GRANT WAS ONLY A FEW MILES AWAY BUT ALTHOUGH COMMANDER IN CHIEF HE KNEW NOTHING OF THE HARDEST FOUGHT BATTLE OF THE CIVIL WAR UNTIL IT WAS OVER",
+   "transcript_normalized": "grant was only a few miles away but although commander in chief he knew nothing of the hardest fought battle of the civil war until it was over",
+   "native": {
+    "path": "native/7976-105575-0000.flac",
+    "sha256": "9f2e5c25ec4a4116abf793c2416a3a86a40ee6100f35ec72b393290630ebcb19",
+    "bytes": 159469,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.16
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-105575-0000.wav",
+    "sha256": "c992340693e45b9b6b11f8ba9ec83477c37166f6b77d15a35f29bc7d83cd2874",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-105575-0001",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "105575",
+   "role": "development",
+   "transcript": "MY OWN REGIMENT WAS IN THE ADVANCE",
+   "transcript_normalized": "my own regiment was in the advance",
+   "native": {
+    "path": "native/7976-105575-0001.flac",
+    "sha256": "69897bdf30a196b28cb03d53fa7bf383ee9112fadec40e175329794706e95f57",
+    "bytes": 54773,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.8
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-105575-0001.wav",
+    "sha256": "d9053d18905b12d6bde4db5d605d4e1698a7e9b33f48860732f98e6a593946a5",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-105575-0002",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "105575",
+   "role": "holdout",
+   "transcript": "OUR BRIGADE WAS FEARFULLY OUTNUMBERED",
+   "transcript_normalized": "our brigade was fearfully outnumbered",
+   "native": {
+    "path": "native/7976-105575-0002.flac",
+    "sha256": "6bc116270fa1167d408ee5180979727f397ecd58c6dd97dbe632d92b06115c9a",
+    "bytes": 57051,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.045
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-105575-0002.wav",
+    "sha256": "710c56e6f5077be4021c47a11578644cd8a06ed541cf12c6182685b37c4dfa54",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-110124-0000",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "110124",
+   "role": "enrollment",
+   "transcript": "LONG AGO THERE LIVED A MERCHANT WHO HAD THREE DAUGHTERS",
+   "transcript_normalized": "long ago there lived a merchant who had three daughters",
+   "native": {
+    "path": "native/7976-110124-0000.flac",
+    "sha256": "60f86f63cd9189fa1bdf8f4bc6ed3850797a7fe7c519d9f28ad822927442871f",
+    "bytes": 66178,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.55
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-110124-0000.wav",
+    "sha256": "d7bee8b000dbe0e8d392bdcdd9a759fb6c2e5af411e0131b855c739506bbdb59",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-110124-0001",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "110124",
+   "role": "development",
+   "transcript": "EVERY YEAR AT A CERTAIN DAY OF A CERTAIN MONTH HE WENT AWAY TO A DISTANT CITY TO COLLECT MONEY ON AN ACCOUNT",
+   "transcript_normalized": "every year at a certain day of a certain month he went away to a distant city to collect money on an account",
+   "native": {
+    "path": "native/7976-110124-0001.flac",
+    "sha256": "d7657a4692e6e39421ba028c02c5547efc234ddfa47a050fafe01f9fc63f4ae1",
+    "bytes": 127822,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.35
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-110124-0001.wav",
+    "sha256": "b3de88c73c07bc6f2709c8e6e51d25f79b97d0f074bc76dadc03aa9b2d704c6c",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-110124-0002",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "110124",
+   "role": "holdout",
+   "transcript": "HOW DO YOU KNOW ASKED THEIR FATHER I AM OLDER AND WISER THAN YOU ARE AND I KNOW THAT THERE ARE MANY EVILS WHICH MIGHT COME UPON YOU",
+   "transcript_normalized": "how do you know asked their father i am older and wiser than you are and i know that there are many evils which might come upon you",
+   "native": {
+    "path": "native/7976-110124-0002.flac",
+    "sha256": "332ff728d3fe56032f26eb4734d6f22bca44f91ea32776ca5c3f5090554516b7",
+    "bytes": 138403,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.845
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-110124-0002.wav",
+    "sha256": "2df951e4a722b9ad7ea180bbef92ff8326103c8e361cf414f1ad29b15af484e1",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-110523-0001",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "110523",
+   "role": "enrollment",
+   "transcript": "HOW CAN WE FEED OUR CHILDREN WHEN WE HAVE NO MORE THAN WE CAN EAT OURSELVES",
+   "transcript_normalized": "how can we feed our children when we have no more than we can eat ourselves",
+   "native": {
+    "path": "native/7976-110523-0001.flac",
+    "sha256": "5b65e1d1fe5b50b48cbc18d2f08973ba45da9fc704b8ae5b16690c5020a29bc5",
+    "bytes": 89629,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.72
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-110523-0001.wav",
+    "sha256": "e48aba3a46ed796e0c2fb1b1d9e185f2248682669220ad7b3f416c762abb10a0",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "7976-110523-0002",
+   "speaker_id": "7976",
+   "sex": "M",
+   "chapter": "110523",
+   "role": "holdout",
+   "transcript": "OH YOU SIMPLETON SAID SHE THEN WE MUST ALL FOUR DIE OF HUNGER YOU HAD BETTER PLANE THE COFFINS FOR US",
+   "transcript_normalized": "oh you simpleton said she then we must all four die of hunger you had better plane the coffins for us",
+   "native": {
+    "path": "native/7976-110523-0002.flac",
+    "sha256": "a52f290029c6b49762965df7f122d5e5ebc0a00dbba9c90436114059b746c4ae",
+    "bytes": 134122,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.12
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/7976-110523-0002.wav",
+    "sha256": "34c0d3f62f52f33aca966b073d694be1c42a51e80f22001d72898042c8718d66",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-147956-0000",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "147956",
+   "role": "enrollment",
+   "transcript": "FUCHS BROUGHT UP A SACK OF POTATOES AND A PIECE OF CURED PORK FROM THE CELLAR AND GRANDMOTHER PACKED SOME LOAVES OF SATURDAY'S BREAD A JAR OF BUTTER AND SEVERAL PUMPKIN PIES IN THE STRAW OF THE WAGON BOX",
+   "transcript_normalized": "fuchs brought up a sack of potatoes and a piece of cured pork from the cellar and grandmother packed some loaves of saturdays bread a jar of butter and several pumpkin pies in the straw of the wagon box",
+   "native": {
+    "path": "native/1988-147956-0000.flac",
+    "sha256": "dd619997014d3a6d45b909f1295c847e81942193ef85c7366c2dade42244f102",
+    "bytes": 247072,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 14.95
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-147956-0000.wav",
+    "sha256": "afc03ae866ffac66b38fd99dfc5a83a7132ec03ff5bd8725df60c2b9c36cffa6",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-147956-0001",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "147956",
+   "role": "development",
+   "transcript": "OCCASIONALLY ONE OF THE HORSES WOULD TEAR OFF WITH HIS TEETH A PLANT FULL OF BLOSSOMS AND WALK ALONG MUNCHING IT THE FLOWERS NODDING IN TIME TO HIS BITES AS HE ATE DOWN TOWARD THEM",
+   "transcript_normalized": "occasionally one of the horses would tear off with his teeth a plant full of blossoms and walk along munching it the flowers nodding in time to his bites as he ate down toward them",
+   "native": {
+    "path": "native/1988-147956-0001.flac",
+    "sha256": "84a4c71c2f297de0ec8f3d1519bfda4944a0b360b8a52329aff8709a6e5718eb",
+    "bytes": 230367,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 14.21
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-147956-0001.wav",
+    "sha256": "98a8754e281e12c5ec3f1a370de75ae0c295d5dd3979da5813c551dc02e6bcf8",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-147956-0002",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "147956",
+   "role": "holdout",
+   "transcript": "IT'S NO BETTER THAN A BADGER HOLE NO PROPER DUGOUT AT ALL",
+   "transcript_normalized": "its no better than a badger hole no proper dugout at all",
+   "native": {
+    "path": "native/1988-147956-0002.flac",
+    "sha256": "1ddf444b2dd7b371463678a8518c17217440e2a545f25bf9cfdce40a6043b9c1",
+    "bytes": 77152,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.395
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-147956-0002.wav",
+    "sha256": "d7464f9d082fccfb462a3d662eae92d150c4c75f53e89b11505b5c8f4878af46",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-148538-0001",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "148538",
+   "role": "enrollment",
+   "transcript": "AN AMERICAN INSTEAD OF GOING IN A LEISURE HOUR TO DANCE MERRILY AT SOME PLACE OF PUBLIC RESORT AS THE FELLOWS OF HIS CALLING CONTINUE TO DO THROUGHOUT THE GREATER PART OF EUROPE SHUTS HIMSELF UP AT HOME TO DRINK",
+   "transcript_normalized": "an american instead of going in a leisure hour to dance merrily at some place of public resort as the fellows of his calling continue to do throughout the greater part of europe shuts himself up at home to drink",
+   "native": {
+    "path": "native/1988-148538-0001.flac",
+    "sha256": "36804e8ffbf00f1afd5abefb60c1e2c9ef57bb8ca0f4c12fd41fe4af86f0af39",
+    "bytes": 190040,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.02
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-148538-0001.wav",
+    "sha256": "1890472c4683649db326042e99951f192cca92f9f3fbe2b07d4da5019d6297ae",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-148538-0002",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "148538",
+   "role": "development",
+   "transcript": "I BELIEVE THE SERIOUSNESS OF THE AMERICANS ARISES PARTLY FROM THEIR PRIDE",
+   "transcript_normalized": "i believe the seriousness of the americans arises partly from their pride",
+   "native": {
+    "path": "native/1988-148538-0002.flac",
+    "sha256": "a71b00bbab2da7571f0ee3cc25d1ccab0a25158b4dd1e64e8cdf18f87fd23850",
+    "bytes": 86419,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.45
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-148538-0002.wav",
+    "sha256": "68e336146af196f34c8b12f4688c879b9929c73acd9bccc11f2ccc2df3bc33a3",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-148538-0003",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "148538",
+   "role": "holdout",
+   "transcript": "THIS IS MORE ESPECIALLY THE CASE AMONGST THOSE FREE NATIONS WHICH FORM DEMOCRATIC COMMUNITIES",
+   "transcript_normalized": "this is more especially the case amongst those free nations which form democratic communities",
+   "native": {
+    "path": "native/1988-148538-0003.flac",
+    "sha256": "77c6fe8273718288f77ce2fa384c49af870d3a4c690b1cd17d5509d9c5a45ecc",
+    "bytes": 101636,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 5.58
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-148538-0003.wav",
+    "sha256": "8984c1197616062707f6a7b4ca4aa17a6c52a820e439a9c54451799eb1b76be2",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-24833-0000",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "24833",
+   "role": "enrollment",
+   "transcript": "THE TWO STRAY KITTENS GRADUALLY MAKE THEMSELVES AT HOME",
+   "transcript_normalized": "the two stray kittens gradually make themselves at home",
+   "native": {
+    "path": "native/1988-24833-0000.flac",
+    "sha256": "6a15f3242eceb9c42417e5a57575ddf341dcf944474bd9ba9e6d10f514873d52",
+    "bytes": 56741,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.32
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-24833-0000.wav",
+    "sha256": "f5d0552bd093ab057dad4eb2764511ad3141e5b9b6d26c59638436fcc3fa2739",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1988-24833-0001",
+   "speaker_id": "1988",
+   "sex": "F",
+   "chapter": "24833",
+   "role": "holdout",
+   "transcript": "SOMEHOW OR OTHER CAT HAS TAUGHT THEM THAT HE'S IN CHARGE HERE AND HE JUST CHASES THEM FOR FUN NOW AND AGAIN WHEN HE'S NOT BUSY SLEEPING",
+   "transcript_normalized": "somehow or other cat has taught them that hes in charge here and he just chases them for fun now and again when hes not busy sleeping",
+   "native": {
+    "path": "native/1988-24833-0001.flac",
+    "sha256": "398a08d40b5acb32981fd1f2e20a60b305c6881d04b69d1e0e87401ba47fb374",
+    "bytes": 129191,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.895
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1988-24833-0001.wav",
+    "sha256": "a9c62017b5229be362804fe15940537deed4749ea5f0c0590b98bab06620f4cf",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0000",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "enrollment",
+   "transcript": "ALL IDEALISATION MAKES LIFE POORER",
+   "transcript_normalized": "all idealisation makes life poorer",
+   "native": {
+    "path": "native/777-126732-0000.flac",
+    "sha256": "6dfb2d28b03b4f6d0039a187545349cdec13afad0bf5ba734cc8e4c6c536ac4a",
+    "bytes": 51484,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.74
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0000.wav",
+    "sha256": "eb4e7619fb39c251a50477ec79e9a95afb4830a00b50e0187c3a8b35b3285622",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0001",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "development",
+   "transcript": "THEN WHY INDULGE IN PROPHETIC PHANTASIES",
+   "transcript_normalized": "then why indulge in prophetic phantasies",
+   "native": {
+    "path": "native/777-126732-0001.flac",
+    "sha256": "4dee5919f6566aa791a3c863b70c46b262409e39131058861b0ef00e2bbf0777",
+    "bytes": 44518,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.3
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0001.wav",
+    "sha256": "78e860822036604dc525d17028690e921895b08a6e2206b61f0cd573b44df923",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0002",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "holdout",
+   "transcript": "AT BEST THEY CAN ONLY INTERPRET THE MIND OF THE PROPHET AND CAN HAVE NO OBJECTIVE VALUE",
+   "transcript_normalized": "at best they can only interpret the mind of the prophet and can have no objective value",
+   "native": {
+    "path": "native/777-126732-0002.flac",
+    "sha256": "810af64e7584b35c6e51c663bebfd139f551168fac60ffc163566941775ed1a0",
+    "bytes": 85942,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 5.06
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0002.wav",
+    "sha256": "d841b2fac7d21b998b596157ae30339e982d0d4bc7c9ee5c85d145c0446fb48e",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0003",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "enrollment",
+   "transcript": "MICHAELIS THE TICKET OF LEAVE APOSTLE WAS SPEAKING IN AN EVEN VOICE A VOICE THAT WHEEZED AS IF DEADENED AND OPPRESSED BY THE LAYER OF FAT ON HIS CHEST",
+   "transcript_normalized": "michaelis the ticket of leave apostle was speaking in an even voice a voice that wheezed as if deadened and oppressed by the layer of fat on his chest",
+   "native": {
+    "path": "native/777-126732-0003.flac",
+    "sha256": "906ee074b72e20c502526890bfdba26a246803c52e2779317b498224c8e65cc9",
+    "bytes": 156046,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.45
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0003.wav",
+    "sha256": "54f37ef3b896beaa8c3559f950daf96bd6e86ee8742a2c77c4e8ad50bea2885c",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0004",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "development",
+   "transcript": "AND EVER SINCE HE HAD NEVER MANAGED TO GET HIS WEIGHT DOWN AS MUCH AS AN OUNCE",
+   "transcript_normalized": "and ever since he had never managed to get his weight down as much as an ounce",
+   "native": {
+    "path": "native/777-126732-0004.flac",
+    "sha256": "0aab7cb77249ff2cd0264d8d61e6ca25415056f3f657e0e811988449c22b1abc",
+    "bytes": 76365,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.255
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0004.wav",
+    "sha256": "6e61b8aca85eb645ac175e38d43eab57490f7b5586febff3cc77d65c31c64ac5",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0005",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "holdout",
+   "transcript": "WITH HIS ELBOW PRESENTING NO APPEARANCE OF A JOINT BUT MORE LIKE A BEND IN A DUMMY'S LIMB THROWN OVER THE BACK OF A CHAIR HE LEANED FORWARD SLIGHTLY OVER HIS SHORT AND ENORMOUS THIGHS TO SPIT INTO THE GRATE",
+   "transcript_normalized": "with his elbow presenting no appearance of a joint but more like a bend in a dummys limb thrown over the back of a chair he leaned forward slightly over his short and enormous thighs to spit into the grate",
+   "native": {
+    "path": "native/777-126732-0005.flac",
+    "sha256": "b136883f21f170d0d2710f5245226191805f14f000332166018bb59751db55e6",
+    "bytes": 187292,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.12
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0005.wav",
+    "sha256": "5f1839bd9007da64bca704f2b17f505c4930b4fe04297d3e53c8c7a8abc2cc22",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0006",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "enrollment",
+   "transcript": "YES I HAD THE TIME TO THINK THINGS OUT A LITTLE HE ADDED WITHOUT EMPHASIS",
+   "transcript_normalized": "yes i had the time to think things out a little he added without emphasis",
+   "native": {
+    "path": "native/777-126732-0006.flac",
+    "sha256": "a9ac81cb955e7b8ba35ff98c1e34b74a7da3c8b749432c64b8d3aae54bdd5e86",
+    "bytes": 81585,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.575
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0006.wav",
+    "sha256": "5510863cfb2f11523d5e025c3df05d6dd9bc7dff5ffd00b6b8209fcebca0b892",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "777-126732-0007",
+   "speaker_id": "777",
+   "sex": "M",
+   "chapter": "126732",
+   "role": "holdout",
+   "transcript": "WHEN HE ROSE PAINFULLY THE THRUSTING FORWARD OF A SKINNY GROPING HAND DEFORMED BY GOUTY SWELLINGS SUGGESTED THE EFFORT OF A MORIBUND MURDERER SUMMONING ALL HIS REMAINING STRENGTH FOR A LAST STAB",
+   "transcript_normalized": "when he rose painfully the thrusting forward of a skinny groping hand deformed by gouty swellings suggested the effort of a moribund murderer summoning all his remaining strength for a last stab",
+   "native": {
+    "path": "native/777-126732-0007.flac",
+    "sha256": "68ab38cb4c318e000446a9e5f2ebd6915ae2033d0a32d7e733d6dca641f1bc5f",
+    "bytes": 198418,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 12.255
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/777-126732-0007.wav",
+    "sha256": "bd42f3ade817a410f32318fab0fc5bbe4d3b9b9cfb72b782cc5682656e85cdfa",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121123-0000",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121123",
+   "role": "enrollment",
+   "transcript": "GO DO YOU HEAR",
+   "transcript_normalized": "go do you hear",
+   "native": {
+    "path": "native/84-121123-0000.flac",
+    "sha256": "4c0f9a693f6a2f56e877dec64b26deb56d77648a138ccbac7bcc95c35e74e995",
+    "bytes": 33046,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.09
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121123-0000.wav",
+    "sha256": "6e8353d85498a02b0e06c0107e81f48b2020615b541d13a13440b41effbac0ff",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121123-0001",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121123",
+   "role": "development",
+   "transcript": "BUT IN LESS THAN FIVE MINUTES THE STAIRCASE GROANED BENEATH AN EXTRAORDINARY WEIGHT",
+   "transcript_normalized": "but in less than five minutes the staircase groaned beneath an extraordinary weight",
+   "native": {
+    "path": "native/84-121123-0001.flac",
+    "sha256": "63c0d685d385a09cceebfeeb1f18df17b4b99a76d593dbbd1c31d34f903be411",
+    "bytes": 81773,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.99
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121123-0001.wav",
+    "sha256": "910901d9e645a6d59724408a18105fb130fe447896c511cbcc4e34d94e0d5506",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121123-0002",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121123",
+   "role": "holdout",
+   "transcript": "AT THIS MOMENT THE WHOLE SOUL OF THE OLD MAN SEEMED CENTRED IN HIS EYES WHICH BECAME BLOODSHOT THE VEINS OF THE THROAT SWELLED HIS CHEEKS AND TEMPLES BECAME PURPLE AS THOUGH HE WAS STRUCK WITH EPILEPSY NOTHING WAS WANTING TO COMPLETE THIS BUT THE UTTERANCE OF A CRY",
+   "transcript_normalized": "at this moment the whole soul of the old man seemed centred in his eyes which became bloodshot the veins of the throat swelled his cheeks and temples became purple as though he was struck with epilepsy nothing was wanting to complete this but the utterance of a cry",
+   "native": {
+    "path": "native/84-121123-0002.flac",
+    "sha256": "453d47cd8fc7329ac868128a4ac919d7ced28fda9ee72303d2189f064f8d1324",
+    "bytes": 265402,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 13.69
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121123-0002.wav",
+    "sha256": "48aad9c25ccd030b396d1ee56e9d8617d5c02201525d9be60e3e92a7f9f74b62",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121123-0003",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121123",
+   "role": "enrollment",
+   "transcript": "AND THE CRY ISSUED FROM HIS PORES IF WE MAY THUS SPEAK A CRY FRIGHTFUL IN ITS SILENCE",
+   "transcript_normalized": "and the cry issued from his pores if we may thus speak a cry frightful in its silence",
+   "native": {
+    "path": "native/84-121123-0003.flac",
+    "sha256": "dec25161df1b6a2e7016f5a80c3dd3e172ce55123b771b9d00be19875bcaad46",
+    "bytes": 125125,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.8
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121123-0003.wav",
+    "sha256": "de5178c0b18b970cf658ead6a410bef4c111bf084e8b61774ec42cce9cd4e7bc",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121550-0000",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121550",
+   "role": "development",
+   "transcript": "BUT WITH FULL RAVISHMENT THE HOURS OF PRIME SINGING RECEIVED THEY IN THE MIDST OF LEAVES THAT EVER BORE A BURDEN TO THEIR RHYMES",
+   "transcript_normalized": "but with full ravishment the hours of prime singing received they in the midst of leaves that ever bore a burden to their rhymes",
+   "native": {
+    "path": "native/84-121550-0000.flac",
+    "sha256": "dbd3048279d25cb4adaa25e246db50ffa01b7714e6f091691abe908027951daf",
+    "bytes": 162628,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.435
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121550-0000.wav",
+    "sha256": "613dcecdd28649b089958a7432ac801546e4b7c7d86b2323fe5b52deb70b1ff3",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121550-0001",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121550",
+   "role": "holdout",
+   "transcript": "ALL WATERS THAT ON EARTH MOST LIMPID ARE WOULD SEEM TO HAVE WITHIN THEMSELVES SOME MIXTURE COMPARED WITH THAT WHICH NOTHING DOTH CONCEAL",
+   "transcript_normalized": "all waters that on earth most limpid are would seem to have within themselves some mixture compared with that which nothing doth conceal",
+   "native": {
+    "path": "native/84-121550-0001.flac",
+    "sha256": "247e369979ea804e60027e88710bfa4e8ab1b8f651a355c524715ba7861e6686",
+    "bytes": 159747,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.975
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121550-0001.wav",
+    "sha256": "3c0aad8113c789d511d9c9da18958f0e066c83d0e9e835a71ce7a9e6128ce622",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121550-0002",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121550",
+   "role": "enrollment",
+   "transcript": "THOU MAKEST ME REMEMBER WHERE AND WHAT PROSERPINA THAT MOMENT WAS WHEN LOST HER MOTHER HER AND SHE HERSELF THE SPRING",
+   "transcript_normalized": "thou makest me remember where and what proserpina that moment was when lost her mother her and she herself the spring",
+   "native": {
+    "path": "native/84-121550-0002.flac",
+    "sha256": "5b0f7043f218db93d39fa5462df911c790daf2800c628e34aecd30ebdb7d7602",
+    "bytes": 155410,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.265
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121550-0002.wav",
+    "sha256": "5796314b4f531872e8804d6a23be2a935b7a08c3f8cd6bee212efe867ab4cc83",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "84-121550-0003",
+   "speaker_id": "84",
+   "sex": "F",
+   "chapter": "121550",
+   "role": "holdout",
+   "transcript": "I DO NOT THINK THERE SHONE SO GREAT A LIGHT UNDER THE LIDS OF VENUS WHEN TRANSFIXED BY HER OWN SON BEYOND HIS USUAL CUSTOM",
+   "transcript_normalized": "i do not think there shone so great a light under the lids of venus when transfixed by her own son beyond his usual custom",
+   "native": {
+    "path": "native/84-121550-0003.flac",
+    "sha256": "c55986a6daae05d71d0a5589d1ce3c3a19bd80ada49e9c1aa8f0db4a16f0a958",
+    "bytes": 156576,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.16
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/84-121550-0003.wav",
+    "sha256": "944845448c6f65b9e92d8a0f6c0e02ea30df2664b64e3e2de340287c91758c52",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143396-0000",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143396",
+   "role": "enrollment",
+   "transcript": "A LAUDABLE REGARD FOR THE HONOR OF THE FIRST PROSELYTE HAS COUNTENANCED THE BELIEF THE HOPE THE WISH THAT THE EBIONITES OR AT LEAST THE NAZARENES WERE DISTINGUISHED ONLY BY THEIR OBSTINATE PERSEVERANCE IN THE PRACTICE OF THE MOSAIC RITES",
+   "transcript_normalized": "a laudable regard for the honor of the first proselyte has countenanced the belief the hope the wish that the ebionites or at least the nazarenes were distinguished only by their obstinate perseverance in the practice of the mosaic rites",
+   "native": {
+    "path": "native/1673-143396-0000.flac",
+    "sha256": "3e04afe2f2ce5cb949db8dfb3750eb758c2ea7ce30cd318df2e80c883d620b3c",
+    "bytes": 293408,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 14.675
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143396-0000.wav",
+    "sha256": "d6caba430847ce6cb23e678b80dbd9b2255507bea0e6b0a20dedd18ed4415c2f",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143396-0001",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143396",
+   "role": "development",
+   "transcript": "THEIR CHURCHES HAVE DISAPPEARED THEIR BOOKS ARE OBLITERATED THEIR OBSCURE FREEDOM MIGHT ALLOW A LATITUDE OF FAITH AND THE SOFTNESS OF THEIR INFANT CREED WOULD BE VARIOUSLY MOULDED BY THE ZEAL OR PRUDENCE OF THREE HUNDRED YEARS",
+   "transcript_normalized": "their churches have disappeared their books are obliterated their obscure freedom might allow a latitude of faith and the softness of their infant creed would be variously moulded by the zeal or prudence of three hundred years",
+   "native": {
+    "path": "native/1673-143396-0001.flac",
+    "sha256": "091b5ee61b4d2b5e8eca03750395195525e751813d8582e9d74534c8dbbb5db9",
+    "bytes": 286923,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 14.05
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143396-0001.wav",
+    "sha256": "e2d8c648942c1b3101df5cdac4bf033d1ce7fd83d1438c05a336cd36a1846484",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143396-0002",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143396",
+   "role": "holdout",
+   "transcript": "YET THE MOST CHARITABLE CRITICISM MUST REFUSE THESE SECTARIES ANY KNOWLEDGE OF THE PURE AND PROPER DIVINITY OF CHRIST",
+   "transcript_normalized": "yet the most charitable criticism must refuse these sectaries any knowledge of the pure and proper divinity of christ",
+   "native": {
+    "path": "native/1673-143396-0002.flac",
+    "sha256": "d6dfc50025e5af2388d576375e589b265295cdfc6408730667c9c8bc8b9a001c",
+    "bytes": 166435,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.85
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143396-0002.wav",
+    "sha256": "dc352314816d7c242380a592e627ec7f2723f9cfd408bb6634de0235bb6ddcec",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143396-0003",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143396",
+   "role": "enrollment",
+   "transcript": "HIS PROGRESS FROM INFANCY TO YOUTH AND MANHOOD WAS MARKED BY A REGULAR INCREASE IN STATURE AND WISDOM AND AFTER A PAINFUL AGONY OF MIND AND BODY HE EXPIRED ON THE CROSS",
+   "transcript_normalized": "his progress from infancy to youth and manhood was marked by a regular increase in stature and wisdom and after a painful agony of mind and body he expired on the cross",
+   "native": {
+    "path": "native/1673-143396-0003.flac",
+    "sha256": "d840d75718bb57838bb0cf0ce9e2a03c8438c5dda444173735bf07307048c0a3",
+    "bytes": 230007,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.355
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143396-0003.wav",
+    "sha256": "9fefc23140e94ae8a0ee2863c3ee80ceba8bcb78d0a9d5378b69211fce964cb1",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143397-0000",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143397",
+   "role": "development",
+   "transcript": "ARDENT IN THE PROSECUTION OF HERESY CYRIL AUSPICIOUSLY OPENED HIS REIGN BY OPPRESSING THE NOVATIANS THE MOST INNOCENT AND HARMLESS OF THE SECTARIES",
+   "transcript_normalized": "ardent in the prosecution of heresy cyril auspiciously opened his reign by oppressing the novatians the most innocent and harmless of the sectaries",
+   "native": {
+    "path": "native/1673-143397-0000.flac",
+    "sha256": "5e24baded45b435cbf9581f3edcd805ba90d8a273fa040df4c1c2bd4cc9c404b",
+    "bytes": 184864,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.35
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143397-0000.wav",
+    "sha256": "aad08565aeb72c44be53c024b6eda9603c5e8d2dd62997270194001c138b5b33",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143397-0001",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143397",
+   "role": "holdout",
+   "transcript": "WITHOUT ANY LEGAL SENTENCE WITHOUT ANY ROYAL MANDATE THE PATRIARCH AT THE DAWN OF DAY LED A SEDITIOUS MULTITUDE TO THE ATTACK OF THE SYNAGOGUES",
+   "transcript_normalized": "without any legal sentence without any royal mandate the patriarch at the dawn of day led a seditious multitude to the attack of the synagogues",
+   "native": {
+    "path": "native/1673-143397-0001.flac",
+    "sha256": "ba8bc880cb06ac6c658abe6c739388082bd4bc588773e16d9a4e8d0030165f98",
+    "bytes": 180079,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.895
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143397-0001.wav",
+    "sha256": "437bd0695058b0482de9bed47b011bf153e0cd762787cf45901e071066805d1e",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143397-0002",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143397",
+   "role": "enrollment",
+   "transcript": "SUCH CRIMES WOULD HAVE DESERVED THE ANIMADVERSION OF THE MAGISTRATE BUT IN THIS PROMISCUOUS OUTRAGE THE INNOCENT WERE CONFOUNDED WITH THE GUILTY AND ALEXANDRIA WAS IMPOVERISHED BY THE LOSS OF A WEALTHY AND INDUSTRIOUS COLONY",
+   "transcript_normalized": "such crimes would have deserved the animadversion of the magistrate but in this promiscuous outrage the innocent were confounded with the guilty and alexandria was impoverished by the loss of a wealthy and industrious colony",
+   "native": {
+    "path": "native/1673-143397-0002.flac",
+    "sha256": "fb51f70a0e5ec3d83ef39d73689248dbe22c625aaf56176e7d0eb43b21875ede",
+    "bytes": 261397,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 13.03
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143397-0002.wav",
+    "sha256": "171710fbfee5b4d4473fc4a5e7504cdc59a57e06225d37accefe946875ea3a58",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "1673-143397-0003",
+   "speaker_id": "1673",
+   "sex": "F",
+   "chapter": "143397",
+   "role": "holdout",
+   "transcript": "THE ZEAL OF CYRIL EXPOSED HIM TO THE PENALTIES OF THE JULIAN LAW BUT IN A FEEBLE GOVERNMENT AND A SUPERSTITIOUS AGE HE WAS SECURE OF IMPUNITY AND EVEN OF PRAISE",
+   "transcript_normalized": "the zeal of cyril exposed him to the penalties of the julian law but in a feeble government and a superstitious age he was secure of impunity and even of praise",
+   "native": {
+    "path": "native/1673-143397-0003.flac",
+    "sha256": "bd0fb7db46005c1e3115c5c0041225526278fde32b08a420a21753d6ceb13f68",
+    "bytes": 225365,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.18
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/1673-143397-0003.wav",
+    "sha256": "d51c84cbdbd6b1ef9a90db5d8a740712553a041d107e1aaf8aa57244acb75c70",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275154-0000",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275154",
+   "role": "enrollment",
+   "transcript": "NOT HAVING HEARD FROM CAPTAIN BENNYDECK FOR SOME LITTLE TIME RANDAL THOUGHT IT DESIRABLE IN SYDNEY'S INTERESTS TO MAKE INQUIRIES AT HIS CLUB",
+   "transcript_normalized": "not having heard from captain bennydeck for some little time randal thought it desirable in sydneys interests to make inquiries at his club",
+   "native": {
+    "path": "native/8297-275154-0000.flac",
+    "sha256": "b4c7de4c248d4eb18f61bd7b93947569add38ad258394af15e95ff26e0cc0cb9",
+    "bytes": 192867,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.22
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275154-0000.wav",
+    "sha256": "c461a7a96b59e03be20f8faafed1929d3b1b22acded7bb5f32c4f799d811cfc9",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275154-0001",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275154",
+   "role": "development",
+   "transcript": "THE SAILING MASTER ANNOUNCED THAT HE HAD ORDERS TO TAKE THE VESSEL BACK TO HER PORT WITH NO OTHER EXPLANATION THAN THAT THE CRUISE WAS OVER",
+   "transcript_normalized": "the sailing master announced that he had orders to take the vessel back to her port with no other explanation than that the cruise was over",
+   "native": {
+    "path": "native/8297-275154-0001.flac",
+    "sha256": "99260d4f0642dc9e6b25578712fdfdb068cf7f64ebfceb4abe7f037e00acf0e4",
+    "bytes": 185552,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.34
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275154-0001.wav",
+    "sha256": "3122aa6d52939a365e0372fd60c8365994af9d40b5c541f2f8650b98f8ef5f1a",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275154-0002",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275154",
+   "role": "holdout",
+   "transcript": "THIS ALTERNATIVE IN THE CAPTAIN'S PLANS TERMINATING THE VOYAGE A MONTH EARLIER THAN HIS ARRANGEMENTS HAD CONTEMPLATED PUZZLED RANDAL",
+   "transcript_normalized": "this alternative in the captains plans terminating the voyage a month earlier than his arrangements had contemplated puzzled randal",
+   "native": {
+    "path": "native/8297-275154-0002.flac",
+    "sha256": "d6700d44e218fbf60a49735897813a2a5f4b7704018b6db1a7d72fa381597944",
+    "bytes": 174359,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.76
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275154-0002.wav",
+    "sha256": "39e6bfc418728a0f516802f5cf878105d1fb26db743c129ca56c2d4763644818",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275155-0000",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275155",
+   "role": "enrollment",
+   "transcript": "ON THE NEXT DAY BUT ONE RANDAL ARRANGED HIS DEPARTURE FOR SYDENHAM SO AS TO ARRIVE AT THE HOTEL AN HOUR BEFORE THE TIME APPOINTED FOR THE DINNER",
+   "transcript_normalized": "on the next day but one randal arranged his departure for sydenham so as to arrive at the hotel an hour before the time appointed for the dinner",
+   "native": {
+    "path": "native/8297-275155-0000.flac",
+    "sha256": "925c737155a5aa3934e19aea1da725a5f0275aaffd1b50ead2f6069629617653",
+    "bytes": 194322,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.47
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275155-0000.wav",
+    "sha256": "68b9114fe8eb2fad1a24b6f2ef7291c5e70fd98862dc040e9cb2c05d86ee8bd6",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275155-0001",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275155",
+   "role": "development",
+   "transcript": "THE NEW NUMBER OF A POPULAR WEEKLY JOURNAL HAD THAT DAY BEEN PUBLISHED RANDAL BOUGHT IT",
+   "transcript_normalized": "the new number of a popular weekly journal had that day been published randal bought it",
+   "native": {
+    "path": "native/8297-275155-0001.flac",
+    "sha256": "527875db0c807be2afedd667a1363f5e516edde35bf9a023bd78071184cc06cd",
+    "bytes": 111186,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.625
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275155-0001.wav",
+    "sha256": "9b380ce83d52b53952c73b00a8049d80d1fc45efe641f98841ab0e694ef6a2bc",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275155-0002",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275155",
+   "role": "holdout",
+   "transcript": "AFTER READING ONE OR TWO OF THE POLITICAL ARTICLES HE ARRIVED AT THE COLUMNS SPECIALLY DEVOTED TO FASHIONABLE INTELLIGENCE",
+   "transcript_normalized": "after reading one or two of the political articles he arrived at the columns specially devoted to fashionable intelligence",
+   "native": {
+    "path": "native/8297-275155-0002.flac",
+    "sha256": "232e7b08b857c61a24fe6996db2681ebb03fb46d3891cc87cbbbfead7603f63f",
+    "bytes": 163352,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.85
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275155-0002.wav",
+    "sha256": "6658296ed09994afc6dc880f1e47fe6185f0dc4e8ca6b94e1592d64e816ba264",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275156-0000",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275156",
+   "role": "enrollment",
+   "transcript": "WHAT ARE YOU DOING HERE HE ASKED",
+   "transcript_normalized": "what are you doing here he asked",
+   "native": {
+    "path": "native/8297-275156-0000.flac",
+    "sha256": "739897cc382b4f6ab0e813607a44ee932fd7e6655d130c011028b7fb3c1e8c24",
+    "bytes": 56931,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.58
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275156-0000.wav",
+    "sha256": "13358e58def12edd49c209b7f8ab352bede77fe0c993a6e7eb3711b0f59aaa05",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "8297-275156-0001",
+   "speaker_id": "8297",
+   "sex": "M",
+   "chapter": "275156",
+   "role": "holdout",
+   "transcript": "YOU HAVE BEEN TO THE HOTEL HE BURST OUT YOU HAVE SEEN CATHERINE",
+   "transcript_normalized": "you have been to the hotel he burst out you have seen catherine",
+   "native": {
+    "path": "native/8297-275156-0001.flac",
+    "sha256": "e488957bc427fa0db62ee62ed3ceefbcec71f4b99b95cd7a4b6abeb392a962e9",
+    "bytes": 84331,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.64
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/8297-275156-0001.wav",
+    "sha256": "27e55b7c2bc5d7e4641450429f164087c2daccbdd8b3e54109acd95ee51a3156",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43358-0000",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43358",
+   "role": "enrollment",
+   "transcript": "THE SAVAGE PHILOSOPHER THE DUAL MIND",
+   "transcript_normalized": "the savage philosopher the dual mind",
+   "native": {
+    "path": "native/5536-43358-0000.flac",
+    "sha256": "a26df15b85c34f713fd23161fb0b0ea5f12889bb00133327c8c83e0b3de7cbf7",
+    "bytes": 59548,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.175
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43358-0000.wav",
+    "sha256": "eb2448fe34a0ba8159ce53e729be53fb78ea26697cd6fdde2db7585cadd10e3f",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43358-0001",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43358",
+   "role": "development",
+   "transcript": "THE ORIGINAL ATTITUDE OF THE AMERICAN INDIAN TOWARD THE ETERNAL THE GREAT MYSTERY THAT SURROUNDS AND EMBRACES US WAS AS SIMPLE AS IT WAS EXALTED",
+   "transcript_normalized": "the original attitude of the american indian toward the eternal the great mystery that surrounds and embraces us was as simple as it was exalted",
+   "native": {
+    "path": "native/5536-43358-0001.flac",
+    "sha256": "5dbb796d005260dd237544909f193b0cc6814f56a93ace09d9297ad29ccb6c29",
+    "bytes": 173545,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.875
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43358-0001.wav",
+    "sha256": "93537c49b8ae6b453fe2181472ff5f054c3d3bf1cb98ba48754948675c24909b",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43358-0002",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43358",
+   "role": "holdout",
+   "transcript": "IT WAS SILENT BECAUSE ALL SPEECH IS OF NECESSITY FEEBLE AND IMPERFECT THEREFORE THE SOULS OF MY ANCESTORS ASCENDED TO GOD IN WORDLESS ADORATION",
+   "transcript_normalized": "it was silent because all speech is of necessity feeble and imperfect therefore the souls of my ancestors ascended to god in wordless adoration",
+   "native": {
+    "path": "native/5536-43358-0002.flac",
+    "sha256": "c92ed8ae81bb3cf6fa6d0917216838dc4ebd83e9c4a8c2165e740791abf898c6",
+    "bytes": 184972,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.11
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43358-0002.wav",
+    "sha256": "15f8706008f40f24ba98d638b367b3e20f293c362639a1f79647e0fcca923bf4",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43359-0000",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43359",
+   "role": "enrollment",
+   "transcript": "HE HAD NEITHER A NATIONAL ARMY NOR AN ORGANIZED CHURCH",
+   "transcript_normalized": "he had neither a national army nor an organized church",
+   "native": {
+    "path": "native/5536-43359-0000.flac",
+    "sha256": "e4c6ac3210796945d20b516c3b02a2cf0716c157eeb9bcf671a8e83b85c1b475",
+    "bytes": 63363,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.35
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43359-0000.wav",
+    "sha256": "0f2560ab83a5d329d09d56d1cf6cc291d980314ccd44fe396a14268c13374013",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43359-0001",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43359",
+   "role": "development",
+   "transcript": "HER ATTITUDE AND SECRET MEDITATIONS MUST BE SUCH AS TO INSTILL INTO THE RECEPTIVE SOUL OF THE UNBORN CHILD THE LOVE OF THE GREAT MYSTERY AND A SENSE OF BROTHERHOOD WITH ALL CREATION",
+   "transcript_normalized": "her attitude and secret meditations must be such as to instill into the receptive soul of the unborn child the love of the great mystery and a sense of brotherhood with all creation",
+   "native": {
+    "path": "native/5536-43359-0001.flac",
+    "sha256": "2a46c712fd19e788bf290d0cde422aac16f0cc2da8878e405837be9134f526e1",
+    "bytes": 193945,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.36
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43359-0001.wav",
+    "sha256": "bd0509d216cc1fbf27ced6b773dd58fe56bd8f5c7ad6889db60d29e250b79983",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43359-0002",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43359",
+   "role": "holdout",
+   "transcript": "THE ORDEAL IS BEST MET ALONE WHERE NO CURIOUS OR PITYING EYES EMBARRASS HER WHERE ALL NATURE SAYS TO HER SPIRIT TIS LOVE TIS LOVE THE FULFILLING OF LIFE",
+   "transcript_normalized": "the ordeal is best met alone where no curious or pitying eyes embarrass her where all nature says to her spirit tis love tis love the fulfilling of life",
+   "native": {
+    "path": "native/5536-43359-0002.flac",
+    "sha256": "c335cdd0f6689710d1bb3f98733fe409e53dfeb84ae016075b06d8075821bf4a",
+    "bytes": 196008,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.04
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43359-0002.wav",
+    "sha256": "dfbe6ddda7340b472bbb16a5b4b19a729763370aaee34f3f78ec88b4e1531b2b",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43363-0000",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43363",
+   "role": "enrollment",
+   "transcript": "REINCARNATION AND THE CONVERSE OF SPIRITS",
+   "transcript_normalized": "reincarnation and the converse of spirits",
+   "native": {
+    "path": "native/5536-43363-0000.flac",
+    "sha256": "c8065bd417663e4f8a316ff5be9ddaeef19dd23571856ef66d6cb045a270e2ef",
+    "bytes": 57407,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 2.82
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43363-0000.wav",
+    "sha256": "a6bd33a0a9c403800c3defeb77a18f50bb30abf4fa16119010c06276ac764f00",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "5536-43363-0001",
+   "speaker_id": "5536",
+   "sex": "M",
+   "chapter": "43363",
+   "role": "holdout",
+   "transcript": "THEREFORE HE COURTS DEATH IN BATTLE ON THE OTHER HAND HE WOULD REGARD IT AS DISGRACEFUL TO BE KILLED IN A PRIVATE QUARREL",
+   "transcript_normalized": "therefore he courts death in battle on the other hand he would regard it as disgraceful to be killed in a private quarrel",
+   "native": {
+    "path": "native/5536-43363-0001.flac",
+    "sha256": "a1537606893dc7e420f291dadf5db699b993365204bb0ac32d8e93320a82ae34",
+    "bytes": 131574,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.14
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/5536-43363-0001.wav",
+    "sha256": "fca023471c56d4efa3b671fe4ca4481ecfa41cae6d5cd3a93424d1b4c0b11c51",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-64257-0000",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "64257",
+   "role": "enrollment",
+   "transcript": "WHEN SHE SAID GOOD NIGHT TO BEENIE AND WENT TO HER CHAMBER OVER THAT WHERE THE LOVED PARENT AND FRIEND WOULD FALL ASLEEP NO MORE SHE FELT AS IF SHE WENT WALKING ALONG TO HER TOMB",
+   "transcript_normalized": "when she said good night to beenie and went to her chamber over that where the loved parent and friend would fall asleep no more she felt as if she went walking along to her tomb",
+   "native": {
+    "path": "native/6345-64257-0000.flac",
+    "sha256": "a46de9c857652f0f0a1f08aff1e79bec13c141bf687a8bd14495492802db2350",
+    "bytes": 211414,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 11.055
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-64257-0000.wav",
+    "sha256": "e6da8986513065d38a7dafc22d5a22b9364b32750ca0a565205b5d17990d1775",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-64257-0002",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "64257",
+   "role": "development",
+   "transcript": "WHEN SHE OPENED THE DOOR OF IT THE BRIGHT FIRE WHICH BEENIE UNDESIRED HAD KINDLED THERE STARTLED HER THE ROOM LOOKED UNNATURAL UNCANNY BECAUSE IT WAS CHEERFUL",
+   "transcript_normalized": "when she opened the door of it the bright fire which beenie undesired had kindled there startled her the room looked unnatural uncanny because it was cheerful",
+   "native": {
+    "path": "native/6345-64257-0002.flac",
+    "sha256": "3f4cc0ce1bff0a2f4a048512c39b70d54aa87fbee3621d4ad7fa21103fcb0a39",
+    "bytes": 194430,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 10.045
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-64257-0002.wav",
+    "sha256": "6be7bb8bb6ab858eccf809d0d735f000cc93f0f33d3ad4886a6a5800c10ed82a",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-64257-0003",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "64257",
+   "role": "holdout",
+   "transcript": "SHE STOOD FOR A MOMENT ON THE HEARTH AND IN SAD DREAMY MOOD LISTENED TO THE HOWLING SWOOPS OF THE WIND MAKING THE HOUSE QUIVER AND SHAKE",
+   "transcript_normalized": "she stood for a moment on the hearth and in sad dreamy mood listened to the howling swoops of the wind making the house quiver and shake",
+   "native": {
+    "path": "native/6345-64257-0003.flac",
+    "sha256": "b8135e70bd88402d51421c2e510c4a7f6bc34d036a300e836e04eec4c510564d",
+    "bytes": 174952,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.78
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-64257-0003.wav",
+    "sha256": "c30a2ab9b0b9e571c1616b4a013770f9a17fe8a8cb3d4f58424ff9114f0bd73b",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-93302-0000",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "93302",
+   "role": "enrollment",
+   "transcript": "SHE HERSELF SHOULD HAVE BEEN A POEM A LYRIC IN A WHITE GOWN AND GREEN SCARF COMING TO HIM THROUGH THE LONG GRASS UNDER THE BLOSSOMED BOUGHS",
+   "transcript_normalized": "she herself should have been a poem a lyric in a white gown and green scarf coming to him through the long grass under the blossomed boughs",
+   "native": {
+    "path": "native/6345-93302-0000.flac",
+    "sha256": "24888b526233b023c2f6f17f7d0f410e622a09589b05349215fbe74d1610bd6e",
+    "bytes": 163037,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 9.88
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-93302-0000.wav",
+    "sha256": "9910835d5bf51ab5999fd270c245fdbea30b0b79691c9d395c0ab3ac55f3ff9c",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-93302-0001",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "93302",
+   "role": "development",
+   "transcript": "HER HANDS SHOULD HAVE BEEN FULL OF BLUEBELLS AND SHE SHOULD HAVE HELD THEM UP TO HIS FACE IN MAIDENLY DEFENCE AS HE SPRANG FORWARD TO TAKE HER IN HIS ARMS",
+   "transcript_normalized": "her hands should have been full of bluebells and she should have held them up to his face in maidenly defence as he sprang forward to take her in his arms",
+   "native": {
+    "path": "native/6345-93302-0001.flac",
+    "sha256": "241ce36622a7bf0192d5a71ead4ba72e3570aac2f54a79f2786a0994e7c1fa9a",
+    "bytes": 146503,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 8.625
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-93302-0001.wav",
+    "sha256": "07d2ce196b97cd6b3b2e0bb4146f115a882c73b5cbb7983b817132b8368c0661",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-93302-0002",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "93302",
+   "role": "holdout",
+   "transcript": "YOU SEE THAT SHE KNEW EXACTLY HOW A TRYST IS CONDUCTED IN THE PAGES OF THE STANDARD POETS AND OF THE CHEAPER WEEKLY JOURNALS",
+   "transcript_normalized": "you see that she knew exactly how a tryst is conducted in the pages of the standard poets and of the cheaper weekly journals",
+   "native": {
+    "path": "native/6345-93302-0002.flac",
+    "sha256": "beeecaac4cb3933adb36f13be794bdb67a00bd0997522bff1fd2130b7f544007",
+    "bytes": 124629,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.55
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-93302-0002.wav",
+    "sha256": "4e55bb63db0f70d955df59d63742c9bc5ad4e9fa77c31b450e91df9c8f4ad4af",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-93306-0001",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "93306",
+   "role": "enrollment",
+   "transcript": "THE YOUNG MAN DREW A DEEP BREATH OF RELIEF AND LIGHTED THE WAX CANDLES IN THE SOLID SILVER CANDLESTICKS ON HIS WRITING TABLE FOR NOW THE LATE SUMMER DUSK WAS FALLING AND THAT ORGAN PLEASE HEAVEN MADE FULL THE MEASURE OF THE DAY'S APPOINTED TORTURE",
+   "transcript_normalized": "the young man drew a deep breath of relief and lighted the wax candles in the solid silver candlesticks on his writing table for now the late summer dusk was falling and that organ please heaven made full the measure of the days appointed torture",
+   "native": {
+    "path": "native/6345-93306-0001.flac",
+    "sha256": "70632e68ebb9d3529beac21e0bd6c72c00b476e9a00a990d8300eacefb43a549",
+    "bytes": 240087,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 14.46
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-93306-0001.wav",
+    "sha256": "3be55e043c57aa9093b4442098b3cdd45199bd7db52aa5a8403c656e982fd427",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6345-93306-0002",
+   "speaker_id": "6345",
+   "sex": "F",
+   "chapter": "93306",
+   "role": "holdout",
+   "transcript": "THEN THERE WAS SILENCE THEN A SIGH AND THE SOUND OF LIGHT MOVING FEET ON THE GRAVEL",
+   "transcript_normalized": "then there was silence then a sigh and the sound of light moving feet on the gravel",
+   "native": {
+    "path": "native/6345-93306-0002.flac",
+    "sha256": "3e2f99f8fbf3b3882f1592068fa264e7a1a679cd30f924c1587a79665687233c",
+    "bytes": 86905,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 5.13
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6345-93306-0002.wav",
+    "sha256": "ee3f3f9d48fa860eaf7bd26943c1dc8dcdb3577f07479026fb1d08332d0eb00a",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-244435-0000",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "244435",
+   "role": "enrollment",
+   "transcript": "CHAPTER SEVEN THE HOMECOMING",
+   "transcript_normalized": "chapter seven the homecoming",
+   "native": {
+    "path": "native/6295-244435-0000.flac",
+    "sha256": "584835bd337d293cc811f3d346c6d681716534634f36b477e8115bdb269ad177",
+    "bytes": 43421,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.105
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-244435-0000.wav",
+    "sha256": "07ea1b6c2d204f6ce7613766f50ddc9de9201e77be885e88c78b8435ce30e8f0",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-244435-0001",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "244435",
+   "role": "development",
+   "transcript": "COLONEL LEONIDAS TALBOT REGARDED THE WHITE FLAG WITH FEELINGS IN WHICH TRIUMPH AND SADNESS WERE MINGLED STRANGELY",
+   "transcript_normalized": "colonel leonidas talbot regarded the white flag with feelings in which triumph and sadness were mingled strangely",
+   "native": {
+    "path": "native/6295-244435-0001.flac",
+    "sha256": "fd1c766546d427730866e37146b25b156522f5d5cfae65d4ecd831a9c4af266d",
+    "bytes": 148468,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 7.885
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-244435-0001.wav",
+    "sha256": "1660ecf877b01f43d497fce56e18e7d61e55772832888ecae1a2e16ab5db7324",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-244435-0002",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "244435",
+   "role": "holdout",
+   "transcript": "BUT THE EMOTIONS OF HARRY AND HIS COMRADES WERE FOR THE MOMENT THOSE OF VICTORY ONLY",
+   "transcript_normalized": "but the emotions of harry and his comrades were for the moment those of victory only",
+   "native": {
+    "path": "native/6295-244435-0002.flac",
+    "sha256": "3b151044ecf96c0412839a203efdfda21027ada7651ba311ce67224af42f9770",
+    "bytes": 101024,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.105
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-244435-0002.wav",
+    "sha256": "fc0efbc0237037e56c0312750e9ba7653fa9302c66e7a78980f5526a5b2ae9c4",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-244435-0003",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "244435",
+   "role": "enrollment",
+   "transcript": "BOATS PUT OUT BOTH FROM THE FORT AND THE SHORE",
+   "transcript_normalized": "boats put out both from the fort and the shore",
+   "native": {
+    "path": "native/6295-244435-0003.flac",
+    "sha256": "2887a536f5879bf1aa28c49720f18f8ad2f6c221496664832c1d241226f7031c",
+    "bytes": 59301,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.245
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-244435-0003.wav",
+    "sha256": "bae1ebb573a13e5a0db9eff05f242577d11920e40d17f919a57da88aa2be8fa9",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-64301-0001",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "64301",
+   "role": "development",
+   "transcript": "IT WAS THE AFTERNOON OF A HOLIDAY AND SHE HAD CLOSED EARLY",
+   "transcript_normalized": "it was the afternoon of a holiday and she had closed early",
+   "native": {
+    "path": "native/6295-64301-0001.flac",
+    "sha256": "3e8623cd0f8e802b0c61aae4946cf63778b2f456110cf6a02288c92d7a6bf41a",
+    "bytes": 79600,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 4.73
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-64301-0001.wav",
+    "sha256": "7c47681540bdd42afcd6d7f516984bcb508858b527b60bf5ae252ce96601b9f2",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-64301-0002",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "64301",
+   "role": "holdout",
+   "transcript": "WAS THERE EVER A HAPPIER MAN THAN JOSEPH THAT NIGHT AS HE STRODE ALONG THE FOOTPATH",
+   "transcript_normalized": "was there ever a happier man than joseph that night as he strode along the footpath",
+   "native": {
+    "path": "native/6295-64301-0002.flac",
+    "sha256": "1cf7c1497a58e27e06c256fee082c1fa958e558bcc38b8ff11c6ce698ec0102b",
+    "bytes": 116699,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.72
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-64301-0002.wav",
+    "sha256": "45e07f23d49a36858d967d993db2ab25bd131ca1ac6037791561b454fe9e2b65",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-64301-0003",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "64301",
+   "role": "enrollment",
+   "transcript": "HE PRESSED HIS VIOLIN CASE TO HIS HEART AS IF IT WERE A LIVING THING THAT COULD KNOW THAT HE LOVED IT",
+   "transcript_normalized": "he pressed his violin case to his heart as if it were a living thing that could know that he loved it",
+   "native": {
+    "path": "native/6295-64301-0003.flac",
+    "sha256": "751e73b8c575e1a4eda4d7f411efe6abacd5d94c1998618098b4af5836ae8fb2",
+    "bytes": 121483,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 6.77
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-64301-0003.wav",
+    "sha256": "39034e9121cc888bd607def0a3b760434edf9df28c145a0adb7b9b316461a423",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  },
+  {
+   "id": "6295-64301-0004",
+   "speaker_id": "6295",
+   "sex": "M",
+   "chapter": "64301",
+   "role": "holdout",
+   "transcript": "EARTH WAS GONE AND HEAVEN WAS ALL",
+   "transcript_normalized": "earth was gone and heaven was all",
+   "native": {
+    "path": "native/6295-64301-0004.flac",
+    "sha256": "cf2d80044ac0dfeffb5370af13078a9353fe244ace47cb6efcf694235c7f3acf",
+    "bytes": 63246,
+    "sample_rate": 16000,
+    "channels": 1,
+    "duration_s": 3.77
+   },
+   "derived_16k_mono": {
+    "path": "derived_16k_mono/6295-64301-0004.wav",
+    "sha256": "35c195f503eb7b79464754d979ab97c0e51836fd9ac3e20cac82e6eb294f6727",
+    "method": "FLAC->PCM16 WAV, no resampling (native already 16 kHz mono)"
+   }
+  }
+ ]
+}

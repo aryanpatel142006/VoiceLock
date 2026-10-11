@@ -1,0 +1,61 @@
+{
+  "scenario_id": "scenario_36",
+  "name": "gain_step_change_6db",
+  "category": "gain_asymmetry_6db",
+  "description": "Speaker 1 starts at 0dB, pauses 200ms, then resumes at +6dB (intra-speaker 6dB step)",
+  "sample_rate": 16000,
+  "duration_s": 4.2,
+  "total_samples": 67200,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.8,
+      "start_sample": 0,
+      "end_sample": 28800,
+      "duration_s": 1.8,
+      "gain_db": 0.0,
+      "description": "Spk 1 initial phrase at 0dB"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_1",
+      "start_s": 2.0,
+      "end_s": 3.8,
+      "start_sample": 32000,
+      "end_sample": 60800,
+      "duration_s": 1.8,
+      "gain_db": 6.0,
+      "description": "Spk 1 post-pause phrase stepped up to +6dB"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.8
+      ],
+      [
+        2.0,
+        3.8
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.8,
+      2.0
+    ],
+    [
+      3.8,
+      4.2
+    ]
+  ],
+  "params": {
+    "gain_step_db": 6.0,
+    "pause_ms": 200
+  },
+  "seed": 29336
+}

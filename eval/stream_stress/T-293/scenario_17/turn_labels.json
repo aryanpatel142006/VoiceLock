@@ -1,0 +1,86 @@
+{
+  "scenario_id": "scenario_17",
+  "name": "midstream_simultaneous_onset",
+  "category": "simultaneous_onset",
+  "description": "Speaker 1 speaks solo [0.0, 2.0s], pause [2.0, 2.4s], then both onset simultaneously at t=2.4s",
+  "sample_rate": 16000,
+  "duration_s": 5.0,
+  "total_samples": 80000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 initial solo segment"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_1",
+      "start_s": 2.4,
+      "end_s": 4.4,
+      "start_sample": 38400,
+      "end_sample": 70400,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 midstream simultaneous onset"
+    },
+    {
+      "turn_id": 3,
+      "speaker": "speaker_2",
+      "start_s": 2.4,
+      "end_s": 4.4,
+      "start_sample": 38400,
+      "end_sample": 70400,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 2 midstream simultaneous onset"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        2.0
+      ],
+      [
+        2.4,
+        4.4
+      ]
+    ],
+    "speaker_2": [
+      [
+        2.4,
+        4.4
+      ]
+    ]
+  },
+  "overlap_intervals": [
+    [
+      2.4,
+      4.4,
+      [
+        "speaker_1",
+        "speaker_2"
+      ]
+    ]
+  ],
+  "silent_intervals": [
+    [
+      2.0,
+      2.4
+    ],
+    [
+      4.4,
+      5.0
+    ]
+  ],
+  "params": {
+    "midstream_onset_s": 2.4
+  },
+  "seed": 29317
+}

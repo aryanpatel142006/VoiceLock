@@ -1,0 +1,365 @@
+[
+  {
+    "first_inference_ms": 1133.3692920161411,
+    "latencies_ms": [
+      1086.3127500051633,
+      1056.5190829802305,
+      1080.1715420093387,
+      1056.3542080344632,
+      1075.846082996577
+    ],
+    "p50_ms": 1075.846082996577,
+    "p95_ms": 1085.0845084059983,
+    "output_shapes": [
+      [
+        1,
+        192
+      ]
+    ],
+    "load_ms": 110.0905000930652,
+    "device": "cpu",
+    "sample_rate": 16000,
+    "input_shapes": [
+      [
+        1,
+        32000
+      ]
+    ],
+    "input_seconds": 2,
+    "params": 27107708,
+    "license": "CC-BY-NC-4.0",
+    "model": "Jenthe/ECAPA2",
+    "mock": false,
+    "artifacts": [
+      {
+        "repo": "Jenthe/ECAPA2",
+        "file": "ecapa2.pt",
+        "revision": "207cb6d137c671a12ba820ebec3b719549b06c0f",
+        "sha256": "9b12f6bfdb641297eb7a8c04993d0a62944586e4a1db52cc2ba86aec08980570",
+        "bytes": 108895613
+      }
+    ],
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7",
+    "hostname": "MacBook-Air.local",
+    "threads": 1,
+    "peak_process_rss_mib": 1133.234375,
+    "scratch_cleaned": true,
+    "runtime_versions": {
+      "torch": "2.14.1",
+      "torchaudio": "2.11.0",
+      "numpy": "2.5.3",
+      "onnx": "1.23.1",
+      "onnxruntime": "1.28.0",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  {
+    "first_inference_ms": 193.17566696554422,
+    "latencies_ms": [
+      189.02550009079278,
+      189.43450006190687,
+      188.8524160021916,
+      188.29745799303055,
+      188.2751660887152
+    ],
+    "p50_ms": 188.8524160021916,
+    "p95_ms": 189.35270006768405,
+    "output_shapes": [
+      [
+        1,
+        192
+      ]
+    ],
+    "load_ms": 98.6888330662623,
+    "device": "cpu",
+    "sample_rate": 16000,
+    "input_shapes": [
+      [
+        1,
+        198,
+        80
+      ]
+    ],
+    "input_seconds": 2,
+    "params": 17838280,
+    "params_kind": "ONNX initializer elements (includes buffers)",
+    "license": "Apache-2.0",
+    "model": "ERes2NetV2",
+    "mock": false,
+    "artifacts": [
+      {
+        "repo": "csukuangfj/speaker-embedding-models",
+        "file": "3dspeaker_speech_eres2netv2_sv_zh-cn_16k-common.onnx",
+        "revision": "0743f301363dec56491a490f6d6cbc9d67f9a3bf",
+        "sha256": "bf1a75b9930474cf3389ef415e6e5d38ca96fea4a3a00f7e301d080a58ee2239",
+        "bytes": 71441526
+      }
+    ],
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7",
+    "hostname": "MacBook-Air.local",
+    "threads": 1,
+    "peak_process_rss_mib": 618.796875,
+    "scratch_cleaned": true,
+    "runtime_versions": {
+      "torch": "2.14.1",
+      "torchaudio": "2.11.0",
+      "numpy": "2.5.3",
+      "onnx": "1.23.1",
+      "onnxruntime": "1.28.0",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  {
+    "first_inference_ms": 108.89520903583616,
+    "latencies_ms": [
+      102.8818329796195,
+      105.17337499186397,
+      102.1754170069471,
+      103.2262499211356,
+      112.61379206553102
+    ],
+    "p50_ms": 103.2262499211356,
+    "p95_ms": 111.1257086507976,
+    "output_shapes": [
+      [
+        1,
+        16000
+      ],
+      [
+        1,
+        16000
+      ]
+    ],
+    "load_ms": 43.91795792616904,
+    "device": "cpu",
+    "sample_rate": 8000,
+    "input_seconds": 2,
+    "input_shapes": [
+      [
+        1,
+        16000
+      ]
+    ],
+    "license": "CC-BY-4.0",
+    "params": 7877505,
+    "stream_100_frames_ms": 28.104875003919005,
+    "stream_max_abs_delta": 5.7220458984375e-05,
+    "streaming_scope": "separator features only; no live Stage/resampling adapter",
+    "model": "lichenda/wsj0_2mix_skim_small_causal",
+    "mock": false,
+    "artifacts": [
+      {
+        "repo": "lichenda/wsj0_2mix_skim_small_causal",
+        "file": "exp/enh_train_enh_skim_causal_small_raw/config.yaml",
+        "revision": "40a67347c0d98183b924e3434a6f0dd68f3497fd",
+        "sha256": "8f47ddda94818000c07508e9d8de011b3172799883fc78824ddb5eb8e66a6e8b",
+        "bytes": 3743
+      },
+      {
+        "repo": "lichenda/wsj0_2mix_skim_small_causal",
+        "file": "exp/enh_train_enh_skim_causal_small_raw/149epoch.pth",
+        "revision": "40a67347c0d98183b924e3434a6f0dd68f3497fd",
+        "sha256": "5aa8ece7fda5c0a5fdf2d37540bd12fe80f7ad38834462e500d8c3722de532ff",
+        "bytes": 31528663
+      },
+      {
+        "source": "espnet2/enh/layers/skim.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "4fa3ccffc6bcbf29dee8655f2a354a7040d4432106915d77d7c77d6cff99aa31"
+      },
+      {
+        "source": "espnet2/enh/layers/dprnn.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "07fa4f79cd36a7849ba7ae6eee8370a71b3b927f04e6307181dc0b9ac837f27f"
+      },
+      {
+        "source": "espnet2/enh/layers/tcn.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "b98f81efc831e8fe71ef830773231365dd53367763f2e2ac114a3411f960b638"
+      },
+      {
+        "source": "espnet2/enh/layers/adapt_layers.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "241a84e78db5bceb630861bb39b17ad70cec78272f007ddd48a02238cbd2c080"
+      },
+      {
+        "source": "espnet2/enh/encoder/conv_encoder.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "7a3e8266db982ada5ef6437a694441dfa9e175ec44f50449a1d0b91accb4ff72"
+      },
+      {
+        "source": "espnet2/enh/encoder/abs_encoder.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "482389f5354ec9c22ac118dca968a375baa374d9202ae7a4cf13ab41b2f8a016"
+      },
+      {
+        "source": "espnet2/enh/decoder/conv_decoder.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "690337dd807c0375acf20d455d8a8c67701b7118a9ee55f157b7cdf3714883f0"
+      },
+      {
+        "source": "espnet2/enh/decoder/abs_decoder.py",
+        "revision": "3897ed8380bfb526d5c5dd2197eccbffbba7d8f8",
+        "sha256": "beabea245d7ea472363304930c18ae3f4bdf3bcffca952e777db2db030c37e25"
+      }
+    ],
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7",
+    "hostname": "MacBook-Air.local",
+    "threads": 1,
+    "peak_process_rss_mib": 415.75,
+    "scratch_cleaned": true,
+    "runtime_versions": {
+      "torch": "2.14.1",
+      "torchaudio": "2.11.0",
+      "numpy": "2.5.3",
+      "onnx": "1.23.1",
+      "onnxruntime": "1.28.0",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  {
+    "first_inference_ms": 3027.6857919525355,
+    "latencies_ms": [
+      3023.537916946225,
+      2993.7189160846174,
+      3025.6469590822235,
+      3024.30533291772,
+      3010.087083093822
+    ],
+    "p50_ms": 3023.537916946225,
+    "p95_ms": 3025.378633849323,
+    "output_shapes": [
+      [
+        1,
+        2,
+        2,
+        88200
+      ]
+    ],
+    "load_ms": 161.01279098074883,
+    "device": "cpu",
+    "sample_rate": 44100,
+    "input_seconds": 2,
+    "input_shapes": [
+      [
+        1,
+        2,
+        88200
+      ]
+    ],
+    "params": 10846800,
+    "license": "Apache-2.0 weights; MIT-derived inference code",
+    "future_change_prefix_max_delta": 0.0,
+    "prefix_recompute_max_delta": 0.0,
+    "streaming_scope": "causal architecture; no explicit stateful chunk API in release",
+    "model": "cadenzachallenge/ConvTasNet_Lyrics_Causal",
+    "mock": false,
+    "artifacts": [
+      {
+        "repo": "cadenzachallenge/ConvTasNet_Lyrics_Causal",
+        "file": "tasnet.py",
+        "revision": "d2601a366fd8a3bd969852ca5bced524b6c8aae9",
+        "sha256": "54da991dba53e2655a4033b384a48d8c02c5b840084246c4e9845061ace75fe4",
+        "bytes": 17426
+      },
+      {
+        "repo": "cadenzachallenge/ConvTasNet_Lyrics_Causal",
+        "file": "config.json",
+        "revision": "d2601a366fd8a3bd969852ca5bced524b6c8aae9",
+        "sha256": "eade3979ab526e30ddb4e376f63691a87a7b69c3fd4bf46af13d86a96a731b5e",
+        "bytes": 204
+      },
+      {
+        "repo": "cadenzachallenge/ConvTasNet_Lyrics_Causal",
+        "file": "model.safetensors",
+        "revision": "d2601a366fd8a3bd969852ca5bced524b6c8aae9",
+        "sha256": "da44e1c9e38336b0cd14ea18458fb7cbc27c0c3689ef91e0de748e91d2236a90",
+        "bytes": 43427104
+      }
+    ],
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7",
+    "hostname": "MacBook-Air.local",
+    "threads": 1,
+    "peak_process_rss_mib": 635.109375,
+    "scratch_cleaned": true,
+    "runtime_versions": {
+      "torch": "2.14.1",
+      "torchaudio": "2.11.0",
+      "numpy": "2.5.3",
+      "onnx": "1.23.1",
+      "onnxruntime": "1.28.0",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  {
+    "first_inference_ms": 0.45716692693531513,
+    "latencies_ms": [
+      0.1457079779356718,
+      0.12391596101224422,
+      0.11920800898224115,
+      0.1177079975605011,
+      0.1158339437097311
+    ],
+    "p50_ms": 0.11920800898224115,
+    "p95_ms": 0.1413495745509863,
+    "output_shapes": [
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        1,
+        128
+      ]
+    ],
+    "load_ms": 50.08954100776464,
+    "device": "cpu",
+    "sample_rate": 16000,
+    "input_seconds": 0.032,
+    "input_shapes": [
+      [
+        1,
+        576
+      ],
+      [
+        2,
+        1,
+        128
+      ],
+      []
+    ],
+    "params": 545391,
+    "params_kind": "ONNX initializer elements (both rate branches, includes buffers)",
+    "license": "MIT",
+    "model": "onnx-community/silero-vad",
+    "mock": false,
+    "artifacts": [
+      {
+        "repo": "onnx-community/silero-vad",
+        "file": "onnx/model.onnx",
+        "revision": "e71cae966052b992a7eca6b17738916ce0eca4ec",
+        "sha256": "a4a068cd6cf1ea8355b84327595838ca748ec29a25bc91fc82e6c299ccdc5808",
+        "bytes": 2243022
+      }
+    ],
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7",
+    "hostname": "MacBook-Air.local",
+    "threads": 1,
+    "peak_process_rss_mib": 113.859375,
+    "scratch_cleaned": true,
+    "runtime_versions": {
+      "torch": "2.14.1",
+      "torchaudio": "2.11.0",
+      "numpy": "2.5.3",
+      "onnx": "1.23.1",
+      "onnxruntime": "1.28.0",
+      "huggingface-hub": "1.33.0"
+    }
+  }
+]

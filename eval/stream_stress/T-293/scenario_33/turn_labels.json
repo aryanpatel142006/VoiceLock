@@ -1,0 +1,68 @@
+{
+  "scenario_id": "scenario_33",
+  "name": "gain_asymmetry_simultaneous_loud_int_6db",
+  "category": "gain_asymmetry_6db",
+  "description": "Simultaneous onset at t=0.0s where interferer is +6dB louder than target",
+  "sample_rate": 16000,
+  "duration_s": 4.5,
+  "total_samples": 72000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 4.0,
+      "start_sample": 0,
+      "end_sample": 64000,
+      "duration_s": 4.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 target at 0dB"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 6.0,
+      "description": "Speaker 2 loud interferer at +6dB simultaneous onset"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        4.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        0.0,
+        2.0
+      ]
+    ]
+  },
+  "overlap_intervals": [
+    [
+      0.0,
+      2.0,
+      [
+        "speaker_1",
+        "speaker_2"
+      ]
+    ]
+  ],
+  "silent_intervals": [
+    [
+      4.0,
+      4.5
+    ]
+  ],
+  "params": {
+    "gain_asymmetry_db": 6.0,
+    "loud_speaker": "speaker_2"
+  },
+  "seed": 29333
+}

@@ -1,0 +1,258 @@
+{
+  "task": "T-310",
+  "sample_rate": 16000,
+  "sources_are_standins": true,
+  "note": "speech_a/b are LibriSpeech stand-ins (spk 1580/F, 61/M). Real team recordings live on laptop-b; rerun with --src to swap.",
+  "groups": {
+    "clean": [
+      {
+        "file": "clean/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {},
+        "sha256": "192bb5f21cdfbc8d0310cc7b2e0bdca728c520a04f3fcb6e1863376230cbd8a3",
+        "peak_dbfs": -4.43
+      },
+      {
+        "file": "clean/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {},
+        "sha256": "26bf1a40886d1a98b593ac6548df845a787f1f3f1d915b3d186c9a39c5a2ea21",
+        "peak_dbfs": -5.75
+      }
+    ],
+    "pitch_pm2": [
+      {
+        "file": "pitch_pm2/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "semitones": 2,
+          "method": "librosa"
+        },
+        "sha256": "76c4ff424914257802a19515d6380f617037f849699398eba41b8c6c02f07db0",
+        "peak_dbfs": -8.6
+      },
+      {
+        "file": "pitch_pm2/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "semitones": 2,
+          "method": "librosa"
+        },
+        "sha256": "c52520269772e8cd62406d9ed6753ec8664fd5d428e357d3ab28d68f4b8793fe",
+        "peak_dbfs": -11.26
+      }
+    ],
+    "pitch_pm4": [
+      {
+        "file": "pitch_pm4/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "semitones": 4,
+          "method": "librosa"
+        },
+        "sha256": "423d3adc6a371b9c1b77282908c0ab8d024118620710ce7f83357bf0204e39bb",
+        "peak_dbfs": -7.57
+      },
+      {
+        "file": "pitch_pm4/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "semitones": 4,
+          "method": "librosa"
+        },
+        "sha256": "f9be7ff97b7a608f5ab0854da18be296af6a47b380d5a8b3ab969c400e494f01",
+        "peak_dbfs": -13.08
+      }
+    ],
+    "reverb_02": [
+      {
+        "file": "reverb_02/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.02,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "c66084bd5cb5d04feeac0afe6b14370d9d1d2c1a8925d4761962485d61b71620",
+        "peak_dbfs": -2.98
+      },
+      {
+        "file": "reverb_02/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.02,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "cbdef65487691a92e02117daf6fbf0ddfac89d94109d09b95af82cffda6007d3",
+        "peak_dbfs": -4.23
+      }
+    ],
+    "reverb_05": [
+      {
+        "file": "reverb_05/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.05,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "c3d33dcdf86caeed4e1b6788b2811e390c067e039367cc7756466d77f5a40eeb",
+        "peak_dbfs": -3.29
+      },
+      {
+        "file": "reverb_05/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.05,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "567678283d1fd75cd2c1d4690b34f24754b4a9583aae1242df56a95c14158c92",
+        "peak_dbfs": -4.82
+      }
+    ],
+    "reverb_08": [
+      {
+        "file": "reverb_08/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.08,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "2b829e9e7bb795b3949284f56c0d00914e06962b3fe51cfca0c6de2a4f1cce99",
+        "peak_dbfs": -3.24
+      },
+      {
+        "file": "reverb_08/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "rt60_s": 0.08,
+          "method": "synthetic_exp_decay_rir"
+        },
+        "sha256": "a3b6d991cf3472073fc37e6467a21561681f8011a7479c8dda5c228f3daf6588",
+        "peak_dbfs": -5.3
+      }
+    ],
+    "opus16": [
+      {
+        "file": "opus16/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "bitrate_kbps": 16,
+          "codec": "libopus"
+        },
+        "sha256": "a0461b141e5c2f88873ea818c2618514ac8ce9e0b60b342d1f0c8c48ce1bf5ca",
+        "peak_dbfs": -4.13
+      },
+      {
+        "file": "opus16/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "bitrate_kbps": 16,
+          "codec": "libopus"
+        },
+        "sha256": "55f3f9918e3f04d6c9a99d1f29f82a10ecd38ce4244695a291282a1dd9a4a3a2",
+        "peak_dbfs": -6.65
+      }
+    ],
+    "opus32": [
+      {
+        "file": "opus32/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "bitrate_kbps": 32,
+          "codec": "libopus"
+        },
+        "sha256": "5f0247086418fc489b1e121a79c7be5e31e37a81de1af866617c8bf84f76d56d",
+        "peak_dbfs": -3.97
+      },
+      {
+        "file": "opus32/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "bitrate_kbps": 32,
+          "codec": "libopus"
+        },
+        "sha256": "f4fd68343215b2bb0109e303049aa098f652d66b2fab072e4718dba4dfe09208",
+        "peak_dbfs": -5.92
+      }
+    ],
+    "combo": [
+      {
+        "file": "combo/speaker_a/speech_a.wav",
+        "speaker_label": "speaker_a",
+        "librispeech_speaker_id": "1580",
+        "sex": "F",
+        "standin": true,
+        "params": {
+          "semitones": 4,
+          "rt60_s": 0.8,
+          "pitch_method": "librosa",
+          "note": "hardest-20pct rule applies with more sources; applied to all sources here (n=2)"
+        },
+        "sha256": "f2e018f0a361bd7289e2575ae4d67e3ac5485d0414266541abd9de9b1a03caa1",
+        "peak_dbfs": -7.86
+      },
+      {
+        "file": "combo/speaker_b/speech_b.wav",
+        "speaker_label": "speaker_b",
+        "librispeech_speaker_id": "61",
+        "sex": "M",
+        "standin": true,
+        "params": {
+          "semitones": 4,
+          "rt60_s": 0.8,
+          "pitch_method": "librosa",
+          "note": "hardest-20pct rule applies with more sources; applied to all sources here (n=2)"
+        },
+        "sha256": "6d4dfde2e634f2c67a8b42bd03bcbea975960d66a56a95fd3fa3ac479221e9d0",
+        "peak_dbfs": -12.89
+      }
+    ]
+  }
+}

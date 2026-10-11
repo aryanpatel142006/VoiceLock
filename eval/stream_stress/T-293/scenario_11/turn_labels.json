@@ -1,0 +1,68 @@
+{
+  "scenario_id": "scenario_11",
+  "name": "simultaneous_onset_spk1_continues",
+  "category": "simultaneous_onset",
+  "description": "Simultaneous onset at t=0.0s for 2.0s, Spk 2 drops out, Spk 1 continues solo to 4.0s",
+  "sample_rate": 16000,
+  "duration_s": 4.5,
+  "total_samples": 72000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 4.0,
+      "start_sample": 0,
+      "end_sample": 64000,
+      "duration_s": 4.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 active throughout (onset t=0)"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 2 simultaneous onset t=0, drops at 2.0s"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        4.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        0.0,
+        2.0
+      ]
+    ]
+  },
+  "overlap_intervals": [
+    [
+      0.0,
+      2.0,
+      [
+        "speaker_1",
+        "speaker_2"
+      ]
+    ]
+  ],
+  "silent_intervals": [
+    [
+      4.0,
+      4.5
+    ]
+  ],
+  "params": {
+    "overlap_s": 2.0,
+    "solo_speaker": "speaker_1"
+  },
+  "seed": 29311
+}

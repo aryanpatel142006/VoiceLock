@@ -1,0 +1,1696 @@
+{
+ "task": "T-341",
+ "cache": "/var/folders/m_/zmpgp0352qvcpjrgt74cy1vh0000gn/T/T-341-cache.npz",
+ "cache_sha256": "b397a83dc02b6aee398ba3a85b6d04d569299552d7121e2f1cd82daf054a74ee",
+ "gemini_pt": "/Users/aryanpatel/CODE/selective-hearing/models/team_projection_head.pt",
+ "gemini_pt_sha256": "7ca5539fafb5d89cd8aa365b574020f22285544ab67cb9cf03cbbb3863fe9661",
+ "windowing": {
+  "win_s": 1.0,
+  "hop_s": 0.5,
+  "target_active_db": -45.0,
+  "dev_scene": "demo-team-same",
+  "dev_fa": 0.05
+ },
+ "pilot_same_session": {
+  "A2 raw ECAPA cos(proto10)": {
+   "acc": 0.8557,
+   "errors": 14,
+   "n": 97,
+   "ci95": [
+    0.7722,
+    0.912
+   ]
+  },
+  "A3 raw ECAPA closed-set cos(t)-cos(o)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "D4 LDA (prod fit_lda, train crops)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "B on-disk team_projection_head.pt cos(proto10)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "B' T-273 head contrastive (5 seeds, mean score) cos(proto10)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "B' T-273 head contrastive seed0 cos(proto10)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "B' T-273 head arcface (5 seeds, mean score) cos(proto10)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  },
+  "D1 linear 192->32, contrastive (no LN/GELU) cos(proto10)": {
+   "acc": 1.0,
+   "errors": 0,
+   "n": 97,
+   "ci95": [
+    0.9619,
+    1.0
+   ]
+  }
+ },
+ "scenes": {
+  "A raw ECAPA cos(enroll)": {
+   "threshold_dev": 0.2679,
+   "top1": {
+    "k": 191,
+    "n": 212,
+    "rate": 0.9009,
+    "ci95": [
+     0.8533,
+     0.9343
+    ]
+   },
+   "ta": {
+    "k": 129,
+    "n": 212,
+    "rate": 0.6085,
+    "ci95": [
+     0.5414,
+     0.6717
+    ]
+   },
+   "wrong": {
+    "k": 1,
+    "n": 212,
+    "rate": 0.0047,
+    "ci95": [
+     0.0008,
+     0.0262
+    ]
+   },
+   "fa_absent": {
+    "k": 11,
+    "n": 236,
+    "rate": 0.0466,
+    "ci95": [
+     0.0262,
+     0.0815
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 29,
+    "n": 38,
+    "rate": 0.7632,
+    "ci95": [
+     0.6079,
+     0.8701
+    ]
+   },
+   "margin_mean": 0.2411,
+   "margin_std": 0.1724,
+   "margin_dprime": 1.399,
+   "margin_ci95": [
+    0.2179,
+    0.2643
+   ],
+   "score_s": 0.0,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 53,
+     "accept_right": 40,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 50,
+     "accept_right": 35,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 29,
+     "accept_wrong": 1,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 42,
+     "accept_right": 25,
+     "accept_wrong": 0,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "A2 raw ECAPA cos(proto10)": {
+   "threshold_dev": 0.2139,
+   "top1": {
+    "k": 136,
+    "n": 212,
+    "rate": 0.6415,
+    "ci95": [
+     0.575,
+     0.703
+    ]
+   },
+   "ta": {
+    "k": 56,
+    "n": 212,
+    "rate": 0.2642,
+    "ci95": [
+     0.2094,
+     0.3273
+    ]
+   },
+   "wrong": {
+    "k": 2,
+    "n": 212,
+    "rate": 0.0094,
+    "ci95": [
+     0.0026,
+     0.0337
+    ]
+   },
+   "fa_absent": {
+    "k": 11,
+    "n": 236,
+    "rate": 0.0466,
+    "ci95": [
+     0.0262,
+     0.0815
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 22,
+    "n": 38,
+    "rate": 0.5789,
+    "ci95": [
+     0.4219,
+     0.7215
+    ]
+   },
+   "margin_mean": 0.0778,
+   "margin_std": 0.1567,
+   "margin_dprime": 0.497,
+   "margin_ci95": [
+    0.0567,
+    0.0989
+   ],
+   "score_s": 0.0,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 21,
+     "accept_right": 0,
+     "accept_wrong": 1,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 26,
+     "accept_right": 1,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 30,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 25,
+     "accept_wrong": 0,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "A3 raw ECAPA closed-set cos(t)-cos(o)": {
+   "threshold_dev": 0.226,
+   "top1": {
+    "k": 179,
+    "n": 212,
+    "rate": 0.8443,
+    "ci95": [
+     0.7895,
+     0.887
+    ]
+   },
+   "ta": {
+    "k": 114,
+    "n": 212,
+    "rate": 0.5377,
+    "ci95": [
+     0.4705,
+     0.6036
+    ]
+   },
+   "wrong": {
+    "k": 1,
+    "n": 212,
+    "rate": 0.0047,
+    "ci95": [
+     0.0008,
+     0.0262
+    ]
+   },
+   "fa_absent": {
+    "k": 10,
+    "n": 236,
+    "rate": 0.0424,
+    "ci95": [
+     0.0232,
+     0.0762
+    ]
+   },
+   "fa_unknown": {
+    "k": 18,
+    "n": 236,
+    "rate": 0.0763,
+    "ci95": [
+     0.0488,
+     0.1173
+    ]
+   },
+   "quiet_top1": {
+    "k": 27,
+    "n": 38,
+    "rate": 0.7105,
+    "ci95": [
+     0.5524,
+     0.83
+    ]
+   },
+   "margin_mean": 0.2691,
+   "margin_std": 0.2544,
+   "margin_dprime": 1.058,
+   "margin_ci95": [
+    0.2348,
+    0.3033
+   ],
+   "score_s": 0.0,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 37,
+     "accept_wrong": 0,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 9
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 31,
+     "accept_wrong": 0,
+     "absent_accept": 4,
+     "absent_windows": 59,
+     "unknown_accept": 9
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 27,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 19,
+     "accept_wrong": 1,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    }
+   }
+  },
+  "D3 centred ECAPA cos(enroll)": {
+   "threshold_dev": 0.1328,
+   "top1": {
+    "k": 189,
+    "n": 212,
+    "rate": 0.8915,
+    "ci95": [
+     0.8425,
+     0.9266
+    ]
+   },
+   "ta": {
+    "k": 126,
+    "n": 212,
+    "rate": 0.5943,
+    "ci95": [
+     0.5271,
+     0.6582
+    ]
+   },
+   "wrong": {
+    "k": 1,
+    "n": 212,
+    "rate": 0.0047,
+    "ci95": [
+     0.0008,
+     0.0262
+    ]
+   },
+   "fa_absent": {
+    "k": 12,
+    "n": 236,
+    "rate": 0.0508,
+    "ci95": [
+     0.0293,
+     0.0868
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 31,
+    "n": 38,
+    "rate": 0.8158,
+    "ci95": [
+     0.6658,
+     0.9078
+    ]
+   },
+   "margin_mean": 0.2414,
+   "margin_std": 0.1805,
+   "margin_dprime": 1.337,
+   "margin_ci95": [
+    0.2171,
+    0.2657
+   ],
+   "score_s": 0.001,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 51,
+     "accept_right": 37,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 48,
+     "accept_right": 35,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 30,
+     "accept_wrong": 1,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 24,
+     "accept_wrong": 0,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "D4 LDA (prod fit_lda, train crops)": {
+   "threshold_dev": 0.528,
+   "top1": {
+    "k": 184,
+    "n": 212,
+    "rate": 0.8679,
+    "ci95": [
+     0.8157,
+     0.907
+    ]
+   },
+   "ta": {
+    "k": 131,
+    "n": 212,
+    "rate": 0.6179,
+    "ci95": [
+     0.551,
+     0.6807
+    ]
+   },
+   "wrong": {
+    "k": 5,
+    "n": 212,
+    "rate": 0.0236,
+    "ci95": [
+     0.0101,
+     0.054
+    ]
+   },
+   "fa_absent": {
+    "k": 15,
+    "n": 236,
+    "rate": 0.0636,
+    "ci95": [
+     0.0389,
+     0.1022
+    ]
+   },
+   "fa_unknown": {
+    "k": 10,
+    "n": 236,
+    "rate": 0.0424,
+    "ci95": [
+     0.0232,
+     0.0762
+    ]
+   },
+   "quiet_top1": {
+    "k": 29,
+    "n": 38,
+    "rate": 0.7632,
+    "ci95": [
+     0.6079,
+     0.8701
+    ]
+   },
+   "margin_mean": 0.6689,
+   "margin_std": 0.6417,
+   "margin_dprime": 1.042,
+   "margin_ci95": [
+    0.5825,
+    0.7553
+   ],
+   "score_s": 0.0,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 49,
+     "accept_right": 42,
+     "accept_wrong": 1,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 35,
+     "accept_wrong": 3,
+     "absent_accept": 9,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 34,
+     "accept_wrong": 1,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 20,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    }
+   }
+  },
+  "B on-disk team_projection_head.pt cos(proto10)": {
+   "threshold_dev": 0.9043,
+   "top1": {
+    "k": 103,
+    "n": 212,
+    "rate": 0.4858,
+    "ci95": [
+     0.4194,
+     0.5528
+    ]
+   },
+   "ta": {
+    "k": 61,
+    "n": 212,
+    "rate": 0.2877,
+    "ci95": [
+     0.231,
+     0.352
+    ]
+   },
+   "wrong": {
+    "k": 8,
+    "n": 212,
+    "rate": 0.0377,
+    "ci95": [
+     0.0192,
+     0.0727
+    ]
+   },
+   "fa_absent": {
+    "k": 17,
+    "n": 236,
+    "rate": 0.072,
+    "ci95": [
+     0.0455,
+     0.1123
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 15,
+    "n": 38,
+    "rate": 0.3947,
+    "ci95": [
+     0.256,
+     0.5528
+    ]
+   },
+   "margin_mean": -0.1358,
+   "margin_std": 1.0522,
+   "margin_dprime": -0.129,
+   "margin_ci95": [
+    -0.2774,
+    0.0059
+   ],
+   "score_s": 0.002,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 6,
+     "accept_right": 0,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 9,
+     "accept_right": 0,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 35,
+     "accept_wrong": 3,
+     "absent_accept": 9,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 26,
+     "accept_wrong": 5,
+     "absent_accept": 8,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B on-disk team_projection_head.pt cos(enroll)": {
+   "threshold_dev": 0.9191,
+   "top1": {
+    "k": 182,
+    "n": 212,
+    "rate": 0.8585,
+    "ci95": [
+     0.8052,
+     0.899
+    ]
+   },
+   "ta": {
+    "k": 126,
+    "n": 212,
+    "rate": 0.5943,
+    "ci95": [
+     0.5271,
+     0.6582
+    ]
+   },
+   "wrong": {
+    "k": 6,
+    "n": 212,
+    "rate": 0.0283,
+    "ci95": [
+     0.013,
+     0.0604
+    ]
+   },
+   "fa_absent": {
+    "k": 14,
+    "n": 236,
+    "rate": 0.0593,
+    "ci95": [
+     0.0357,
+     0.0971
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.781,
+   "margin_std": 0.8637,
+   "margin_dprime": 0.904,
+   "margin_ci95": [
+    0.6647,
+    0.8973
+   ],
+   "score_s": 0.002,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 48,
+     "accept_right": 34,
+     "accept_wrong": 1,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 32,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 35,
+     "accept_wrong": 2,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 25,
+     "accept_wrong": 3,
+     "absent_accept": 7,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head contrastive (5 seeds, mean score) cos(proto10)": {
+   "threshold_dev": 0.8755,
+   "top1": {
+    "k": 181,
+    "n": 212,
+    "rate": 0.8538,
+    "ci95": [
+     0.7999,
+     0.895
+    ]
+   },
+   "ta": {
+    "k": 132,
+    "n": 212,
+    "rate": 0.6226,
+    "ci95": [
+     0.5558,
+     0.6852
+    ]
+   },
+   "wrong": {
+    "k": 5,
+    "n": 212,
+    "rate": 0.0236,
+    "ci95": [
+     0.0101,
+     0.054
+    ]
+   },
+   "fa_absent": {
+    "k": 18,
+    "n": 236,
+    "rate": 0.0763,
+    "ci95": [
+     0.0488,
+     0.1173
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.7679,
+   "margin_std": 0.7681,
+   "margin_dprime": 1.0,
+   "margin_ci95": [
+    0.6646,
+    0.8713
+   ],
+   "score_s": 0.007,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 37,
+     "accept_wrong": 2,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 36,
+     "accept_wrong": 2,
+     "absent_accept": 3,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 33,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 26,
+     "accept_wrong": 0,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head contrastive (5 seeds, mean score) cos(enroll)": {
+   "threshold_dev": 0.887,
+   "top1": {
+    "k": 181,
+    "n": 212,
+    "rate": 0.8538,
+    "ci95": [
+     0.7999,
+     0.895
+    ]
+   },
+   "ta": {
+    "k": 131,
+    "n": 212,
+    "rate": 0.6179,
+    "ci95": [
+     0.551,
+     0.6807
+    ]
+   },
+   "wrong": {
+    "k": 5,
+    "n": 212,
+    "rate": 0.0236,
+    "ci95": [
+     0.0101,
+     0.054
+    ]
+   },
+   "fa_absent": {
+    "k": 17,
+    "n": 236,
+    "rate": 0.072,
+    "ci95": [
+     0.0455,
+     0.1123
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.7743,
+   "margin_std": 0.7689,
+   "margin_dprime": 1.007,
+   "margin_ci95": [
+    0.6708,
+    0.8778
+   ],
+   "score_s": 0.007,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 36,
+     "accept_wrong": 2,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 36,
+     "accept_wrong": 2,
+     "absent_accept": 2,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 33,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 26,
+     "accept_wrong": 0,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head contrastive seed0 cos(proto10)": {
+   "threshold_dev": 0.9261,
+   "top1": {
+    "k": 181,
+    "n": 212,
+    "rate": 0.8538,
+    "ci95": [
+     0.7999,
+     0.895
+    ]
+   },
+   "ta": {
+    "k": 112,
+    "n": 212,
+    "rate": 0.5283,
+    "ci95": [
+     0.4612,
+     0.5944
+    ]
+   },
+   "wrong": {
+    "k": 1,
+    "n": 212,
+    "rate": 0.0047,
+    "ci95": [
+     0.0008,
+     0.0262
+    ]
+   },
+   "fa_absent": {
+    "k": 13,
+    "n": 236,
+    "rate": 0.0551,
+    "ci95": [
+     0.0325,
+     0.092
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.83,
+   "margin_std": 0.8407,
+   "margin_dprime": 0.987,
+   "margin_ci95": [
+    0.7169,
+    0.9432
+   ],
+   "score_s": 0.002,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 30,
+     "accept_wrong": 0,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 27,
+     "accept_wrong": 0,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 30,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 25,
+     "accept_wrong": 0,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head contrastive seed0 cos(enroll)": {
+   "threshold_dev": 0.9299,
+   "top1": {
+    "k": 181,
+    "n": 212,
+    "rate": 0.8538,
+    "ci95": [
+     0.7999,
+     0.895
+    ]
+   },
+   "ta": {
+    "k": 114,
+    "n": 212,
+    "rate": 0.5377,
+    "ci95": [
+     0.4705,
+     0.6036
+    ]
+   },
+   "wrong": {
+    "k": 2,
+    "n": 212,
+    "rate": 0.0094,
+    "ci95": [
+     0.0026,
+     0.0337
+    ]
+   },
+   "fa_absent": {
+    "k": 11,
+    "n": 236,
+    "rate": 0.0466,
+    "ci95": [
+     0.0262,
+     0.0815
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.8305,
+   "margin_std": 0.8363,
+   "margin_dprime": 0.993,
+   "margin_ci95": [
+    0.7179,
+    0.9431
+   ],
+   "score_s": 0.001,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 32,
+     "accept_wrong": 0,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 27,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 31,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 24,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head arcface (5 seeds, mean score) cos(proto10)": {
+   "threshold_dev": 0.7607,
+   "top1": {
+    "k": 177,
+    "n": 212,
+    "rate": 0.8349,
+    "ci95": [
+     0.7791,
+     0.8788
+    ]
+   },
+   "ta": {
+    "k": 105,
+    "n": 212,
+    "rate": 0.4953,
+    "ci95": [
+     0.4287,
+     0.5621
+    ]
+   },
+   "wrong": {
+    "k": 3,
+    "n": 212,
+    "rate": 0.0142,
+    "ci95": [
+     0.0048,
+     0.0408
+    ]
+   },
+   "fa_absent": {
+    "k": 13,
+    "n": 236,
+    "rate": 0.0551,
+    "ci95": [
+     0.0325,
+     0.092
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.6336,
+   "margin_std": 0.638,
+   "margin_dprime": 0.993,
+   "margin_ci95": [
+    0.5477,
+    0.7195
+   ],
+   "score_s": 0.008,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 23,
+     "accept_wrong": 0,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 43,
+     "accept_right": 15,
+     "accept_wrong": 1,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 38,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 29,
+     "accept_wrong": 1,
+     "absent_accept": 7,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "B' T-273 head arcface (5 seeds, mean score) cos(enroll)": {
+   "threshold_dev": 0.7867,
+   "top1": {
+    "k": 180,
+    "n": 212,
+    "rate": 0.8491,
+    "ci95": [
+     0.7947,
+     0.891
+    ]
+   },
+   "ta": {
+    "k": 121,
+    "n": 212,
+    "rate": 0.5708,
+    "ci95": [
+     0.5034,
+     0.6355
+    ]
+   },
+   "wrong": {
+    "k": 1,
+    "n": 212,
+    "rate": 0.0047,
+    "ci95": [
+     0.0008,
+     0.0262
+    ]
+   },
+   "fa_absent": {
+    "k": 13,
+    "n": 236,
+    "rate": 0.0551,
+    "ci95": [
+     0.0325,
+     0.092
+    ]
+   },
+   "fa_unknown": {
+    "k": 20,
+    "n": 236,
+    "rate": 0.0847,
+    "ci95": [
+     0.0555,
+     0.1273
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.6833,
+   "margin_std": 0.6442,
+   "margin_dprime": 1.061,
+   "margin_ci95": [
+    0.5966,
+    0.7701
+   ],
+   "score_s": 0.007,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 31,
+     "accept_wrong": 0,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 25,
+     "accept_wrong": 0,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 37,
+     "accept_wrong": 1,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 28,
+     "accept_wrong": 0,
+     "absent_accept": 7,
+     "absent_windows": 59,
+     "unknown_accept": 10
+    }
+   }
+  },
+  "D1 linear 192->32, contrastive (no LN/GELU) cos(proto10)": {
+   "threshold_dev": 0.7214,
+   "top1": {
+    "k": 182,
+    "n": 212,
+    "rate": 0.8585,
+    "ci95": [
+     0.8052,
+     0.899
+    ]
+   },
+   "ta": {
+    "k": 137,
+    "n": 212,
+    "rate": 0.6462,
+    "ci95": [
+     0.5798,
+     0.7075
+    ]
+   },
+   "wrong": {
+    "k": 6,
+    "n": 212,
+    "rate": 0.0283,
+    "ci95": [
+     0.013,
+     0.0604
+    ]
+   },
+   "fa_absent": {
+    "k": 11,
+    "n": 236,
+    "rate": 0.0466,
+    "ci95": [
+     0.0262,
+     0.0815
+    ]
+   },
+   "fa_unknown": {
+    "k": 0,
+    "n": 236,
+    "rate": 0.0,
+    "ci95": [
+     0.0,
+     0.016
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.6975,
+   "margin_std": 0.6658,
+   "margin_dprime": 1.048,
+   "margin_ci95": [
+    0.6078,
+    0.7871
+   ],
+   "score_s": 0.002,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 40,
+     "accept_wrong": 1,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 38,
+     "accept_wrong": 3,
+     "absent_accept": 4,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 33,
+     "accept_wrong": 1,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 26,
+     "accept_wrong": 1,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    }
+   }
+  },
+  "D1 linear 192->32, contrastive (no LN/GELU) cos(enroll)": {
+   "threshold_dev": 0.7156,
+   "top1": {
+    "k": 182,
+    "n": 212,
+    "rate": 0.8585,
+    "ci95": [
+     0.8052,
+     0.899
+    ]
+   },
+   "ta": {
+    "k": 137,
+    "n": 212,
+    "rate": 0.6462,
+    "ci95": [
+     0.5798,
+     0.7075
+    ]
+   },
+   "wrong": {
+    "k": 6,
+    "n": 212,
+    "rate": 0.0283,
+    "ci95": [
+     0.013,
+     0.0604
+    ]
+   },
+   "fa_absent": {
+    "k": 12,
+    "n": 236,
+    "rate": 0.0508,
+    "ci95": [
+     0.0293,
+     0.0868
+    ]
+   },
+   "fa_unknown": {
+    "k": 0,
+    "n": 236,
+    "rate": 0.0,
+    "ci95": [
+     0.0,
+     0.016
+    ]
+   },
+   "quiet_top1": {
+    "k": 28,
+    "n": 38,
+    "rate": 0.7368,
+    "ci95": [
+     0.5799,
+     0.8503
+    ]
+   },
+   "margin_mean": 0.7067,
+   "margin_std": 0.6681,
+   "margin_dprime": 1.058,
+   "margin_ci95": [
+    0.6168,
+    0.7967
+   ],
+   "score_s": 0.002,
+   "per_scene": {
+    "aryan/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 46,
+     "accept_right": 40,
+     "accept_wrong": 1,
+     "absent_accept": 6,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "aryan/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 44,
+     "accept_right": 38,
+     "accept_wrong": 3,
+     "absent_accept": 5,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-easy": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 47,
+     "accept_right": 33,
+     "accept_wrong": 1,
+     "absent_accept": 0,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    },
+    "joseph/demo-team-hard": {
+     "windows": 59,
+     "target_windows": 53,
+     "top1": 45,
+     "accept_right": 26,
+     "accept_wrong": 1,
+     "absent_accept": 1,
+     "absent_windows": 59,
+     "unknown_accept": 0
+    }
+   }
+  }
+ },
+ "head_latency_us_2streams_cpu": 57.2
+}

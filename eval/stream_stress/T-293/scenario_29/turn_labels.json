@@ -1,0 +1,84 @@
+{
+  "scenario_id": "scenario_29",
+  "name": "asymmetric_pauses_150_200ms",
+  "category": "micro_pause_200ms",
+  "description": "Intra-turn 150ms pause followed by inter-turn 200ms pause",
+  "sample_rate": 16000,
+  "duration_s": 4.8,
+  "total_samples": 76800,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.2,
+      "start_sample": 0,
+      "end_sample": 19200,
+      "duration_s": 1.2,
+      "gain_db": 0.0,
+      "description": "Spk 1 segment 1"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_1",
+      "start_s": 1.35,
+      "end_s": 2.55,
+      "start_sample": 21600,
+      "end_sample": 40800,
+      "duration_s": 1.2,
+      "gain_db": 0.0,
+      "description": "Spk 1 segment 2 (150ms pause)"
+    },
+    {
+      "turn_id": 3,
+      "speaker": "speaker_2",
+      "start_s": 2.75,
+      "end_s": 4.25,
+      "start_sample": 44000,
+      "end_sample": 68000,
+      "duration_s": 1.5,
+      "gain_db": 0.0,
+      "description": "Spk 2 handoff (200ms pause)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.2
+      ],
+      [
+        1.35,
+        2.55
+      ]
+    ],
+    "speaker_2": [
+      [
+        2.75,
+        4.25
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.2,
+      1.35
+    ],
+    [
+      2.55,
+      2.75
+    ],
+    [
+      4.25,
+      4.8
+    ]
+  ],
+  "params": {
+    "pauses_ms": [
+      150,
+      200
+    ]
+  },
+  "seed": 29329
+}

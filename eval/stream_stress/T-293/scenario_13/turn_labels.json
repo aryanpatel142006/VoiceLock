@@ -1,0 +1,67 @@
+{
+  "scenario_id": "scenario_13",
+  "name": "simultaneous_full_overlap",
+  "category": "simultaneous_onset",
+  "description": "Simultaneous onset at t=0.0s with full 3.0s double-talk overlap at 0 dB SIR",
+  "sample_rate": 16000,
+  "duration_s": 3.5,
+  "total_samples": 56000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 3.0,
+      "start_sample": 0,
+      "end_sample": 48000,
+      "duration_s": 3.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 full double-talk"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 0.0,
+      "end_s": 3.0,
+      "start_sample": 0,
+      "end_sample": 48000,
+      "duration_s": 3.0,
+      "gain_db": 0.0,
+      "description": "Speaker 2 full double-talk"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        3.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        0.0,
+        3.0
+      ]
+    ]
+  },
+  "overlap_intervals": [
+    [
+      0.0,
+      3.0,
+      [
+        "speaker_1",
+        "speaker_2"
+      ]
+    ]
+  ],
+  "silent_intervals": [
+    [
+      3.0,
+      3.5
+    ]
+  ],
+  "params": {
+    "overlap_s": 3.0
+  },
+  "seed": 29313
+}

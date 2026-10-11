@@ -1,0 +1,355 @@
+{
+ "shard": "muse_acoustics",
+ "task": "T-225",
+ "collected_on": "2026-10-10",
+ "fixtures_root": "$HEARING_FIXTURES_DIR/overnight_grunt/muse_acoustics",
+ "budget_bytes_noise": 134217728,
+ "network_bytes_downloaded_approx": 20709242,
+ "network_bytes_note": "sum of range-fetched bytes per zip (central directory + deflated member); small API/HTML probes excluded (<0.5 MB). ESC-50/OpenSLR28 not re-downloaded",
+ "failed": [
+  {
+   "source": "demand OOFFICE/ch01.wav",
+   "reason": "range-fetch run produced no output in the background-shell run; not retried, not counted as collected"
+  }
+ ],
+ "transcripts": "none: noise only; no speech transcripts created",
+ "sources": [
+  {
+   "id": "demand",
+   "name": "DEMAND (Thiemann, Ito, Vincent; IRISA/Tokyo/INRIA)",
+   "kind": "noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0",
+   "licence_evidence_url": "https://zenodo.org/api/records/1227121",
+   "availability_status": "available",
+   "categories": [
+    "cafeteria(PCAFETER)",
+    "traffic(STRAFFIC)",
+    "appliance(DWASHING,DKITCHEN)",
+    "office/meeting/hallway",
+    "metro/bus/car",
+    "park/field/river"
+   ],
+   "sample_rates": [
+    16000,
+    48000
+   ],
+   "subset_access": "HTTP range on Zenodo zip (/api/records/1227121/files/<NAME>_16k.zip/content); central directory in last 128 KiB, each ch01.wav ~6.5-7 MB deflated",
+   "observed_http_status": 200,
+   "downloaded": [
+    {
+     "file": "native/demand_pcafeter/ch01.wav",
+     "member": "PCAFETER/ch01.wav",
+     "bytes": 9600172,
+     "sha256": "854dd0e5ef334a66abdd02d6d2b3e9d01b685df033d0acd1cd06e471c062550b",
+     "sample_rate": 16000,
+     "channels": 1,
+     "duration_s": 300.004,
+     "category": "cafeteria"
+    },
+    {
+     "file": "native/demand_straffic/ch01.wav",
+     "member": "STRAFFIC/ch01.wav",
+     "bytes": 9600172,
+     "sha256": "8fa49dcf3996af655a3ecef8d06f0d9ef217c35410e3adce3d461da797987dbb",
+     "sample_rate": 16000,
+     "channels": 1,
+     "duration_s": 300.004,
+     "category": "street traffic"
+    },
+    {
+     "file": "native/demand_dwashing/ch01.wav",
+     "member": "DWASHING/ch01.wav",
+     "bytes": 9600172,
+     "sha256": "da02faca8c6523d24ee86aae6c6889c950bb34d559f1379cc87e7e3b75690f4d",
+     "sample_rate": 16000,
+     "channels": 1,
+     "duration_s": 300.004,
+     "category": "washing machine appliance"
+    }
+   ],
+   "notes": "16-ch array, 300 s per channel; 17 16k zips 78-130 MB each (md5 in Zenodo record). No RT60/room metadata supplied. Speech content in PCAFETER is unlabeled babble, not transcribed."
+  },
+  {
+   "id": "musan",
+   "name": "MUSAN (Snyder, Chen, Povey)",
+   "kind": "noise+speech+music",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0",
+   "licence_evidence_url": "https://www.openslr.org/17/",
+   "availability_status": "discovery-only",
+   "categories": [
+    "noise",
+    "music",
+    "speech"
+   ],
+   "sample_rates": [
+    16000
+   ],
+   "subset_access": "single musan.tar.gz 11 GB (gzip: no random access); not downloaded (budget 128 MiB)",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Licence page fetched HTTP 200; per-file attribution not checked. Recipe needs >128 MiB."
+  },
+  {
+   "id": "but_reverbdb",
+   "name": "BUT Speech@FIT ReverbDB 19_06",
+   "kind": "RIR+room noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0",
+   "licence_evidence_url": "https://speech.fit.vutbr.cz/software/but-speech-fit-reverb-database",
+   "availability_status": "discovery-only",
+   "categories": [
+    "office",
+    "stairs",
+    "hotel room",
+    "conference room",
+    "lecture room",
+    "meeting room"
+   ],
+   "sample_rates": [
+    16000
+   ],
+   "subset_access": "RIR-Only 8.7 GB .tgz (no random access); not downloaded",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Page supplies room sizes/volumes (9 rooms, 31 mics, RIRs by sine sweep); per-RIR RT60 not on page. The Zenodo hits for 'BUT ReverbDB' are unrelated small records."
+  },
+  {
+   "id": "openslr28",
+   "name": "RIRS_NOISES (OpenSLR 28: AIR, REVERB, RWCP real + simulated)",
+   "kind": "RIR+noise",
+   "measured_vs_simulated": "mixed: real_rirs_isotropic_noises recorded; simulated_rirs simulated",
+   "licence": "Apache 2.0 (page; upstream per-set terms unverified)",
+   "licence_evidence_url": "https://www.openslr.org/28/",
+   "availability_status": "available",
+   "categories": [
+    "real RIRs",
+    "simulated RIRs",
+    "isotropic noises (pointsource_noises)"
+   ],
+   "sample_rates": [
+    16000
+   ],
+   "subset_access": "HTTP range on rirs_noises.zip (1,311,166,223 B, Accept-Ranges: bytes, HEAD 200)",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Already collected by T-219 (11 recorded RIRs, see noise.json); not re-downloaded here. T-219 recorded room/RT60 as null."
+  },
+  {
+   "id": "openslr26",
+   "name": "OpenSLR 26 sim_rir (Ko et al.)",
+   "kind": "RIR",
+   "measured_vs_simulated": "simulated",
+   "licence": "Apache 2.0",
+   "licence_evidence_url": "https://www.openslr.org/26/",
+   "availability_status": "available",
+   "categories": [
+    "simulated RIRs 8k/16k"
+   ],
+   "sample_rates": [
+    8000,
+    16000
+   ],
+   "subset_access": "sim_rir_16k.zip 178 MB (>128 MiB: use range, not full)",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Simulation, never mix with recorded RIR evidence; no download here."
+  },
+  {
+   "id": "dechorate",
+   "name": "dEchorate (Di Carlo et al.)",
+   "kind": "RIR+babble+noise+speech",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0",
+   "licence_evidence_url": "https://zenodo.org/api/records/6576203",
+   "availability_status": "discovery-only",
+   "categories": [
+    "recorded RIRs, 11 echo/absorption configurations",
+    "babble",
+    "noise"
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "hdf5 files 0.7-11 GB (rirs 4.19 GB, babble 3.15 GB); HDF5 range-read not tested",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Room geometry and annotation in dEchorate_database.csv (2.9 MB) is the only small file; not fetched."
+  },
+  {
+   "id": "meshrir",
+   "name": "MeshRIR (Koyama et al., Tokyo)",
+   "kind": "RIR",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0 (Zenodo record; LICENSE file 18,656 B)",
+   "licence_evidence_url": "https://zenodo.org/api/records/10852693",
+   "availability_status": "discovery-only",
+   "categories": [
+    "dense grid RIRs, one room"
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "zips 1-3.5 GB; LICENSE/README small",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Sound-field research, not talker-scale; no download."
+  },
+  {
+   "id": "arni",
+   "name": "Aalto ARNI variable acoustics room (Zenodo 6985104)",
+   "kind": "RIR",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY 4.0",
+   "licence_evidence_url": "https://zenodo.org/api/records/6985104",
+   "availability_status": "discovery-only",
+   "categories": [
+    "one room, variable absorber panels"
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "zips 4-10 GB",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Only combinations_setup.csv (1.2 MB) small; no download."
+  },
+  {
+   "id": "esc50",
+   "name": "ESC-50 (Piczak)",
+   "kind": "noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "CC BY-NC 3.0 (dataset), per-clip CC tags",
+   "licence_evidence_url": "https://raw.githubusercontent.com/karolpiczak/ESC-50/master/LICENSE",
+   "availability_status": "available",
+   "categories": [
+    "keyboard",
+    "traffic",
+    "ventilation",
+    "weather"
+   ],
+   "sample_rates": [
+    44100
+   ],
+   "subset_access": "GitHub raw, 5 s clips",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Already collected by T-219 (33 clips); not re-downloaded. Non-commercial."
+  },
+  {
+   "id": "fsd50k",
+   "name": "FSD50K (Fonseca et al.)",
+   "kind": "noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "per-clip CC (CC0/BY/BY-NC/Sampling+); Zenodo label 'other-at'",
+   "licence_evidence_url": "https://zenodo.org/api/records/4060432",
+   "availability_status": "discovery-only",
+   "categories": [
+    "200 AudioSet classes incl. crowd, babble-like"
+   ],
+   "sample_rates": [
+    44100
+   ],
+   "subset_access": "multi-part zip 2-3 GB parts",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Per-clip licences require ground_truth/metadata; not fetched. Rejected for download until per-file CC filter written."
+  },
+  {
+   "id": "tau_urban",
+   "name": "TAU Urban Acoustic Scenes 2019/2020",
+   "kind": "noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "other-nc (Zenodo)",
+   "licence_evidence_url": "https://zenodo.org/api/records/2589280",
+   "availability_status": "rejected",
+   "categories": [
+    "street, metro, mall, etc."
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "zip parts 1.6 GB",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Non-commercial and parts too big."
+  },
+  {
+   "id": "wham",
+   "name": "WHAM! noise (Whisper/MERL)",
+   "kind": "noise",
+   "measured_vs_simulated": "recorded",
+   "licence": "unverified in this run",
+   "licence_evidence_url": "https://wham.whisper.ai/",
+   "availability_status": "discovery-only",
+   "categories": [
+    "cafe/restaurant/bar babble"
+   ],
+   "sample_rates": [
+    16000
+   ],
+   "subset_access": "wham.whisper.ai HTTP 000 (unreachable); guessed bucket URLs 404",
+   "observed_http_status": 0,
+   "downloaded": [],
+   "notes": "Cafe babble source, but licence and URL not resolved; no download."
+  },
+  {
+   "id": "dns_challenge",
+   "name": "Microsoft DNS-Challenge noise/RIRs",
+   "kind": "noise+RIR",
+   "measured_vs_simulated": "mixed",
+   "licence": "repo LICENSE/README; per-set unresolved",
+   "licence_evidence_url": "https://github.com/microsoft/DNS-Challenge",
+   "availability_status": "discovery-only",
+   "categories": [
+    "noise_fullband 58G"
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "large archives via blobs; not tested",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Per-file licences not resolved; no download."
+  },
+  {
+   "id": "mit_ir_survey",
+   "name": "MIT IR Survey (McDermott)",
+   "kind": "RIR",
+   "measured_vs_simulated": "recorded",
+   "licence": "no licence stated on official page",
+   "licence_evidence_url": "https://mcdermottlab.mit.edu/Reverb/IR_Survey.html",
+   "availability_status": "rejected",
+   "categories": [
+    "271 recorded IRs"
+   ],
+   "sample_rates": [
+    32000
+   ],
+   "subset_access": "11.7 MB zip",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Unknown licence: rejected (T-219 already noted)."
+  },
+  {
+   "id": "rwth_air",
+   "name": "Aachen Impulse Response DB (RWTH IKS)",
+   "kind": "RIR",
+   "measured_vs_simulated": "recorded",
+   "licence": "no licence text found on official page",
+   "licence_evidence_url": "https://www.iks.rwth-aachen.de/en/research/tools-downloads/databases/aachen-impulse-response-database/",
+   "availability_status": "rejected",
+   "categories": [
+    "rooms for hearing aids"
+   ],
+   "sample_rates": [
+    48000
+   ],
+   "subset_access": "not tested",
+   "observed_http_status": 200,
+   "downloaded": [],
+   "notes": "Page fetched HTTP 200; only TYPO3 GPL boilerplate, none for data. OpenSLR 28 redistributes a subset under Apache 2.0."
+  }
+ ]
+}

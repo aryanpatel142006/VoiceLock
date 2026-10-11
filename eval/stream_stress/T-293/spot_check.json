@@ -1,0 +1,100 @@
+[
+  {
+    "passed": true,
+    "scenario_id": "scenario_01",
+    "category": "rapid_turn_taking",
+    "duration_s": 4.5,
+    "num_turns": 2,
+    "turns": [
+      {
+        "turn_id": 1,
+        "rms": 0.0990292747442548,
+        "peak": 0.9000244140625
+      },
+      {
+        "turn_id": 2,
+        "rms": 0.07276506012045003,
+        "peak": 0.773223876953125
+      }
+    ],
+    "silences": [
+      {
+        "interval": [
+          2.0,
+          2.05
+        ],
+        "rms": 0.0
+      },
+      {
+        "interval": [
+          4.05,
+          4.5
+        ],
+        "rms": 0.0
+      }
+    ]
+  },
+  {
+    "passed": true,
+    "scenario_id": "scenario_11",
+    "category": "simultaneous_onset",
+    "duration_s": 4.5,
+    "num_turns": 2,
+    "turns": [
+      {
+        "turn_id": 1,
+        "rms": 0.09186607288808982,
+        "peak": 0.9000244140625
+      },
+      {
+        "turn_id": 2,
+        "rms": 0.10615380577702686,
+        "peak": 0.9000244140625
+      }
+    ],
+    "silences": [
+      {
+        "interval": [
+          4.0,
+          4.5
+        ],
+        "rms": 0.0
+      }
+    ]
+  },
+  {
+    "passed": true,
+    "scenario_id": "scenario_21",
+    "category": "micro_pause_200ms",
+    "duration_s": 4.2,
+    "num_turns": 2,
+    "turns": [
+      {
+        "turn_id": 1,
+        "rms": 0.09641975920985692,
+        "peak": 0.9000244140625
+      },
+      {
+        "turn_id": 2,
+        "rms": 0.07616428151724715,
+        "peak": 0.4771728515625
+      }
+    ],
+    "silences": [
+      {
+        "interval": [
+          1.8,
+          2.0
+        ],
+        "rms": 0.0
+      },
+      {
+        "interval": [
+          3.8,
+          4.2
+        ],
+        "rms": 0.0
+      }
+    ]
+  }
+]

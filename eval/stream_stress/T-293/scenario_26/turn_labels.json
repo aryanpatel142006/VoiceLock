@@ -1,0 +1,82 @@
+{
+  "scenario_id": "scenario_26",
+  "name": "pingpong_with_200ms_pauses",
+  "category": "micro_pause_200ms",
+  "description": "Three-turn dialogue where every transition is exactly 200ms pause",
+  "sample_rate": 16000,
+  "duration_s": 5.0,
+  "total_samples": 80000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.4,
+      "start_sample": 0,
+      "end_sample": 22400,
+      "duration_s": 1.4,
+      "gain_db": 0.0,
+      "description": "Turn 1 (Spk 1)"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 1.6,
+      "end_s": 3.0,
+      "start_sample": 25600,
+      "end_sample": 48000,
+      "duration_s": 1.4,
+      "gain_db": 0.0,
+      "description": "Turn 2 (Spk 2, 200ms pause)"
+    },
+    {
+      "turn_id": 3,
+      "speaker": "speaker_1",
+      "start_s": 3.2,
+      "end_s": 4.6,
+      "start_sample": 51200,
+      "end_sample": 73600,
+      "duration_s": 1.4,
+      "gain_db": 0.0,
+      "description": "Turn 3 (Spk 1, 200ms pause)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.4
+      ],
+      [
+        3.2,
+        4.6
+      ]
+    ],
+    "speaker_2": [
+      [
+        1.6,
+        3.0
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.4,
+      1.6
+    ],
+    [
+      3.0,
+      3.2
+    ],
+    [
+      4.6,
+      5.0
+    ]
+  ],
+  "params": {
+    "pause_ms": 200,
+    "num_turns": 3
+  },
+  "seed": 29326
+}

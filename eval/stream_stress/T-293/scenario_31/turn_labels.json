@@ -1,0 +1,64 @@
+{
+  "scenario_id": "scenario_31",
+  "name": "gain_asymmetry_loud_interferer_6db",
+  "category": "gain_asymmetry_6db",
+  "description": "Turn-taking with +6dB louder interferer (Spk 1 0dB, Spk 2 +6dB, 150ms gap)",
+  "sample_rate": 16000,
+  "duration_s": 4.5,
+  "total_samples": 72000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 at baseline 0dB"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 2.15,
+      "end_s": 4.15,
+      "start_sample": 34400,
+      "end_sample": 66400,
+      "duration_s": 2.0,
+      "gain_db": 6.0,
+      "description": "Speaker 2 loud interferer (+6dB, 150ms gap)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        2.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        2.15,
+        4.15
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      2.0,
+      2.15
+    ],
+    [
+      4.15,
+      4.5
+    ]
+  ],
+  "params": {
+    "gain_asymmetry_db": 6.0,
+    "loud_speaker": "speaker_2",
+    "gap_ms": 150
+  },
+  "seed": 29331
+}

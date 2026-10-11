@@ -1,0 +1,99 @@
+{
+  "scenario_id": "scenario_30",
+  "name": "triple_rhythmic_pause_200ms",
+  "category": "micro_pause_200ms",
+  "description": "Three periodic 200ms hesitation pauses across a continuous 5.0s sentence",
+  "sample_rate": 16000,
+  "duration_s": 5.2,
+  "total_samples": 83200,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "start_sample": 0,
+      "end_sample": 16000,
+      "duration_s": 1.0,
+      "gain_db": 0.0,
+      "description": "Chunk 1"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_1",
+      "start_s": 1.2,
+      "end_s": 2.2,
+      "start_sample": 19200,
+      "end_sample": 35200,
+      "duration_s": 1.0,
+      "gain_db": 0.0,
+      "description": "Chunk 2 (200ms pause)"
+    },
+    {
+      "turn_id": 3,
+      "speaker": "speaker_1",
+      "start_s": 2.4,
+      "end_s": 3.4,
+      "start_sample": 38400,
+      "end_sample": 54400,
+      "duration_s": 1.0,
+      "gain_db": 0.0,
+      "description": "Chunk 3 (200ms pause)"
+    },
+    {
+      "turn_id": 4,
+      "speaker": "speaker_1",
+      "start_s": 3.6,
+      "end_s": 4.6,
+      "start_sample": 57600,
+      "end_sample": 73600,
+      "duration_s": 1.0,
+      "gain_db": 0.0,
+      "description": "Chunk 4 (200ms pause)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        1.2,
+        2.2
+      ],
+      [
+        2.4,
+        3.4
+      ],
+      [
+        3.6,
+        4.6
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.0,
+      1.2
+    ],
+    [
+      2.2,
+      2.4
+    ],
+    [
+      3.4,
+      3.6
+    ],
+    [
+      4.6,
+      5.2
+    ]
+  ],
+  "params": {
+    "pause_ms": 200,
+    "count": 3
+  },
+  "seed": 29330
+}

@@ -1,0 +1,63 @@
+{
+  "scenario_id": "scenario_38",
+  "name": "gain_asymmetry_handoff_6db",
+  "category": "gain_asymmetry_6db",
+  "description": "Very rapid handoff (50ms gap) into a +6dB louder speaker",
+  "sample_rate": 16000,
+  "duration_s": 4.5,
+  "total_samples": 72000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Spk 1 at 0dB"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 2.05,
+      "end_s": 4.05,
+      "start_sample": 32800,
+      "end_sample": 64800,
+      "duration_s": 2.0,
+      "gain_db": 6.0,
+      "description": "Spk 2 at +6dB (50ms gap)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        2.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        2.05,
+        4.05
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      2.0,
+      2.05
+    ],
+    [
+      4.05,
+      4.5
+    ]
+  ],
+  "params": {
+    "gain_asymmetry_db": 6.0,
+    "gap_ms": 50
+  },
+  "seed": 29338
+}

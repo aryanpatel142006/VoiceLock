@@ -1,0 +1,63 @@
+{
+  "scenario_id": "scenario_03",
+  "name": "rapid_turn_150ms",
+  "category": "rapid_turn_taking",
+  "description": "Rapid turn handoff with 150ms gap (<300ms)",
+  "sample_rate": 16000,
+  "duration_s": 4.5,
+  "total_samples": 72000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "start_sample": 0,
+      "end_sample": 32000,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 1 initial turn"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 2.15,
+      "end_s": 4.15,
+      "start_sample": 34400,
+      "end_sample": 66400,
+      "duration_s": 2.0,
+      "gain_db": 0.0,
+      "description": "Speaker 2 handoff after 150ms gap"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        2.0
+      ]
+    ],
+    "speaker_2": [
+      [
+        2.15,
+        4.15
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      2.0,
+      2.15
+    ],
+    [
+      4.15,
+      4.5
+    ]
+  ],
+  "params": {
+    "gap_ms": 150,
+    "gap_s": 0.15
+  },
+  "seed": 29303
+}

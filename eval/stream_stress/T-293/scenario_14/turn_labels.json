@@ -1,0 +1,72 @@
+{
+  "scenario_id": "scenario_14",
+  "name": "simultaneous_onset_post_silence",
+  "category": "simultaneous_onset",
+  "description": "1.0s lead silence followed by simultaneous onset at t=1.0s for 2.5s",
+  "sample_rate": 16000,
+  "duration_s": 4.0,
+  "total_samples": 64000,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 1.0,
+      "end_s": 3.5,
+      "start_sample": 16000,
+      "end_sample": 56000,
+      "duration_s": 2.5,
+      "gain_db": 0.0,
+      "description": "Speaker 1 onset after 1s silence"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_2",
+      "start_s": 1.0,
+      "end_s": 3.5,
+      "start_sample": 16000,
+      "end_sample": 56000,
+      "duration_s": 2.5,
+      "gain_db": 0.0,
+      "description": "Speaker 2 onset after 1s silence"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        1.0,
+        3.5
+      ]
+    ],
+    "speaker_2": [
+      [
+        1.0,
+        3.5
+      ]
+    ]
+  },
+  "overlap_intervals": [
+    [
+      1.0,
+      3.5,
+      [
+        "speaker_1",
+        "speaker_2"
+      ]
+    ]
+  ],
+  "silent_intervals": [
+    [
+      0.0,
+      1.0
+    ],
+    [
+      3.5,
+      4.0
+    ]
+  ],
+  "params": {
+    "lead_silence_s": 1.0,
+    "overlap_s": 2.5
+  },
+  "seed": 29314
+}

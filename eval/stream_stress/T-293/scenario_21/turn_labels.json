@@ -1,0 +1,61 @@
+{
+  "scenario_id": "scenario_21",
+  "name": "intraturn_pause_200ms",
+  "category": "micro_pause_200ms",
+  "description": "Speaker 1 with mid-utterance exactly 200ms pause (tests EMA coasting without decay)",
+  "sample_rate": 16000,
+  "duration_s": 4.2,
+  "total_samples": 67200,
+  "turns": [
+    {
+      "turn_id": 1,
+      "speaker": "speaker_1",
+      "start_s": 0.0,
+      "end_s": 1.8,
+      "start_sample": 0,
+      "end_sample": 28800,
+      "duration_s": 1.8,
+      "gain_db": 0.0,
+      "description": "Speaker 1 pre-pause phrase"
+    },
+    {
+      "turn_id": 2,
+      "speaker": "speaker_1",
+      "start_s": 2.0,
+      "end_s": 3.8,
+      "start_sample": 32000,
+      "end_sample": 60800,
+      "duration_s": 1.8,
+      "gain_db": 0.0,
+      "description": "Speaker 1 post-pause phrase (200ms pause)"
+    }
+  ],
+  "speaker_active_intervals": {
+    "speaker_1": [
+      [
+        0.0,
+        1.8
+      ],
+      [
+        2.0,
+        3.8
+      ]
+    ]
+  },
+  "overlap_intervals": [],
+  "silent_intervals": [
+    [
+      1.8,
+      2.0
+    ],
+    [
+      3.8,
+      4.2
+    ]
+  ],
+  "params": {
+    "pause_ms": 200,
+    "pause_s": 0.2
+  },
+  "seed": 29321
+}
