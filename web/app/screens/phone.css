@@ -91,6 +91,8 @@
 .ph-btn:active:not(:disabled) { transform: scale(.97); }
 .ph-btn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
 .ph-btn:disabled { color: var(--color-faint); border-color: transparent; background: transparent; }
+/* T-463: a disabled button keeps a dashed outline, so "Start Solo" still reads as a button, not plain text */
+.ph-btn:disabled { border: 1px dashed color-mix(in oklab, var(--color-fg) 22%, transparent); }
 /* pressed is a neutral fill; green only while the stage really plays the isolated person (DESIGN.md, T-356) */
 .ph-btn[aria-pressed="true"] { background: color-mix(in oklab, var(--color-fg) 16%, transparent);
   border-color: color-mix(in oklab, var(--color-fg) 55%, transparent); color: var(--color-fg); }

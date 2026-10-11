@@ -15,7 +15,7 @@
 
 import { ageText, createWatch, listSessions, probeSession, stageSessions } from "../watch.js";
 import { listenModel } from "./listen.js";
-import { modeFields } from "../store.js";
+import { expectedDelayCopy, fetchHealth, modeFields } from "../store.js";
 
 export const title = "Phone";
 
@@ -61,13 +61,15 @@ export function companionModel(s) {
   if (live) {
     if (m.mode === "quiet") stage = "Stage is in Quiet: captions only";
     else if (m.ab === "raw") stage = "Stage plays the room (Raw)";
+    else if (m.starting) stage = "Stage is starting";
+    else if (m.gate === "unsure") stage = `Stage is listening for ${m.who || "the chosen voice"}`; // T-463: not "hears"
     else if (m.state === "isolated") stage = m.who ? `Stage hears ${m.who}` : "Stage hears the isolated voice";
     else stage = "Stage is not isolated yet";
   }
   return {
     word, tone, sentence, stage, live,
     // the name only while it is what the stage plays (same as Listen: not under Raw)
-    who: live && m.state === "isolated" && m.tone !== "raw" && m.who ? m.who : "",
+    who: live && m.state === "isolated" && m.tone !== "raw" && m.gate !== "unsure" && m.who ? m.who : "",
     target: m.targetLine,
     mode: m.mode,
     ab: m.ab,
@@ -196,7 +198,7 @@ function mountCompanion(root, sessionId, ctx) {
     el.target.hidden = Boolean(m.who) && m.target === `Target: ${m.who}`; // the name says it once
     el.replay.hidden = !m.replay;
     setText(el.replay, m.replay);
-    setText(el.delay, `Delay ${m.delay}`);
+    setText(el.delay, `Engine delay ${m.delay}`);
     setText(el.tier, `Tier ${m.tier}`);
     setText(el.capNote, m.captionNote || ""); // status only, no instructions in the status slot
     const key = JSON.stringify(m.captions);
@@ -228,6 +230,11 @@ function mountCompanion(root, sessionId, ctx) {
 
 // ------------------------------------------------------------------ lobby: pick a stage session, or Solo
 
+/** Solo's lede with the server's expected delay (T-463). */
+export function soloLede(health) {
+  return `Your phone's own mic, its own session, your headphones. ${expectedDelayCopy(health)}, like live captions. Keep the screen on: iOS stops audio when it locks.`;
+}
+
 function mountLobby(root, ctx) {
   const list = h("ol", { class: "ph-sessions", "aria-live": "polite" });
   const soloBtn = h("button", { type: "button", class: "ph-btn ph-solo-start", "data-act": "solo" },
@@ -250,10 +257,12 @@ function mountLobby(root, ctx) {
       list),
     h("section", { class: "ph-solo", "aria-labelledby": "ph-solo-title" },
       h("h2", { id: "ph-solo-title", class: "ph-solo-title" }, h("span", { text: "Solo" }), h("span", { class: "ph-tag", text: "off stage" })),
-      h("p", { class: "ph-lede", text: "Your phone's own mic, its own session, your headphones. About 1.5 s behind, like live captions. Keep the screen on: iOS stops audio when it locks." }),
+      h("p", { class: "ph-lede ph-solo-lede", text: soloLede(null) }),
       soloBtn, soloWhy, soloLive));
   root.replaceChildren(frame);
 
+  // T-463: the expected delay is the server's (/health tse_window), not a fixed figure
+  fetchHealth().then((health) => { if (!ctx.signal?.aborted) setText(frame.querySelector(".ph-solo-lede"), soloLede(health)); });
   let gate = { allowed: false, reason: "Checking the laptop for a stage session…" };
   let solo = null; // {client, lock}
   let timer = 0;

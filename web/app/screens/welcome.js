@@ -35,6 +35,7 @@ import { MIC_KEY, loadChoice } from "../../console/devices.js";
 import { seeded } from "../scene.js";
 import { sharedSession } from "./setup.js";
 import { haptic } from "../delight.js";
+import { expectedDelayCopy, fetchHealth } from "../store.js";
 import { installHint as platformInstallHint, platformOf, touchDevice } from "../platform.js";
 
 export const title = "Welcome";
@@ -467,7 +468,7 @@ export function mount(root, { app, signal }) {
           h("p", { class: "wl-key" }, "or hold ", h("kbd", { text: "Space" }))),
         h("div", { class: "wl-facts", id: "wl-facts" },
           h("p", { text: "Pick one voice. The room goes quiet around it." }),
-          h("p", {}, h("strong", { text: "About 1.5 s behind" }), ", like live captions."),
+          h("p", {}, h("strong", { class: "wl-delay", text: expectedDelayCopy(null) }), ", like live captions."),
           hint ? h("p", { class: "wl-install", text: hint }) : null,
           installBtn,
           problem)),
@@ -475,6 +476,11 @@ export function mount(root, { app, signal }) {
     soundBtn, // outside .wl-main: that block translates with the pointer, which would anchor a fixed child to it
     playCold ? skipBtn : null);
   root.append(section);
+  // T-463: the delay line is the server's expected delay (/health tse_window, T-419), never a fixed "1.5 s"
+  fetchHealth().then((health) => {
+    const el = section.querySelector(".wl-delay");
+    if (el && !signal.aborted) el.textContent = expectedDelayCopy(health);
+  });
   grain.style.backgroundImage = grainTile();
   if (playCold) document.body.dataset.wlCold = "1";
 

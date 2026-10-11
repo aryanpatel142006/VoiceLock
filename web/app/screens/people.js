@@ -7,6 +7,7 @@
 // calibration countdown (`calibrate_s - calibrate_elapsed_s`), and the profile versions from `/health`.
 
 import { personLabel } from "../../console/judge-targets.js";
+import { gateState } from "../../console/gate-state.js";
 import { sharedSession } from "./setup.js";
 import { showDevFacts } from "../platform.js";
 
@@ -121,7 +122,8 @@ export function mount(root, { app, signal }) {
     // "Following now" only while the person is really heard (T-365 P0-3): streaming, isolated, Selective, not Quiet
     const streaming = connected && (s.started || s.replaying);
     const held = s.mode === "quiet" ? "quiet" : s.ab === "raw" ? "raw" : "";
-    const playing = streaming && !held && s.pill?.state === "isolated";
+    // T-463: and the engine's gate is not doubting the pick (UNSURE / OVERLAP-DUCKED is not "Following now")
+    const playing = streaming && !held && s.pill?.state === "isolated" && [null, "solo"].includes(gateState(t));
     const sig = JSON.stringify([list, connected, Boolean(t), streaming, playing, held]);
     if (sig === cardsSig) { /* unchanged */ } else if (list.length) {
       cardsSig = sig;

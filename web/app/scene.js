@@ -66,7 +66,7 @@ export const DEFAULTS = {
  *   lost      socket reconnecting                         grey (desaturated), the mic's level
  *   quiet     Quiet mode                                  dimmed to --scene-quiet-dim, neutral
  *   raw       RAW is audible (telemetry.ab)               amber, whatever the target state (you hear the room)
- *   searching Release, or no target yet (pill "look")     neutral white
+ *   searching Release, no target yet, not isolated, or the gate UNSURE (T-463)  neutral white
  *   loading   the saved voice is loading (pill loading)   grey, the mic's level (DESIGN_SPEC "loading voice")
  *   focus     Selective is audible                        green, rings sharpen with tse.confidence
  */
@@ -79,6 +79,9 @@ export function sceneLook(s) {
   if ((s.telemetry?.ab || s.ab) === "raw") return "raw";
   if (s.released || s.pill?.state === "look") return "searching";
   if (s.pill?.state === "loading") return "loading";
+  // T-463: green only while the chosen person is isolated (DESIGN.md T-356 "colour is a promise"): calibrating, finding,
+  // the cleaned-room fallback and an UNSURE gate ("Listening for <name>" in the warn tone) are neutral white
+  if ((s.pill && s.pill.state !== "isolated") || gateState(s.telemetry) === "unsure") return "searching";
   return "focus";
 }
 

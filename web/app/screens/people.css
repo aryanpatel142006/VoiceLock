@@ -100,3 +100,11 @@
 @media (prefers-reduced-motion: reduce) {
   .pp-card, .pp-card::before, .pp-cal-bar i { transition: none; }
 }
+
+/* T-463 (laptop review #4): "Go to Listen" stays in view at 1440x900 and 1280x800: sticky at the bottom of the window
+   over a short fade of the page colour. Phones keep T-458's layout. */
+:root:not([data-touch]) .pp-foot {
+  position: sticky; bottom: 0; z-index: 5; padding: 32px 0 calc(var(--safe-b) + 16px); pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-bg) 45%);
+}
+:root:not([data-touch]) .pp-foot > * { pointer-events: auto; }

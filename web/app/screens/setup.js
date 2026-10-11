@@ -8,7 +8,7 @@
 
 import { createSession } from "../session.js";
 import { isStageRig, showDevFacts, touchDevice } from "../platform.js";
-import { SteadyWatch } from "./diag.js";
+import { SETTLING, expectedDelayCopy, fmtDelay } from "../store.js";
 import {
   CLIPPING_DB, MIC_LABEL_KEY, MIC_KEY, SINK_KEY, SINK_LABEL_KEY, TOO_QUIET_DB, deviceWarnings, isBluetoothName, loadChoice,
 } from "../../console/devices.js";
@@ -114,13 +114,15 @@ export function setupChecks({ secure, worklet, health, connection, truth }) {
     const device = String(health.device || "?");
     const where = device === "mps" ? "Mac (Apple GPU)" : device === "cuda" ? "CUDA GPU" : device === "cpu" ? "CPU" : device;
     const plays = truth?.backend; // what plays now, from telemetry hq_active; null before the first telemetry
-    const rev = health.remote_rev_warning || truth?.revWarning;
-    const detail = [`engine on ${where}`];
-    if (plays === "GPU") detail.push(`Focus HQ plays on the GPU${truth.gpuRttMs != null ? `, RTT ${truth.gpuRttMs} ms` : ""}`);
-    else if (plays === "Mac") detail.push(truth.fallback ? "GPU fell back to the Mac ladder" : "Focus HQ plays on this Mac");
-    else detail.push("waiting for telemetry to say what plays");
-    if (rev) detail.push(String(rev));
-    b = { status: rev || truth?.fallback ? "warn" : plays ? "ok" : "wait", value: plays || device.toUpperCase(), detail: detail.join("; ") };
+    // T-463: the GPU's rev against this checkout only matters while the GPU plays; on the Mac (the decided stage
+    // backend) it is a Diagnostics fact, not a stage warning
+    const rev = plays === "GPU" ? health.remote_rev_warning || truth?.revWarning : null;
+    let detail;
+    if (plays === "GPU") detail = `Focus plays on the GPU${truth.gpuRttMs != null ? `, network round trip ${truth.gpuRttMs} ms` : ""}`;
+    else if (plays === "Mac") detail = truth.fallback ? `The GPU is not answering, so ${where} plays` : `Focus plays on this ${where}`;
+    else detail = `Engine on ${where}; waiting for it to say what plays`;
+    if (rev) detail += `. The GPU runs older code than this laptop (details in Diagnostics)`;
+    b = { status: rev || truth?.fallback ? "warn" : plays ? "ok" : "wait", value: plays || device.toUpperCase(), detail: `${detail}.` };
   }
   checks.push({ id: "backend", label: "Backend", ...b });
   return checks;
@@ -146,14 +148,14 @@ export function setupLede(touch) {
 }
 
 /**
- * Setup's "Delay now" line. `steady` is Diagnostics' SteadyWatch state: the engine's number is shown only once it
- * has held for 4 s, so the EMA's warm-up (0.05 s seconds after Start) is never printed as the delay (T-458).
+ * Setup's engine-delay line (T-463): the store's one rule and format (store.js delayText): "settling…" until the
+ * EMA has held for 2 s, then the same "1.5 s" Listen and Diagnostics show. `steady` overrides truth.delaySteady.
  */
-export function delayNowCopy(truth, steady) {
+export function delayNowCopy(truth, steady = truth?.delaySteady) {
   const measured = truth?.delayMs;
-  if (measured == null) return "The measured delay shows here once sound flows.";
-  if (steady !== "steady") return "Delay now: — (settling; the engine's number shows once it holds for 4 s).";
-  return `Delay now: ${(measured / 1000).toFixed(2)} s, as the engine reports it (${truth.latencyPreset || "preset unknown"}), before device buffers.`;
+  if (measured == null) return "The engine's delay shows here once sound flows.";
+  if (steady !== "steady") return `Engine delay now: ${SETTLING} (the number shows once it holds for 2 s).`;
+  return `Engine delay now: ${fmtDelay(measured)} (${truth.latencyPreset || "preset unknown"}), before device buffers.`;
 }
 
 export function mount(root, { app, signal }) {
@@ -163,7 +165,6 @@ export function mount(root, { app, signal }) {
   const touch = touchDevice();
   const devFacts = showDevFacts({ touch });
   const stageRig = isStageRig({ touch });
-  const delayWatch = new SteadyWatch(); // Diagnostics' rule: the delay is shown once it has held one value for 4 s
 
   // ---- meter (the one moving thing on this screen; only real frames move it)
   const word = h("p", { class: "su-word", "aria-live": "polite" });
@@ -211,7 +212,6 @@ export function mount(root, { app, signal }) {
   let raf = 0;
   let warnSig = "";
   let checkSig = "";
-  let settleTimer = 0;
   const now = () => performance.now();
 
   function paintMeter() {
@@ -258,7 +258,6 @@ export function mount(root, { app, signal }) {
 
   function paintChecks() {
     const s = store.state;
-    const steady = delayWatch.push(s.truth.delayMs, now());
     const checks = setupChecks({ secure: globalThis.isSecureContext === true, worklet: { ...worklet, running: s.started && !s.replaying },
       health, connection: s.connection, truth: s.truth });
     const sig = JSON.stringify(checks);
@@ -271,11 +270,9 @@ export function mount(root, { app, signal }) {
         h("span", { class: "su-check-detail", text: c.detail }))));
     }
     root.querySelector(".setup").dataset.ready = String(checks.every((c) => c.status === "ok"));
-    delay.replaceChildren(h("span", { class: "su-delay-big", text: "About 1.5 s behind, like live captions." }),
-      h("span", { class: "su-delay-now", text: delayNowCopy(s.truth, steady) }));
-    // a held value turns steady with no new telemetry change: look again in a second
-    clearTimeout(settleTimer);
-    if (steady === "settling" && !signal?.aborted) settleTimer = setTimeout(paintChecks, 1000);
+    // T-463: the expected delay is the server's (/health tse_window, T-419), not a fixed "1.5 s"
+    delay.replaceChildren(h("span", { class: "su-delay-big", text: `${expectedDelayCopy(health && !health.error ? health : null)}, like live captions.` }),
+      h("span", { class: "su-delay-now", text: delayNowCopy(s.truth) }));
   }
 
   async function poll() {
@@ -329,7 +326,6 @@ export function mount(root, { app, signal }) {
     offs.forEach((off) => off());
     clearInterval(stallTimer);
     clearInterval(healthTimer);
-    clearTimeout(settleTimer);
     cancelAnimationFrame(raf);
     session.devicesElement?.remove(); // the session keeps the element (and its choices) for the next visit
   };

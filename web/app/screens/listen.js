@@ -12,7 +12,7 @@
 import { gateState, renderGate } from "../../console/gate-state.js";
 import { DEGRADED_NOTICE, MODES } from "../../console/judge-modes.js";
 import { createSession } from "../session.js";
-import { METER_FLOOR_DB, store as appStore } from "../store.js";
+import { METER_FLOOR_DB, delayText, store as appStore } from "../store.js";
 import { KEYS_OFF_TEXT, KEY_HINTS, bindKeys, watchKeyFocus } from "../keys.js";
 import { mountPhoneLink } from "../connect.js";
 import { captionWords, dialValue, dropAction, haptic, roomLabel } from "../delight.js";
@@ -34,6 +34,19 @@ export const STATE_WORDS = {
   reacquiring: { word: "Finding them", tone: "warn" },
   fallback: { word: "Not isolated", tone: "warn" },
 };
+
+/**
+ * T-463: the word while the engine's own gate doubts the pick. "Isolated" in green is shown only when the gate says
+ * SOLO (or reports nothing, an engine without the field); UNSURE and OVERLAP-DUCKED take the warn tone.
+ */
+export const GATE_WORDS = {
+  unsure: { word: "Listening", tone: "warn" },
+  ducked: { word: "Overlap", tone: "warn" },
+};
+/** T-463: the first seconds after Start, before the first healthy window (no "the Mac fell behind" at Start). */
+export const WARMUP_MS = 3000;
+export const STARTING = { word: "Starting", tone: "work" };
+const WARMUP_STATES = new Set(["fallback", "reacquiring", "speak", "look"]);
 
 /** What the pressed mode does, visible on touch screens where a title tooltip never shows (T-365 P1-13). */
 export const MODE_NOTES = {
@@ -78,14 +91,18 @@ export function plainSentence(pill, { word = "", who = "" } = {}) {
  * Pure: what the Listen screen shows for a store state. `keysOff` comes from the focus watcher.
  * Every field is a string or boolean the DOM writes as is; none is invented when telemetry is missing.
  */
-export function listenModel(s, { keysOff = false, keys = true } = {}) {
+export function listenModel(s, { keysOff = false, keys = true, warming = false } = {}) {
   const pill = s.pill || { state: "idle", text: "Press Start", note: "" };
-  const look = STATE_WORDS[pill.state] || { word: pill.state, tone: "idle" };
-  const connecting = pill.state === "lost" && s.connection === "connecting" && !s.attempt;
   const t = s.telemetry;
   const person = s.person || {};
   const quiet = s.mode === "quiet";
   const raw = s.ab === "raw";
+  const gate = pill.state === "isolated" && !raw && !quiet ? gateState(t) : null;
+  const doubt = GATE_WORDS[gate] || null; // T-463: never a green "Isolated" next to UNSURE
+  // T-463: right after Start the ladder is still climbing (an overrun, no voice yet): say Starting, not "fell behind"
+  const starting = Boolean(warming) && !raw && (WARMUP_STATES.has(pill.state) || Boolean(doubt));
+  const look = starting ? STARTING : doubt || STATE_WORDS[pill.state] || { word: pill.state, tone: "idle" };
+  const connecting = pill.state === "lost" && s.connection === "connecting" && !s.attempt;
   const live = Boolean(s.replaying) || (s.started && !["idle", "nomic", "lost"].includes(pill.state));
   // Raw while live: the room plays, so the word says Raw (amber); the pill sentence keeps the engine's state
   const rawWord = raw && live && !quiet;
@@ -94,12 +111,19 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
   const who = person.currentLabel || (person.calibrated ? "Calibrated voice" : "");
   // a touch screen has no Space key: name the control instead (finish review)
   const back = keys ? "Space to hear" : "Tap Selective to hear";
-  const sentence = rawWord ? (who ? `${back} ${who} alone.` : `${back} the chosen voice alone.`)
+  const name = who || "the chosen voice";
+  let sentence = rawWord ? (who ? `${back} ${who} alone.` : `${back} the chosen voice alone.`)
     : plainSentence(pill, { word: look.word, who: person.currentLabel || person.lastLabel || "" });
+  if (starting && !rawWord) sentence = "Warming up the engine…";
+  else if (gate === "unsure") sentence = `Waiting to hear ${name} clearly: they may be quiet, or another voice is louder.`;
+  else if (gate === "ducked") sentence = "Two voices overlap, so the engine plays its best guess softened.";
   let hear;
   if (!live) hear = s.connection === "open" ? "Nothing playing yet" : "Not connected";
   else if (quiet) hear = "Quiet: nothing plays, captions only";
   else if (raw) hear = "You hear the room, unprocessed (Raw)";
+  else if (starting) hear = "Starting: the engine is warming up";
+  else if (gate === "unsure") hear = `Not sure it is ${name} yet`;
+  else if (gate === "ducked") hear = `You hear ${name}, softened`;
   else if (pill.state === "isolated") hear = who ? `You hear ${who}` : "You hear the isolated voice";
   else hear = "You hear the engine's output (not isolated yet)";
   const truth = s.truth || {};
@@ -108,7 +132,8 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
     ? `Engine lost. Retrying in ${(s.retryInMs / 1000).toFixed(1)} s (attempt ${s.attempt}).` : "";
   const people = (person.names || []).length ? person.labels : [];
   return {
-    gate: pill.state === "isolated" && !raw && !quiet ? gateState(t) : null,
+    gate,
+    starting,
     word,
     tone: rawWord ? "raw" : look.tone,
     state: connecting ? "connecting" : pill.state,
@@ -116,9 +141,11 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
     note: rawWord ? "" : pill.note || "",
     detail: pillDetail(pill.text),
     who,
+    // the hero's name line: "for Joseph" under "Listening" (the name is not what plays yet), else the name
+    whoLine: who && gate === "unsure" && !starting ? `for ${who}` : who,
     hear,
     live,
-    targetLine: person.line || "Target: —",
+    targetLine: person.released ? releasedLine(keys) : person.line || "Target: —",
     modeNote: MODE_NOTES[quiet ? "quiet" : "focus_hq"],
     ab: raw ? "raw" : "processed",
     mode: quiet ? "quiet" : "focus_hq",
@@ -126,7 +153,8 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
     people: [0, 1].map((i) => ({
       label: people[i] || `Person ${i + 1}`,
       enabled: Boolean(people[i]),
-      pressed: Boolean(people[i]) && !person.released && person.names[i] === person.current,
+      // T-463: the chosen person is pressed even before Start (a neutral fill: chosen; green only while isolated plays)
+      pressed: Boolean(people[i]) && !person.released && person.names[i] === (person.current || person.last),
     })),
     released: Boolean(person.released),
     start: s.replaying ? "hidden" : s.starting ? "starting" : s.started ? "stop" : "start",
@@ -140,14 +168,14 @@ export function listenModel(s, { keysOff = false, keys = true } = {}) {
       show: quiet || (s.captions || []).length > 0,
       quiet,
       speaker: s.caption?.speaker ? capital(s.caption.speaker) : "Target",
-      lines: (s.captions || []).map((c) => ({ text: cleanLine(c.text), final: c.final })).filter((c) => c.text),
+      lines: captionLines(s.captions),
       paused: s.caption?.paused ? pausedCopy(s.caption.paused, who || person.lastLabel) : "",
       stale: !live && (s.captions || []).length > 0,
       degraded: s.caption?.degraded ? DEGRADED_NOTICE : "",
     },
     truth: {
       backend: truth.backend || "—", // "Mac" or "GPU"; the torch device ("mps") lives in Diagnostics (T-388)
-      delay: dash(truth.delayMs, " ms"),
+      delay: delayText(truth), // T-463: one format on every screen, "settling…" until it holds (store.js)
       rtt: truth.rttMs === 0 ? "<10 ms" : dash(truth.rttMs, " ms"), // the steady RTT moves in 10 ms steps (P2-3)
       gpuRtt: truth.gpuRttMs == null ? "" : `${truth.gpuRttMs} ms`,
       tier: truth.tier && truth.tier !== "—" ? truth.tier : "—",
@@ -168,6 +196,37 @@ export function dialGesture(dx, dy, slop = 8) {
 export function pausedCopy(paused, who) {
   if (!paused) return "";
   return who ? `Captions wait until ${who} is isolated.` : "Captions wait until the chosen voice is isolated.";
+}
+
+/** T-463: the Release line in plain words (no "Target: none (Release)"); a touch screen has no 1 / 2 keys. */
+export function releasedLine(keys = true) {
+  return keys ? "No one chosen. Press 1 or 2, or drag a person into the ring." : "No one chosen. Tap a person to hear them.";
+}
+
+const normCaption = (text) => String(text || "").toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, "").replace(/\s+/g, " ").trim();
+// words a sentence carries on with; a fragment that starts with one after an unfinished line is not a new sentence
+const CONTINUES = new Set(["a", "an", "and", "at", "because", "but", "by", "for", "from", "in", "into", "of", "on", "or", "so",
+  "than", "that", "the", "then", "to", "when", "where", "which", "while", "with"]);
+
+/**
+ * Caption lines as shown (T-463): Whisper's "//" removed, a final identical to the final before it dropped (the
+ * screen never shows one sentence twice in a row), and a fragment that continues an unfinished line ("…early" /
+ * "To beat the traffic.") starts lower-case. Only common joining words are lowered, never a name.
+ */
+export function captionLines(captions = []) {
+  const out = [];
+  for (const c of captions || []) {
+    let text = cleanLine(c.text);
+    if (!text) continue;
+    const prev = out[out.length - 1];
+    if (c.final && prev?.final && normCaption(prev.text) === normCaption(text)) continue;
+    const first = text.split(/\s+/)[0];
+    if (prev && !/[.?!…]["')\]]?$/.test(prev.text) && CONTINUES.has(first.toLowerCase()) && first[0] !== first[0].toLowerCase()) {
+      text = first[0].toLowerCase() + text.slice(1);
+    }
+    out.push({ text, final: Boolean(c.final) });
+  }
+  return out;
 }
 
 /** A caption line as shown: Whisper's trailing "//" (not yet stripped by the server's clean_caption) removed. */
@@ -316,7 +375,7 @@ export function mount(root, ctx = {}) {
   const fact = (key, label) => h("div", { class: "ls-fact", "data-fact": key },
     h("dt", { text: label }), h("dd", { text: "—" }));
   const truth = h("dl", { class: "ls-truth", "aria-label": "Measured now" },
-    fact("backend", "Backend"), fact("delay", "Delay now"), fact("rtt", "Round trip"), fact("tier", "Tier"),
+    fact("backend", "Backend"), fact("delay", "Engine delay"), fact("rtt", "Network round trip"), fact("tier", "Tier"),
     h("div", { class: "ls-fact ls-fact-diag" }, h("button", { type: "button", class: "ls-diag", "data-act": "diag" },
       h("span", { text: "Diagnostics" }), kbd(KEY_HINTS.diag))));
   // no dead ends (T-365 P0-7): the Diagnostics button and D exist only when the server has the sheet
@@ -385,8 +444,25 @@ export function mount(root, ctx = {}) {
   }, { signal, drawerOpen: () => app?.sheet === "diag" });
 
   // ---- render
+  // T-463: the warm-up after Start lasts WARMUP_MS, or less once a healthy window (Isolated, gate SOLO) arrives
+  let streamSince = 0;
+  let healthy = false;
+  let warmTimer = 0;
+  function warmingNow() {
+    const st = store.state;
+    const streaming = Boolean(st.started && !st.replaying && st.connection === "open");
+    if (!streaming) { streamSince = 0; healthy = false; clearTimeout(warmTimer); return false; }
+    if (!streamSince) {
+      streamSince = performance.now();
+      clearTimeout(warmTimer);
+      warmTimer = setTimeout(() => { if (!signal?.aborted) render(); }, WARMUP_MS + 50);
+    }
+    if (st.pill?.state === "isolated" && ["solo", null].includes(gateState(st.telemetry))) healthy = true;
+    return !healthy && performance.now() - streamSince < WARMUP_MS;
+  }
+
   function render() {
-    const m = listenModel(store.state, { keysOff, keys: finePointer.matches && !touch });
+    const m = listenModel(store.state, { keysOff, keys: finePointer.matches && !touch, warming: warmingNow() });
     frame.dataset.ab = m.ab;
     frame.dataset.tone = m.tone;
     frame.dataset.state = m.state;
@@ -394,12 +470,14 @@ export function mount(root, ctx = {}) {
     frame.dataset.live = String(m.live);
     frame.dataset.replay = String(Boolean(m.replay));
     frame.dataset.captions = String(m.captions.show);
+    // T-463: green (wash, scene) only while the gate says SOLO; a doubting gate or the warm-up washes neutral
+    frame.dataset.doubt = String(Boolean(m.starting || m.gate === "unsure" || m.gate === "ducked"));
     document.body.dataset.ab = m.ab; // the shell chrome takes the wash too
     setText(el.hear, m.hear);
     setText(el.word, m.word);
     el.word.style.setProperty("--chars", String(Math.max(4, m.word.length))); // the word fills its column, never overflows
     // the name slot holds a person's name or nothing; never a pill detail (T-365 P0-6)
-    setText(el.who, m.tone === "raw" || !m.live ? "" : m.who);
+    setText(el.who, m.tone === "raw" || !m.live || m.starting ? "" : m.whoLine);
     el.who.hidden = !el.who.textContent;
     renderGate(el.gate, store.state.telemetry, m.state === "isolated" && m.ab !== "raw" && m.mode !== "quiet");
     // T-458: on a phone an unsure window is not "Isolated in green next to a red UNSURE": the word takes the warn tone
@@ -412,7 +490,7 @@ export function mount(root, ctx = {}) {
     setText(el.note, m.note);
     el.note.hidden = !m.note;
     setText(el.target, m.targetLine);
-    el.target.hidden = !el.who.hidden && m.targetLine === `Target: ${el.who.textContent}`; // the name says it once
+    el.target.hidden = !el.who.hidden && m.targetLine === `Target: ${m.who}`; // the name says it once
 
     setText(el.engine, m.banners.engine);
     el.engine.hidden = !m.banners.engine;
@@ -501,7 +579,7 @@ export function mount(root, ctx = {}) {
     const has = m.people.some((p) => p.enabled);
     voices.dataset.has = has ? "1" : "0";
     voices.dataset.live = String(m.live);
-    voices.dataset.isolated = String(m.state === "isolated" && m.ab !== "raw" && m.mode !== "quiet");
+    voices.dataset.isolated = String(m.state === "isolated" && m.ab !== "raw" && m.mode !== "quiet" && m.tone === "focus");
     for (const b of voices.querySelectorAll("[data-voice]")) {
       const p = m.people[Number(b.dataset.voice)];
       setText(b.querySelector(".ls-voice-name"), p.label);
@@ -643,6 +721,7 @@ export function mount(root, ctx = {}) {
     offs.splice(0).forEach((off) => off());
     cancelAnimationFrame(raf);
     clearTimeout(askedTimer);
+    clearTimeout(warmTimer);
     delete document.body.dataset.ab;
     if (devBanner?.isConnected) document.body.append(devBanner);
   }

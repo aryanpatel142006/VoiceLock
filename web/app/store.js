@@ -38,6 +38,82 @@ export const METER_FLOOR_DB = -60;
 export const METER_RELEASE_DB_PER_S = 24; // devices.js meter release
 const MAX_LOG = 30;
 const MAX_CAPTIONS = 4;
+// T-463: the engine delay is shown as a number only once its EMA has held (within DELAY_TOLERANCE_MS, one 50 ms EMA
+// step either way plus one) for DELAY_STEADY_MS; before that every screen says "settling…" (the ladder starts on the
+// 13 ms filter and climbs to the Focus window, so the first seconds read 0.05 s, then 1.5 s).
+export const DELAY_STEADY_MS = 2000;
+export const DELAY_TOLERANCE_MS = 100;
+export const SETTLING = "settling…";
+
+/** The one delay format (T-463): seconds everywhere, "1.5 s", "1.55 s", "0.05 s"; "—" until measured. */
+export function fmtDelay(ms) {
+  if (!Number.isFinite(ms)) return "—";
+  return `${Number((ms / 1000).toFixed(2))} s`;
+}
+
+/** The engine delay as every screen shows it: "—" (no audio), "settling…" (not steady yet), else fmtDelay. */
+export function delayText(truth) {
+  if (!Number.isFinite(truth?.delayMs)) return "—";
+  return truth.delaySteady === "steady" ? fmtDelay(truth.delayMs) : SETTLING;
+}
+
+/**
+ * "steady" once a value has stayed within `toleranceMs` of where it started for `windowMs`; any gap, or a move
+ * further than that, restarts it. Diagnostics, Setup and Listen read the store's one watch (truth.delaySteady).
+ */
+export class SteadyWatch {
+  constructor(windowMs = DELAY_STEADY_MS, toleranceMs = DELAY_TOLERANCE_MS) {
+    this.windowMs = windowMs;
+    this.toleranceMs = toleranceMs;
+    this.value = null;
+    this.since = null;
+  }
+
+  push(value, nowMs) {
+    if (!Number.isFinite(value)) {
+      this.value = null;
+      this.since = null;
+    } else if (this.value == null || Math.abs(value - this.value) > this.toleranceMs) {
+      this.value = value;
+      this.since = nowMs;
+    }
+    return this.state(nowMs);
+  }
+
+  /** "steady" | "settling" | null (no measurement). */
+  state(nowMs) {
+    if (this.value == null) return null;
+    return nowMs - this.since >= this.windowMs ? "steady" : "settling";
+  }
+}
+
+/**
+ * The expected delay from `/health` `tse_window` (T-419: window + hop of the balanced enrolled tier), for copy that
+ * used to print a fixed "about 1.5 s". Null when the server does not report it; callers then name no number.
+ */
+export function expectedDelayMs(health) {
+  const ms = health?.tse_window?.delay_ms;
+  return Number.isFinite(ms) && ms > 0 ? ms : null;
+}
+
+/** "About 1.5 s behind" from /health, or "A short delay behind" while the server has not said (no invented figure). */
+export function expectedDelayCopy(health, { capital = true } = {}) {
+  const ms = expectedDelayMs(health);
+  const text = ms == null ? "a short delay behind" : `about ${fmtDelay(ms)} behind`;
+  return capital ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
+let healthOnce = null;
+/** `/health` once per page (cached promise; a failure is retried on the next call). Resolves to the JSON or null. */
+export function fetchHealth(fetchFn = globalThis.fetch) {
+  if (!healthOnce && typeof fetchFn === "function") {
+    healthOnce = fetchFn("/health", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+      .then((h) => { if (!h) healthOnce = null; return h; });
+  }
+  return healthOnce || Promise.resolve(null);
+}
 
 /** The reconnect delay after `attempt` failed tries (0 = first retry). */
 export function backoffMs(attempt) {
@@ -111,7 +187,8 @@ export function personState(t, { released = false, streaming = true } = {}) {
  * rttMs: page<->engine round trip from audio-out capture stamps (Steady, 10 ms); gpuRttMs: laptop<->GPU;
  * recording: the server's `recording` telemetry field (null when the server does not report it).
  */
-export function truthStrip(t, { connected = false, sessionId = null, replaying = false, delayMs = null, rttMs = null, streaming = true } = {}) {
+export function truthStrip(t, { connected = false, sessionId = null, replaying = false, delayMs = null, delaySteady = null, rttMs = null,
+  streaming = true } = {}) {
   const hq = hqBackendInfo(t);
   const active = t ? hq.active || "local" : null;
   return {
@@ -126,6 +203,7 @@ export function truthStrip(t, { connected = false, sessionId = null, replaying =
     hqReason: hq.reason || null,
     fallback: Boolean(hq.fallback),
     delayMs: t && streaming ? delayMs : null, // "—" until audio flows: an idle engine's 0 ms is not a delay (P1-1)
+    delaySteady: t && streaming && Number.isFinite(delayMs) ? delaySteady : null, // T-463: "settling" | "steady"
     latencyPreset: t?.latency_preset || null,
     isolation: t?.isolation || null,
     rttMs,
@@ -153,10 +231,17 @@ export function meterStep(levelDb, peakDb, dtS) {
   return { db, band: levelBand(db) };
 }
 
-/** Captions: the in-progress line is replaced until final, at most MAX_CAPTIONS lines kept. */
+const captionKey = (text) => String(text || "").toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, "").replace(/\s+/g, " ").trim();
+
+/**
+ * Captions: the in-progress line is replaced until final, at most MAX_CAPTIONS lines kept. T-463: a final whose words
+ * equal the final just before it is dropped (it only replaces its own partial), so one sentence never shows twice.
+ */
 export function addCaption(lines, c) {
   const out = lines.slice();
   if (out.length && !out[out.length - 1].final) out.pop();
+  const prev = out[out.length - 1];
+  if (c.final && prev?.final && captionKey(prev.text) === captionKey(c.text)) return out.slice(-MAX_CAPTIONS);
   out.push({ text: String(c.text || ""), final: Boolean(c.final), t0: c.t0 ?? null, t1: c.t1 ?? null });
   return out.slice(-MAX_CAPTIONS);
 }
@@ -203,6 +288,7 @@ export class Store {
     this.pill = new PillHysteresis();
     this.steadyDelay = new Steady(50);
     this.steadyRtt = new Steady(10);
+    this.delayWatch = new SteadyWatch();
   }
 
   on(event, fn) {
@@ -249,7 +335,8 @@ export class Store {
     const rtt = rttMs == null ? null : this.steadyRtt.update(rttMs);
     // `audioFlows` false: the caller knows no audio reaches the engine (the phone mirror's seq stopped, T-458)
     const streaming = connected && (s.started || s.replaying) && audioFlows !== false;
-    const truth = truthStrip(t, { connected, sessionId: s.sessionId, replaying: s.replaying, delayMs: delay, rttMs: rtt, streaming });
+    const delaySteady = this.delayWatch.push(t && streaming ? delay : null, nowMs);
+    const truth = truthStrip(t, { connected, sessionId: s.sessionId, replaying: s.replaying, delayMs: delay, delaySteady, rttMs: rtt, streaming });
     const patch = { pillChanges: this.pill.changes, abDelayMs: abDelayMs(t), effectiveMode: t?.effective_mode || null };
     if (!same(pill, s.pill)) patch.pill = { state: pill.state, text: pill.text, note: pill.note || "" };
     const person = personState(t, { released: s.released, streaming });
@@ -264,6 +351,7 @@ export class Store {
   resetEngine() {
     this.steadyDelay.reset();
     this.steadyRtt.reset();
+    this.delayWatch.push(null, 0);
   }
 }
 

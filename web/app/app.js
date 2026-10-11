@@ -48,7 +48,12 @@ export const app = {
   get sheet() { return state.sheet; },
   go(id) { location.hash = id; },
   openSheet(id = "diag") { location.hash = id; },
-  closeSheet() { location.hash = state.screen || DEFAULT; },
+  // T-463: closing the sheet goes back in history when the sheet pushed the entry, so Back never reopens it
+  closeSheet() {
+    if (sheetPushed && history.state?.sheet) { sheetPushed = false; history.back(); return; }
+    history.replaceState(null, "", `#${state.screen || DEFAULT}`);
+    show(route());
+  },
   on(event, fn) {
     if (!listeners.has(event)) listeners.set(event, new Set());
     listeners.get(event).add(fn);
@@ -71,6 +76,7 @@ const $chrome = document.getElementById("chrome");
 // focus order (inert); wider, it is a side panel over a visible stage and the stage stays usable.
 const sheetCovers = matchMedia("(max-width: 899.98px)");
 let sheetOpener = null;
+let sheetPushed = false; // the open sheet has its own history entry (opened by a hash change from a screen)
 function coverUnder(on) {
   for (const node of [document.querySelector(".skip"), $chrome, $stage]) if (node) node.inert = on && sheetCovers.matches;
 }
@@ -221,22 +227,30 @@ async function show(id) {
     document.body.dataset.screen = id;
     markNav(id);
     const root = el("div", { class: "screen", "data-screen": id });
+    rescueBanner();
     $stage.replaceChildren(root);
     const cleanup = await render(screen, root, controller.signal);
     if (token === state.token) state.cleanup = cleanup;
     else runCleanup(cleanup);
+    placeBanner();
     document.title = `${screen.title} · Selective Hearing`;
+    // T-463: every screen opens at its top (Setup's scroll used to carry over to People)
+    if (previous !== null) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, previous, id);
   if (token !== state.token) return;
+  if (previous !== null && scrollY) window.scrollTo({ top: 0, left: 0, behavior: "instant" }); // nothing scrolled it during the cut
   if (previous !== null) $stage.focus({ preventScroll: true });
   app.emit("screen", { id, previous });
 }
 
 async function showSheet(screen) {
+  const pushed = state.screen !== null; // a hash change from a screen pushed an entry; a deep link did not
   if (state.screen === null) await show("listen"); // a deep link to #diag opens over the stage screen
   if (state.sheet === screen.id) return;
   hideSheet();
   state.sheet = screen.id;
+  sheetPushed = pushed;
+  if (pushed) history.replaceState({ sheet: screen.id }, "", location.hash);
   const controller = new AbortController();
   sheetOpener = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
   $sheet.hidden = false;
@@ -256,6 +270,7 @@ async function showSheet(screen) {
 
 function hideSheet() {
   if (!state.sheet) return;
+  sheetPushed = false;
   runCleanup(state.sheetCleanup);
   state.sheetCleanup = null;
   state.sheet = null;
@@ -270,6 +285,23 @@ function hideSheet() {
   const under = byId.get(state.screen);
   if (under) document.title = `${under.title} · Selective Hearing`;
 }
+
+// ---------- the shared device banner (web/console/devices.js) ----------
+// T-463: devices.js appends it to <body> as a fixed red bar over the nav (it is that on /judge). In the app it sits in
+// the screen, in flow and sticky at its top (app.css), so the nav stays clickable and the heading is never under it.
+// Listen places it itself (its .ls-top); a screen change parks it on <body> first so replacing the stage keeps it.
+const devBanner = () => document.querySelector("[data-dev-banner]");
+function rescueBanner() {
+  const b = devBanner();
+  if (b && $stage.contains(b)) document.body.append(b);
+}
+function placeBanner() {
+  const b = devBanner();
+  const root = $stage.querySelector(":scope > .screen");
+  if (b && root && !$stage.contains(b)) root.prepend(b);
+}
+new MutationObserver(() => { if (state.screen && devBanner()?.parentElement === document.body) placeBanner(); })
+  .observe(document.body, { childList: true });
 
 // ---------- built-in Welcome (until a screens/welcome.js lands) ----------
 const HOLD_MS = 700;
@@ -288,7 +320,7 @@ function mountWelcome(root, signal) {
       el("span", { class: "line", text: "Turn down the world" }),
       el("span", { class: "line dim", text: "without disconnecting from it." })),
     el("div", { class: "welcome-actions" }, start,
-      el("p", { id: "start-note", class: "note", text: "About 1.5 s behind, like live captions. Headphones on before you start." })),
+      el("p", { id: "start-note", class: "note", text: "A short delay behind the room, like live captions. Headphones on before you start." })),
     installHint()));
 
   let t0 = 0;

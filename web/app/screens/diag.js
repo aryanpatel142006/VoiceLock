@@ -6,38 +6,15 @@
 // frame time, `app.scene.stats()` -> {p95Ms, lastMs, frames} (scene.js measures it; the row stays "—" until then).
 
 import { DASH, backendText, fmtMs, setNumber, storeOf } from "../truth.js";
+import { SETTLING, SteadyWatch, fmtDelay } from "../store.js";
 
 export const title = "Diagnostics";
 
-const DELAY_WINDOW_MS = 4000; // the delay is "Steady" once it has not moved for this long (it is rounded to 50 ms steps)
 const SAMPLE_MS = 500;
 const SCENE_BUDGET_MS = 4; // tokens.css --scene-budget-ms; DESIGN_SPEC section 5.5
 
-/** "Steady" once the (already rounded) delay has held one value for DELAY_WINDOW_MS; any gap or change restarts it. */
-export class SteadyWatch {
-  constructor(windowMs = DELAY_WINDOW_MS) {
-    this.windowMs = windowMs;
-    this.value = null;
-    this.since = null;
-  }
-
-  push(value, nowMs) {
-    if (!Number.isFinite(value)) {
-      this.value = null;
-      this.since = null;
-    } else if (value !== this.value) {
-      this.value = value;
-      this.since = nowMs;
-    }
-    return this.state(nowMs);
-  }
-
-  /** "steady" | "settling" | null (no measurement). */
-  state(nowMs) {
-    if (this.value == null) return null;
-    return nowMs - this.since >= this.windowMs ? "steady" : "settling";
-  }
-}
+// T-463: the steadiness rule moved to store.js (one watch the store runs, read by every screen as truth.delaySteady)
+export { SteadyWatch };
 
 const PIN_LABELS = [
   ["hq_backend", "Focus HQ backend"],
@@ -109,7 +86,7 @@ const SECTIONS = [
   { title: "Target", rows: ["confidence"] },
 ];
 const LABELS = {
-  backend: "Backend", tier: "Tier", rev: "Server rev", delay: "Delay", rtt: "RTT", scene: "Scene frame time",
+  backend: "Backend", tier: "Tier", rev: "Server rev", delay: "Engine delay", rtt: "Network round trip", scene: "Scene frame time",
   confidence: "Voice match",
 };
 
@@ -173,7 +150,6 @@ export function mount(root, ctx = {}) {
   section.append(pinsBlock, logBlock);
   root.append(section);
 
-  const watch = new SteadyWatch();
   const setRow = (key, info) => {
     const c = cells[key];
     c.wrap.dataset.tone = info.tone || "";
@@ -188,23 +164,28 @@ export function mount(root, ctx = {}) {
     const st = store?.state;
     const truth = st?.truth;
     const t = st?.telemetry || null;
-    const now = performance.now();
     section.dataset.stale = st && st.connection !== "open" ? "true" : "false";
 
     setRow("backend", { ...backendText(truth), sub: [backendText(truth).sub, truth?.hqReason].filter(Boolean).join(" · ") });
     setRow("tier", tierInfoRow(t, truth));
     setRow("rev", revInfo(t, truth));
 
-    const steady = watch.push(truth?.delayMs, now);
-    setNumber(cells.delay.val, Number.isFinite(truth?.delayMs) ? truth.delayMs : null, fmtMs);
+    // T-463: the same number and unit as Listen and Setup (store.js fmtDelay), "settling…" until it holds
+    const steady = truth?.delaySteady || null;
+    if (steady === "steady") setNumber(cells.delay.val, truth.delayMs, fmtDelay);
+    else {
+      setNumber(cells.delay.val, null);
+      if (steady) cells.delay.val.textContent = SETTLING;
+    }
     cells.delay.wrap.dataset.tone = "";
-    cells.delay.sub.textContent = truth?.latencyPreset ? `${truth.latencyPreset} preset · EMA` : "";
+    cells.delay.sub.textContent = truth?.latencyPreset ? `${truth.latencyPreset} preset · engine, before device buffers` : "";
     cells.delay.sub.hidden = !truth?.latencyPreset;
-    cells.delay.flag.hidden = !steady;
-    cells.delay.flag.textContent = steady === "steady" ? "Steady" : "Settling";
+    cells.delay.flag.hidden = steady !== "steady";
+    cells.delay.flag.textContent = "Steady";
     cells.delay.flag.dataset.state = steady || "";
 
-    setNumber(cells.rtt.val, Number.isFinite(truth?.rttMs) ? truth.rttMs : null, fmtMs);
+    // T-463: the steady RTT moves in 10 ms steps; under one step reads "<10 ms", as on Listen
+    setNumber(cells.rtt.val, Number.isFinite(truth?.rttMs) ? truth.rttMs : null, (v) => (v < 10 ? "<10 ms" : fmtMs(v)));
     cells.rtt.sub.textContent = Number.isFinite(truth?.gpuRttMs) ? `page ↔ engine · laptop ↔ GPU ${fmtMs(truth.gpuRttMs)}` : "";
     cells.rtt.sub.hidden = !cells.rtt.sub.textContent;
 

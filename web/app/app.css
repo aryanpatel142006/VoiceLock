@@ -180,6 +180,9 @@ body:not([data-screen="welcome"]):not([data-screen="listen"]) .scene-label { vis
 
 /* first paint: the shell fades up once the first screen is mounted */
 html:not(.ready) .stage { opacity: 0; }
+/* T-463 (laptop review #11): the chrome waits for the first screen too, so the brand and nav never flash before the
+   Welcome cold open hides them (welcome.css body[data-wl-cold]); every other screen fades them up with the stage */
+html:not(.ready) .chrome { opacity: 0; }
 .stage { transition: opacity .6s var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -188,18 +191,23 @@ html:not(.ready) .stage { opacity: 0; }
 }
 
 /* ---------- the shared device banner (web/console/devices.js sets inline styles for /judge; the app restyles it) ----------
-   A problem line, not a red slab: the raised surface, a red hairline round it and the words in red; the app's own controls. */
+   A problem line, not a red slab: the raised surface, a warn hairline round it and the words in the warn tone (T-463: it
+   fires on any device mismatch, a mic swap on stage included, so it is a caution, not an error); the app's own controls. */
 [data-dev-banner] {
-  background: var(--color-bg-raise) !important; color: var(--color-fg) !important; border: 1px solid color-mix(in oklab, var(--color-bad) 60%, transparent);
+  background: var(--color-bg-raise) !important; color: var(--color-fg) !important; border: 1px solid color-mix(in oklab, var(--color-warn) 60%, transparent);
   font: 600 15px/1.35 var(--font-ui) !important; justify-content: flex-start !important; flex-wrap: wrap; gap: 8px 14px !important;
   padding: 10px 16px !important; padding-top: calc(10px + var(--safe-t)) !important;
 }
-[data-dev-banner] > span { color: var(--color-bad); flex: 1 1 280px; min-width: 0; }
+[data-dev-banner] > span { color: var(--color-warn); flex: 1 1 280px; min-width: 0; }
 [data-dev-banner] select, [data-dev-banner] button {
   min-height: 44px; padding: 0 14px !important; border-radius: 6px; font: 600 15px/1 var(--font-ui) !important;
   color: var(--color-fg); background: var(--color-bg); border: 1px solid color-mix(in oklab, var(--color-fg) 26%, transparent); cursor: pointer;
 }
 .ls-top [data-dev-banner] { position: static !important; flex: 1 1 100%; border-radius: 6px; padding-top: 10px !important; }
+/* T-463: on every other screen app.js puts it first in the screen: in flow under the nav, sticky at the top while the
+   page scrolls, never over the nav (it was position:fixed and took the clicks meant for People / About) */
+.screen > [data-dev-banner] { position: sticky !important; top: calc(var(--safe-t) + 8px) !important; left: auto !important; right: auto !important;
+  z-index: 20 !important; grid-column: 1 / -1; align-self: start; margin: 0 0 12px; border-radius: 6px; padding-top: 10px !important; }
 @media (max-width: 600px) {
   [data-dev-banner] select, [data-dev-banner] button { flex: 1 1 100%; }
 }

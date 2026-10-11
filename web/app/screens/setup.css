@@ -160,3 +160,14 @@ body[data-screen="setup"] [data-dev-banner] { display: none !important; }
   .su-fill { transition: none; }
 }
 .su-check-panel:not(:has(.su-checks)) .su-delay { border-top: 0; margin-top: 0; padding-top: 0; } /* T-458: a phone without the stage checklist */
+
+/* T-463 (laptop review #4): the next step never sits below the fold. On a laptop the foot sticks to the bottom of the
+   window over a short fade of the page colour, and the meter word is capped by the window's height so the panel fits
+   800 px. Phones keep T-458's layout (the foot is already the last thing under the thumb there). */
+:root:not([data-touch]) .su-foot {
+  position: sticky; bottom: 0; z-index: 5;
+  padding: 32px 0 calc(var(--safe-b) + 16px); pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-bg) 45%);
+}
+:root:not([data-touch]) .su-foot > * { pointer-events: auto; }
+:root:not([data-touch]) .su-word { font-size: min(clamp(64px, 10vw, 168px), max(64px, 14dvh)); }
