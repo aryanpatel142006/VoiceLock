@@ -1,0 +1,67 @@
+{
+  "_about": "Comfort Companion catalog. Every plan (Gemini or default) is built only from ids in here. Add a sound, a breathing pattern, grounding lines or a message template without touching code. Support for sensory overload, not medical advice.",
+  "triggers": ["noise", "people", "lights", "unknown"],
+  "sounds": [
+    {"id": "brown", "kind": "noise", "label": "Brown noise", "note": "Deep, soft rumble that covers a loud room."},
+    {"id": "pink", "kind": "noise", "label": "Pink noise", "note": "Lighter, like steady rain."},
+    {"id": "white", "kind": "noise", "label": "White noise", "note": "Even hiss, like a fan."},
+    {"id": "music", "kind": "music", "label": "Chill music", "note": "Slow soft chords made in the browser."},
+    {"id": "rain", "label": "Rain sound", "kind": "sound", "sound": "pink", "favorite": "rain",
+     "short": "{name}, a soft rain sound can play if you want it.",
+     "normal": "{name}, a soft, steady rain sound can play for a while. Stop it whenever you like."},
+    {"id": "silence", "kind": "silence", "label": "Just quiet", "note": "No sound at all."}
+  ],
+  "breathing": [
+    {"id": "slow-4-6", "label": "Slow breath", "inhale_s": 4, "hold_s": 0, "exhale_s": 6, "rest_s": 0, "cycles": 4},
+    {"id": "box-4", "label": "Box breath", "inhale_s": 4, "hold_s": 4, "exhale_s": 4, "rest_s": 4, "cycles": 3},
+    {"id": "long-out-4-8", "label": "Long breath out", "inhale_s": 4, "hold_s": 0, "exhale_s": 8, "rest_s": 0, "cycles": 3},
+    {"id": "none", "label": "No breathing exercise", "inhale_s": 0, "hold_s": 0, "exhale_s": 0, "rest_s": 0, "cycles": 0}
+  ],
+  "grounding": {
+    "noise": ["The room is off now.", "Only this one soft sound is left.", "You can stay here as long as you like."],
+    "people": ["Nobody needs anything from you right now.", "You are not behind. Nothing is waiting.", "Come back when you are ready, not before."],
+    "lights": ["Lower your eyes or close them.", "Rest them on one dark, still spot.", "Let the room blur. It can wait."],
+    "unknown": ["You don't have to name it.", "Too much is a fair answer.", "This spot is yours for now."]
+  },
+  "messages": [
+    {"id": "none", "text": null},
+    {"id": "need-a-minute", "text": "Hey, it's a lot right now. I'm taking a few minutes with my headphones on. I'm okay, just need quiet."},
+    {"id": "step-outside", "text": "It's too loud for me here. I'm stepping outside for a bit. Back soon."},
+    {"id": "come-sit", "text": "Things are too much right now. Could you come sit with me? No need to talk."}
+  ],
+  "strategies": [
+    {"id": "breathing", "label": "Slow breathing", "kind": "breathing", "breathing": "slow-4-6",
+     "short": "{name}, one slow breath in, then a long breath out.",
+     "normal": "{name}, if it feels okay, breathe in slowly and let a long breath out. There is no rush."},
+    {"id": "lofi", "label": "Lo-fi music", "kind": "sound", "sound": "music", "favorite": "pad",
+     "short": "{name}, soft lo-fi music can play if you want it.",
+     "normal": "{name}, some soft lo-fi music can play for a while. You can turn it off any time."},
+    {"id": "brown-noise", "label": "Brown noise", "kind": "sound", "sound": "brown", "favorite": "brown",
+     "short": "{name}, a soft brown noise can cover the room.",
+     "normal": "{name}, a soft, deep brown noise can cover the room for a while. Stop it whenever you like."},
+    {"id": "rain", "label": "Rain sound", "kind": "sound", "sound": "pink", "favorite": "rain",
+     "short": "{name}, a soft rain sound can play if you want it.",
+     "normal": "{name}, a soft, steady rain sound can play for a while. Stop it whenever you like."},
+    {"id": "silence", "label": "Quiet", "kind": "sound", "sound": "silence",
+     "short": "{name}, it can stay quiet now.",
+     "normal": "{name}, everything can stay quiet for a while. Nothing needs an answer."},
+    {"id": "sensory-object", "label": "Familiar object", "kind": "object",
+     "short": "{name}, your familiar object is right here if you want it.",
+     "normal": "{name}, your familiar object is close by. Hold it if that feels good."},
+    {"id": "movement", "label": "Small movement", "kind": "movement",
+     "short": "{name}, a small movement or fidget is okay.",
+     "normal": "{name}, moving a little or using a fidget is completely okay. Take your time."},
+    {"id": "step-away", "label": "A quieter spot", "kind": "place",
+     "short": "{name}, a quieter spot nearby is okay to use.",
+     "normal": "{name}, it is okay to move to a quieter spot for a bit. Come back when you are ready."},
+    {"id": "pause", "label": "Just a pause", "kind": "quiet", "fallback": true,
+     "short": "{name}, nothing needs to happen right now.",
+     "normal": "{name}, nothing needs to happen right now. I am here only if you ask."}
+  ],
+  "defaults": {
+    "noise":   {"sound": "brown", "breathing": "slow-4-6", "message": "need-a-minute"},
+    "people":  {"sound": "music", "breathing": "long-out-4-8", "message": "come-sit"},
+    "lights":  {"sound": "pink", "breathing": "box-4", "message": "step-outside"},
+    "unknown": {"sound": "brown", "breathing": "slow-4-6", "message": "none"}
+  }
+}

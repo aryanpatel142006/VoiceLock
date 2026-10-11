@@ -22,6 +22,7 @@ from hearing import __version__, registry
 from hearing.context.prefs import prior_model
 from hearing.device import pick
 from hearing.server import rehearsal, team, warm
+from hearing.server.comfort import mount_comfort
 from hearing.server.connect import mount_connect
 from hearing.server.hostload import host_load
 from hearing.server.session import (
@@ -75,6 +76,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
     app = FastAPI(title="hearing", version=__version__)
     app.state.config = config
     app.state.device = device
+    mount_comfort(app)
 
     sessions = {}
     watchers = SessionWatch()
