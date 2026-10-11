@@ -69,3 +69,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["hearing*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "slow: needs model weights, a GPU, or more than a few seconds (skipped by verify_fast)",
+  "network: calls an external API (ElevenLabs, Hugging Face downloads)",
+]
+asyncio_mode = "auto"
