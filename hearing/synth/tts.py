@@ -253,10 +253,24 @@ class KokoroTTS:
 Connect = Callable[[str, dict], object]
 
 
+@functools.cache
+def tls_context():
+    """Verified TLS with certifi's CA bundle: the python.org macOS build has no system CAs, so the bare default
+    context fails every ``wss://`` connect with CERTIFICATE_VERIFY_FAILED."""
+    import ssl
+
+    try:
+        import certifi
+    except ImportError:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 def _ws_connect(url: str, headers: dict):
     from websockets.sync.client import connect
 
-    return connect(url, additional_headers=headers, open_timeout=5, max_size=None)
+    tls = {"ssl": tls_context()} if url.startswith("wss://") else {}
+    return connect(url, additional_headers=headers, open_timeout=5, max_size=None, **tls)
 
 
 class ElevenLabsTTS:

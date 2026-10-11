@@ -2,7 +2,9 @@
 
 Two layers share one Gemini adapter:
 - Joseph's profile layer (``/comfort/profiles``, ``/comfort/guidance``, ``/comfort/feedback``): per-person preferences
-  (helps / avoid / sounds / style), one strategy from the catalog's ``strategies`` that the profile does not avoid,
+  (helps / avoid / sounds / style), one strategy from the catalog's ``strategies`` that the profile does not avoid
+  (its helps ranked first, then the rest of the catalog; the client's ``recent`` ids are skipped so "Another idea"
+  varies),
   optional ElevenLabs speech (off unless ``speak`` is true and a key exists). Confirmed feedback is the learning loop:
   "not helpful" + confirm moves a strategy into avoid and writes ``history``; nothing is saved without confirm.
 - The plan layer (``/comfort/plan``): after SOS cuts the room the app asks "What's too much right now?" and sends one
@@ -21,14 +23,16 @@ from __future__ import annotations
 import base64
 import io
 import json
+import logging
 import os
 import re
+import ssl
 import time
 import wave
 from pathlib import Path
 from threading import Lock
 from typing import Any
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import numpy as np
@@ -37,12 +41,36 @@ from fastapi import FastAPI, HTTPException
 from hearing.audio.io import float_to_pcm16
 from hearing.synth.tts import ElevenLabsTTS, TtsError
 
-DEFAULT_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
+# Spoken guidance: a calm, warm premade voice that this restricted key can use (Sarah; checked 200 on Oct 11, 2026).
+DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"
+DEFAULT_TTS_MODEL = "eleven_flash_v2_5"
 DEFAULT_TIMEOUT_S = 2.0
 CATALOG_PATH = Path(__file__).with_name("comfort_catalog.json")
 TRIGGERS = ("noise", "people", "lights", "unknown")
 MAX_LINE_WORDS = 14
 MAX_MESSAGE_WORDS = 30
+log = logging.getLogger(__name__)
+_SSL_CONTEXT: ssl.SSLContext | None = None
+
+
+def ssl_context() -> ssl.SSLContext:
+    """Verified TLS with certifi's CA bundle. The python.org macOS build ships without system CAs, so the bare
+    default context fails every Gemini call with CERTIFICATE_VERIFY_FAILED."""
+    global _SSL_CONTEXT
+    if _SSL_CONTEXT is None:
+        try:
+            import certifi
+            _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+        except ImportError:
+            _SSL_CONTEXT = ssl.create_default_context()
+    return _SSL_CONTEXT
+
+
+def _redact(text: str, api_key: str) -> str:
+    return text.replace(api_key, "<redacted>") if api_key else text
+
+
 # words that make a grounding line or message medical or alarming; a plan containing one is replaced by the default
 BLOCKED_WORDS = ("diagnos", "disorder", "medic", "therap", "emergency", "911", "doctor", "panic attack", "http", "www.")
 
@@ -63,12 +91,12 @@ def comfort_enabled() -> bool:
 
 
 def gemini_json(api_key: str, model: str, system: str, user: dict, schema: dict, *, timeout_s: float,
-                max_tokens: int = 320) -> Any:
+                max_tokens: int = 320, temperature: float = 0.3) -> Any:
     """One ``generateContent`` call returning the parsed JSON the response schema forced. Raises on any failure."""
     request_body = {
         "system_instruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": json.dumps(user)}]}],
-        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.3,
+        "generationConfig": {"responseMimeType": "application/json", "temperature": temperature,
                              "maxOutputTokens": max_tokens, "responseSchema": schema},
     }
     request = Request(
@@ -77,9 +105,25 @@ def gemini_json(api_key: str, model: str, system: str, user: dict, schema: dict,
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
         method="POST",
     )
-    with urlopen(request, timeout=timeout_s) as response:
-        result = json.load(response)
-    return json.loads(result["candidates"][0]["content"]["parts"][0]["text"])
+    try:
+        with urlopen(request, timeout=timeout_s, context=ssl_context()) as response:
+            result = json.load(response)
+    except HTTPError as exc:
+        try:
+            message = json.loads(exc.read() or b"{}").get("error", {}).get("message", "")
+        except (OSError, ValueError, AttributeError):
+            message = ""
+        log.warning("Gemini %s HTTP %s: %s", model, exc.code, _redact(str(message or exc.reason)[:300], api_key))
+        raise
+    except (URLError, OSError) as exc:
+        log.warning("Gemini %s request failed: %s", model, _redact(str(exc)[:300], api_key))
+        raise
+    try:
+        return json.loads(result["candidates"][0]["content"]["parts"][0]["text"])
+    except (KeyError, IndexError, TypeError, ValueError):
+        log.warning("Gemini %s returned no JSON text (finishReason %s)", model,
+                    (result.get("candidates") or [{}])[0].get("finishReason") if isinstance(result, dict) else None)
+        raise
 MODES = {"silence", "music", "speech"}
 TALK = {"little", "some"}
 STYLES = {"short", "normal"}
@@ -290,14 +334,46 @@ def is_avoided(strategy: dict, avoid: list[str]) -> bool:
     return any(t == strategy["id"] or t == label or (len(t) >= 4 and t in label) for t in terms)
 
 
-def allowed_strategies(catalog: dict, profile: dict) -> list[dict]:
-    """The profile's helps (in order), minus avoid. If nothing is left: the catalog minus avoid. Never empty."""
+MAX_RECENT = 3
+
+
+def clean_recent(value: Any) -> list[str]:
+    """The ``recent`` request field: up to the last three strategy ids suggested this SOS session (oldest first)."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise HTTPException(422, "recent must be a list of strategy ids")
+    ids = [x.strip().lower() for x in value if isinstance(x, str) and re.fullmatch(PROFILE_ID, x.strip().lower())]
+    return list(dict.fromkeys(reversed(ids)))[:MAX_RECENT][::-1]
+
+
+def ranked_strategies(catalog: dict, profile: dict) -> list[dict]:
+    """Every strategy the profile does not avoid, ranked: its helps first (in its order), then the rest of the
+    catalog, then the quiet fallback. Avoided strategies never appear. Never empty."""
     avoid = profile.get("avoid", [])
     helps = [s for s in (find_strategy(catalog, h) for h in profile.get("helps", [])) if s is not None]
-    allowed = [s for s in {s["id"]: s for s in helps}.values() if not is_avoided(s, avoid)]
-    if not allowed:
-        allowed = [s for s in catalog["strategies"] if not s.get("fallback") and not is_avoided(s, avoid)]
-    return allowed or [s for s in catalog["strategies"] if s.get("fallback")]
+    rest = [s for s in catalog["strategies"] if not s.get("fallback")]
+    tail = [s for s in catalog["strategies"] if s.get("fallback")]
+    ranked = [s for s in {s["id"]: s for s in [*helps, *rest, *tail]}.values() if not is_avoided(s, avoid)]
+    return ranked or tail
+
+
+def allowed_strategies(catalog: dict, profile: dict, recent: list[str] | None = None) -> list[dict]:
+    """The ranked set minus what was suggested recently, unless that would leave nothing."""
+    ranked = ranked_strategies(catalog, profile)
+    fresh = [s for s in ranked if s["id"] not in set(recent or [])]
+    return fresh or ranked
+
+
+def rotate_pick(catalog: dict, profile: dict, recent: list[str] | None = None) -> dict:
+    """The offline pick: the next ranked strategy after the most recent one, skipping anything recent. With no
+    history it is the first of the profile's helps; repeated "Another idea" walks the whole allowed set."""
+    ranked = ranked_strategies(catalog, profile)
+    recent = list(recent or [])
+    ids = [s["id"] for s in ranked]
+    start = ids.index(recent[-1]) + 1 if recent and recent[-1] in ids else 0
+    order = ranked[start:] + ranked[:start]
+    return next((s for s in order if s["id"] not in set(recent)), order[0])
 
 
 def strategy_text(strategy: dict, profile: dict) -> str:
@@ -305,13 +381,65 @@ def strategy_text(strategy: dict, profile: dict) -> str:
 
 
 GUIDANCE_SYSTEM = (
-    "You are LockedIn's optional Comfort Companion for someone in sensory overload. Choose exactly one strategy id "
-    "from the allowed list (the person's own list of what helps, in their order). Write at most two short, gentle "
-    "sentences addressed to the person by their preferred name, in their style: 'short' means one sentence of at most "
-    "14 words; 'normal' at most two sentences and 30 words. Never mention anything in avoid. No questions if questions "
-    "is 'minimal'. Do not assume a diagnosis, give medical advice, force an exercise, claim to know feelings, promise "
-    "relief or mention emergencies. Return only JSON with strategy and text."
+    "You are LockedIn's optional Comfort Companion for someone in sensory overload. Pick the single best NEW strategy "
+    "id for this person from the allowed list. The list is ranked: entries with from_helps true are the person's own "
+    "list of what helps, so prefer those, but the person asked for another idea, so never repeat anything in "
+    "recently_suggested and do pick a different kind of strategy when that fits better. Phrase it freshly in your own "
+    "words: vary the wording each time, do not copy the example. Address the person by their preferred name, at most "
+    "two short, gentle sentences, in their style: 'short' means one sentence of at most 14 words; 'normal' at most two "
+    "sentences and 30 words. Never mention anything in avoid. No questions if questions is 'minimal'. Do not assume a "
+    "diagnosis, give medical advice, force an exercise, claim to know feelings, promise relief or mention emergencies. "
+    "Nothing plays or starts until the person taps: never say something is playing, is ready to play, or that you "
+    "started it. Only entries with app_action can be started from the screen; for those, invite instead of claiming "
+    "(e.g. 'Want some soft music? Tap play.'). For entries without app_action give plain advice and never mention "
+    "tapping, a button or the app playing anything. "
+    "Return only JSON with strategy and text."
 )
+
+# what a strategy can start on the Talk card: sound -> Play <label> (sounds.js), breathing -> the breathing circle,
+# silence -> the Stay Quiet card; everything else (an object, movement, a quieter spot, a pause) is advice only
+ACTIONS = {"sound": "play", "breathing": "breathe", "silence": "quiet"}
+CLAIMS = re.compile(r"\b(?:is|are|now|already) playing\b|\bready (?:to play|for you)\b|\bplaying (?:now|for you)\b"
+                    r"|\bi(?:'ve| have| just)? ?(?:started|put on|turned on|queued)\b|\bi(?:'ll| will) (?:play|start)\b",
+                    re.I)
+TAP = re.compile(r"\b(?:tap|press|click|button)\b", re.I)
+
+
+class WordingError(ValueError):
+    """Gemini's text claims an app action that has not happened (or one the strategy has none of): the pick stands,
+    the catalog's own text replaces the wording."""
+
+    def __init__(self, strategy: dict, why: str):
+        super().__init__(why)
+        self.strategy = strategy
+
+
+def check_claims(text: str, strategy: dict) -> str:
+    if CLAIMS.search(text):
+        raise WordingError(strategy, "text claims something is already playing or started")
+    if strategy_action(strategy) is None and TAP.search(text):
+        raise WordingError(strategy, "text offers a tap for a strategy with no app action")
+    return text
+
+
+def strategy_action(strategy: dict) -> str | None:
+    return "quiet" if strategy.get("sound") == "silence" else ACTIONS.get(strategy.get("kind"))
+
+
+def strategy_body(catalog: dict, strategy: dict) -> dict:
+    """The strategy as the client gets it, with its app action: play (and the sounds.js id), breathe (and the
+    pattern), quiet, or none."""
+    action = strategy_action(strategy)
+    body = {"id": strategy["id"], "label": strategy["label"], "kind": strategy["kind"], "sound": strategy.get("sound"),
+            "favorite_sound": strategy.get("favorite"), "action": action}
+    if action == "play":
+        body["play"] = strategy.get("favorite")
+    if action == "breathe":
+        pattern = next((b for b in catalog.get("breathing", []) if b["id"] == strategy.get("breathing")), None)
+        if pattern:
+            body["pattern"] = {k: pattern[k] for k in ("id", "label", "inhale_s", "hold_s", "exhale_s", "rest_s", "cycles")}
+    return body
+GUIDANCE_TEMPERATURE = 0.9
 
 
 def check_guidance_text(text: Any, profile: dict) -> str:
@@ -327,19 +455,26 @@ def check_guidance_text(text: Any, profile: dict) -> str:
 
 
 def gemini_guidance(catalog: dict, profile: dict, allowed: list[dict], *, api_key: str, model: str,
-                    timeout_s: float) -> tuple[dict, str]:
+                    timeout_s: float, recent: list[str] | None = None) -> tuple[dict, str]:
     """Gemini picks one allowed id (schema enum) and phrases it; validated, raises on anything off-format."""
     by_id = {s["id"]: s for s in allowed}
+    helps = {s["id"] for s in (find_strategy(catalog, h) for h in profile.get("helps", [])) if s is not None}
+    labels = {s["id"]: s["label"] for s in catalog["strategies"]}
     user = {"preferred_name": profile["preferred_name"], "guidance_style": profile["guidance_style"],
-            "questions": profile["questions"], "avoid": profile["avoid"][:12],
+            "questions": profile["questions"], "helps": profile["helps"][:12], "avoid": profile["avoid"][:12],
+            "favorite_sound": profile.get("favorite_sound"), "preferred_mode": profile.get("preferred_mode"),
+            "recently_suggested": [labels.get(r, r) for r in (recent or [])],
             "recent_feedback": [h["text"] for h in profile["history"][-5:]],
-            "allowed": [{"id": s["id"], "label": s["label"], "example": strategy_text(s, profile)} for s in allowed]}
+            "allowed": [{"id": s["id"], "label": s["label"], "from_helps": s["id"] in helps,
+                         "app_action": strategy_action(s), "example": strategy_text(s, profile)} for s in allowed]}
     schema = {"type": "OBJECT", "properties": {"strategy": {"type": "STRING", "enum": list(by_id)},
                                                "text": {"type": "STRING"}}, "required": ["strategy", "text"]}
-    picked = gemini_json(api_key, model, GUIDANCE_SYSTEM, user, schema, timeout_s=timeout_s, max_tokens=120)
+    picked = gemini_json(api_key, model, GUIDANCE_SYSTEM, user, schema, timeout_s=timeout_s, max_tokens=120,
+                         temperature=GUIDANCE_TEMPERATURE)
     if not isinstance(picked, dict) or picked.get("strategy") not in by_id:
         raise ValueError("strategy outside the allowed list")
-    return by_id[picked["strategy"]], check_guidance_text(picked.get("text"), profile)
+    strategy = by_id[picked["strategy"]]
+    return strategy, check_claims(check_guidance_text(picked.get("text"), profile), strategy)
 
 
 def failure_reason(exc: BaseException) -> str:
@@ -352,11 +487,13 @@ def failure_reason(exc: BaseException) -> str:
     return "error"
 
 
-def make_guidance(catalog: dict, profile: dict, *, env: dict | None = None, planner=gemini_guidance) -> dict:
-    """The /comfort/guidance body (without audio): Gemini when a key exists and it answers in time, else the first
-    allowed strategy with catalog text. ``source`` and ``reason`` say which honestly."""
+def make_guidance(catalog: dict, profile: dict, *, env: dict | None = None, planner=gemini_guidance,
+                  recent: list[str] | None = None) -> dict:
+    """The /comfort/guidance body (without audio): Gemini when a key exists and it answers in time, else the next
+    allowed strategy in rotation (skipping ``recent``) with catalog text. ``source`` and ``reason`` say which."""
     env = os.environ if env is None else env
-    allowed = allowed_strategies(catalog, profile)
+    recent = list(recent or [])
+    allowed = allowed_strategies(catalog, profile, recent)
     api_key = env.get("GEMINI_API_KEY") or ""
     model = env.get("GEMINI_MODEL") or DEFAULT_MODEL
     try:
@@ -369,17 +506,24 @@ def make_guidance(catalog: dict, profile: dict, *, env: dict | None = None, plan
         reason = "no_key"
     else:
         try:
-            choice = planner(catalog, profile, allowed, api_key=api_key, model=model, timeout_s=timeout_s)
+            choice = planner(catalog, profile, allowed, api_key=api_key, model=model, timeout_s=timeout_s,
+                             recent=recent)
             source = "gemini"
+        except WordingError as exc:  # Gemini's pick, the catalog's honest words; labelled as the default text
+            reason = "invalid"
+            choice = (exc.strategy, strategy_text(exc.strategy, profile))
+            log.warning("Comfort guidance used the catalog text for %s: %s", exc.strategy["id"], exc)
         except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
             reason = failure_reason(exc)
+            log.warning("Comfort guidance fell back to default (%s): %s: %s", reason, type(exc).__name__,
+                        _redact(str(exc)[:200], api_key))
     if choice is None:
-        choice = (allowed[0], strategy_text(allowed[0], profile))
+        pick = rotate_pick(catalog, profile, recent)
+        choice = (pick, strategy_text(pick, profile))
     strategy, text = choice
     return {"profile_id": profile["id"], "source": source, "reason": reason,
             "model": model if source == "gemini" else None, "latency_ms": int((time.perf_counter() - t0) * 1000),
-            "strategy": {"id": strategy["id"], "label": strategy["label"], "kind": strategy["kind"],
-                         "sound": strategy.get("sound"), "favorite_sound": strategy.get("favorite")},
+            "strategy": strategy_body(catalog, strategy),
             "text": text, "ask": f"Remember that {strategy['label'].lower()} wasn't helpful?",
             # PR #402 names, kept for older clients
             "suggestion": strategy["id"], "planner": "gemini" if source == "gemini" else "local"}
@@ -538,6 +682,8 @@ def make_plan(catalog: dict, trigger: str, *, sound_now: str | None = None, prof
             reason = "error"
         except ValueError:
             reason = "invalid"
+        if reason:
+            log.warning("Comfort plan fell back to default (%s)", reason)
     if plan is None:
         plan = default_plan(catalog, trigger)
     return {"source": source, "model": model if source == "gemini" else None, "reason": reason,
@@ -625,20 +771,30 @@ def mount_comfort(app: FastAPI) -> None:
 
     @app.post("/comfort/guidance")
     def speak(data: dict) -> dict:
-        """One strategy for the profile, never one it avoids. Speech only when speak is true and a key exists."""
+        """One strategy for the profile, never one it avoids, not one of ``recent`` (the last three suggested this
+        SOS session) while others remain. Speech only when speak is true and a key exists."""
         if not isinstance(data.get("speak", False), bool):
             raise HTTPException(422, "speak must be a boolean")
+        recent = clean_recent(data.get("recent"))
         profile = get_store().get(data.get("profile_id"))
-        result = {**make_guidance(catalog, profile), "audio_base64": None, "engine": None, "error": None}
+        result = {**make_guidance(catalog, profile, recent=recent), "audio_base64": None, "engine": None,
+                  "error": None}
         if data.get("speak") is not True:
             return result
         if not os.environ.get("ELEVENLABS_API_KEY"):
             return {**result, "error": "ElevenLabs key is not configured"}
+        api_key = os.environ["ELEVENLABS_API_KEY"]
+        voice_id = os.environ.get("ELEVENLABS_VOICE_ID") or DEFAULT_VOICE_ID
+        model_id = os.environ.get("ELEVENLABS_MODEL_ID") or DEFAULT_TTS_MODEL
+        t0 = time.perf_counter()
         try:
-            samples = ElevenLabsTTS().synthesize(result["text"], None)
+            samples = ElevenLabsTTS(model_id=model_id).synthesize(result["text"], voice_id)
             if samples.size == 0:
                 raise TtsError("no audio was returned")
             result.update(audio_base64=wav_base64(samples), engine="elevenlabs")
-        except (TtsError, OSError, ValueError):
+        except (TtsError, OSError, ValueError) as exc:
+            log.warning("comfort: ElevenLabs speech failed (voice %s, model %s): %s", voice_id, model_id,
+                        _redact(str(exc), api_key)[:300])
             result["error"] = "ElevenLabs unavailable"
+        result["tts_ms"] = int((time.perf_counter() - t0) * 1000)
         return result
