@@ -1,0 +1,91 @@
+/* Diagnostics sheet (#diag) and the truth strip on Listen (T-353). Tokens from ../tokens.css only.
+   Black-and-white, type-led (Gionatan Nese): hairlines, mono numbers, the one accent is the state's own colour. */
+
+/* ---------- truth strip (mounted by Listen via truth.js) ---------- */
+.truth-strip { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: var(--space-3) var(--space-5);
+  z-index: var(--z-truth); color: var(--color-fg); font-family: var(--font-mono); font-variant-numeric: var(--numeric); }
+.truth { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin: 0; padding: 0; }
+.truth-item { display: grid; gap: 2px; min-width: 0; padding-left: var(--space-3); border-left: var(--hairline) solid var(--color-line); }
+.truth-dt { font: 500 var(--text-small)/1.2 var(--font-ui); color: var(--color-dim); }
+.truth-dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); margin: 0; }
+.truth-val { font: 500 var(--text-number)/1.1 var(--font-mono); letter-spacing: -.01em; color: var(--color-fg); min-width: 3ch; }
+.truth-sub { font: 400 var(--text-micro)/1.2 var(--font-mono); color: var(--color-dim); }
+.truth-item[data-tone="warn"] .truth-val { color: var(--color-warn); }
+.truth-item[data-tone="rec"] .truth-sub { color: var(--color-bad); }
+.truth-item[data-tone="rec"] .truth-sub::before { content: ""; display: inline-block; width: .5em; height: .5em; margin-right: .45em;
+  border-radius: 50%; background: var(--color-bad); animation: truth-rec 1.6s ease-in-out infinite; }
+.truth-replay { align-self: center; font: 600 var(--text-small)/1 var(--font-ui);
+  color: var(--color-replay); background: var(--color-replay-wash); border: var(--hairline) solid var(--color-replay);
+  border-radius: var(--radius-pill); padding: 8px 14px; }
+.truth-replay[hidden] { display: none; }
+.truth-strip[data-stale="true"] .truth-val { color: var(--color-faint); }
+@keyframes truth-rec { 50% { opacity: .25; } }
+@media (max-width: 899px) {
+  .truth-strip { justify-content: flex-start; }
+  .truth { gap: var(--space-2) var(--space-4); }
+}
+
+/* ---------- the sheet: 720 px from the right at desktop widths, full screen on a phone ---------- */
+body[data-sheet="diag"] .sheet { inset: 0; max-height: none; height: 100dvh; width: 100%; border-top: 0; overflow-y: auto;
+  overscroll-behavior: contain; background: var(--color-bg-raise); z-index: var(--z-sheet); }
+@media (min-width: 900px) {
+  body[data-sheet="diag"] .sheet { inset: 0 0 0 auto; width: min(720px, 100vw); border-left: var(--hairline) solid var(--color-line);
+    border-radius: var(--radius-sheet) 0 0 var(--radius-sheet); animation: diag-in var(--dur-cut) var(--ease-out); }
+  /* the stage behind recedes under a scrim (T-403: an opacity stack on the stage made its text fail contrast checks) */
+  body[data-sheet="diag"]::after { content: ""; position: fixed; inset: 0; z-index: calc(var(--z-sheet) - 1); pointer-events: none;
+    background: rgb(6 7 8 / .4); animation: mo-fade-in var(--dur-ui) var(--ease-out); }
+}
+@keyframes diag-in { from { transform: translateX(var(--space-8)); opacity: 0; } }
+
+/* ---------- diagnostics body ---------- */
+.diag { display: grid; gap: var(--space-7); padding: var(--space-5) 0 var(--space-8); max-width: 640px; color: var(--color-fg); }
+.diag-head { display: grid; gap: var(--space-2); }
+.diag-head .eyebrow { margin: 0; font: 500 var(--text-small)/1.2 var(--font-ui); color: var(--color-dim); }
+.diag-title { margin: 0; font: var(--weight-display) var(--text-title)/var(--leading-title) var(--font-display);
+  font-stretch: var(--stretch-display); letter-spacing: var(--tracking-display); }
+.diag-note { margin: 0; max-width: 46ch; font-size: var(--text-small); line-height: var(--leading-body); color: var(--color-dim); }
+.diag-block { display: grid; gap: var(--space-3); }
+.diag-h { margin: 0; padding-bottom: var(--space-2); border-bottom: var(--hairline) solid var(--color-line);
+  font: 600 var(--text-small)/1.2 var(--font-ui); color: var(--color-dim); }
+.diag-list { display: grid; margin: 0; padding: 0; }
+.diag-row { display: grid; grid-template-columns: minmax(0, 11ch) minmax(0, 1fr); align-items: baseline; gap: var(--space-4);
+  padding: var(--space-3) 0; border-bottom: var(--hairline) solid var(--color-line); }
+.diag-dt { font: 500 var(--text-small)/1.3 var(--font-ui); color: var(--color-dim); }
+.diag-dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); margin: 0;
+  font: 500 var(--text-lead)/1.15 var(--font-mono); font-variant-numeric: var(--numeric); letter-spacing: -.01em; overflow-wrap: anywhere; }
+.diag-val { min-width: 3ch; }
+.diag-sub { flex-basis: 100%; font: 400 var(--text-small)/1.35 var(--font-mono); letter-spacing: 0; color: var(--color-dim); }
+.diag-sub[hidden], .diag-flag[hidden] { display: none; }
+.diag-row[data-tone="warn"] .diag-val { color: var(--color-warn); }
+.diag-row[data-key="rev"] .diag-val { font-size: var(--text-body); line-height: 1.4; }
+.diag-flag { font: 600 var(--text-small)/1 var(--font-ui); padding: 4px 9px;
+  border-radius: var(--radius-pill); border: var(--hairline) solid var(--color-line); color: var(--color-dim); }
+.diag-flag[data-state="steady"] { color: var(--color-focus); border-color: color-mix(in oklab, var(--color-focus) 55%, transparent); }
+.diag-pins .diag-dd { font-size: var(--text-body); }
+
+/* confidence meter: the fill is a transform; the unmeasured track stays empty */
+.diag-meter { flex: 1 0 100%; order: 2; height: 6px; border-radius: var(--radius-pill); background: var(--color-line); overflow: hidden; }
+.diag-meter-fill { display: block; height: 100%; width: 100%; transform-origin: 0 50%; transform: scaleX(0);
+  background: var(--color-focus); transition: transform var(--dur-quick) var(--ease-out); }
+.diag-meter[data-empty="true"] .diag-meter-fill { background: var(--color-idle); }
+.diag-row[data-key="confidence"] .diag-val { order: 1; }
+.diag-row[data-key="confidence"] .diag-sub { order: 3; }
+
+/* fallback log: newest first, time + what happened */
+.diag-log { display: grid; margin: 0; padding: 0; list-style: none; max-height: 40dvh; overflow-y: auto; }
+.diag-log-line { display: grid; grid-template-columns: 9ch minmax(0, 1fr); gap: var(--space-4); padding: var(--space-2) 0;
+  border-bottom: var(--hairline) solid var(--color-line); font: 400 var(--text-small)/1.4 var(--font-mono); }
+.diag-log-at { color: var(--color-faint); font-variant-numeric: var(--numeric); }
+.diag-log-text { overflow-wrap: anywhere; }
+.diag-log-empty { padding: var(--space-2) 0; color: var(--color-dim); font: 500 var(--text-lead)/1 var(--font-mono); }
+
+.diag[data-stale="true"] .diag-val { color: var(--color-faint); }
+
+@media (max-width: 899px) {
+  .diag { padding-top: var(--space-6); max-width: none; }
+  .diag-row { grid-template-columns: 1fr; gap: var(--space-1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .diag-meter-fill, body[data-sheet="diag"] .stage { transition: none; }
+  body[data-sheet="diag"] .sheet, .truth-item[data-tone="rec"] .truth-sub::before { animation: none; }
+}

@@ -1,0 +1,181 @@
+/* Phone (T-351): the companion (mirror of the stage) and Solo. 390 px first; the laptop's QR card (.pl-*) too.
+   Type carries the screen: one state word, the person, the captions. Colour is state, never decoration:
+   amber = the room (Raw), green = isolated, grey = not live. Controls sit in the thumb zone. */
+
+.screen-phone { min-height: 0; }
+
+.phone {
+  --tone: var(--color-dim);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto auto;
+  gap: var(--space-5);
+  min-height: calc(100dvh - 72px - var(--safe-t, 0px)); /* under the shell's header, like Listen: the controls stay in view */
+  padding: max(var(--space-4), env(safe-area-inset-top)) max(var(--space-4), env(safe-area-inset-right))
+    max(var(--space-4), env(safe-area-inset-bottom)) max(var(--space-4), env(safe-area-inset-left));
+  color: var(--color-fg);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+.phone[data-tone="focus"] { --tone: var(--color-focus); }
+.phone[data-tone="raw"] { --tone: var(--color-raw); }
+.phone[data-tone="warn"] { --tone: var(--color-warn); }
+.phone[data-tone="bad"] { --tone: var(--color-bad); }
+.phone[data-tone="work"] { --tone: var(--color-fg); }
+.phone[data-tone="idle"] { --tone: var(--color-dim); }
+
+
+/* ---------- top line ---------- */
+.ph-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 28px; }
+.ph-link { display: flex; align-items: center; gap: var(--space-2); margin: 0;
+  font: 500 14px/1.2 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
+.ph-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-faint); flex: none; }
+.phone[data-watch="open"] .ph-dot { background: var(--tone); }
+.phone[data-watch="reconnecting"] .ph-dot { background: var(--color-bad); }
+.ph-replay { margin: 0; padding: 6px 12px; border-radius: var(--radius-control, 4px);
+  font: 800 14px/1 var(--font-display); color: var(--color-bg); background: var(--color-fg); }
+
+/* ---------- the hero: what the stage is doing ---------- */
+.ph-hero { align-self: center; display: grid; gap: var(--space-2); min-width: 0; }
+.ph-stage { margin: 0; font: 500 var(--text-body)/1.3 var(--font-ui); color: var(--color-dim); min-height: 1.3em; }
+.ph-word {
+  margin: 0;
+  font: 800 clamp(56px, 17vw, 132px)/.86 var(--font-display);
+  letter-spacing: -.05em;
+  color: var(--tone);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  transition: color .45s var(--ease-out);
+}
+.phone[data-mode="quiet"][data-live="true"] .ph-word { font-size: clamp(44px, 13vw, 96px); }
+.ph-who { margin: 0; font: 700 var(--text-title)/1 var(--font-display); letter-spacing: -.03em; }
+.ph-sentence { margin: var(--space-2) 0 0; max-width: 34ch; font: 400 var(--text-small)/1.45 var(--font-ui); color: var(--color-dim); }
+.ph-target { margin: 0; font: 500 14px/1.4 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
+.ph-target[hidden], .ph-cap-note:empty { display: none; }
+
+/* ---------- captions: a column of type, newest last and brightest ---------- */
+.ph-captions { display: grid; gap: var(--space-2); border-top: 1px solid var(--color-line); padding-top: var(--space-3); }
+.ph-cap-head { display: flex; justify-content: space-between; gap: var(--space-3); margin: 0;
+  font: 500 14px/1.2 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
+.ph-cap-note { text-align: right; color: var(--color-faint); }
+.ph-cap-lines { display: grid; gap: 4px; max-height: 7.5em; overflow: hidden; align-content: end; }
+.ph-cap { margin: 0; font: 500 var(--text-lead)/1.3 var(--font-ui); color: var(--color-dim);
+  animation: ph-rise var(--dur-ui) var(--ease-out) backwards; }
+.ph-cap:last-child { color: var(--color-fg); }
+.ph-cap.partial { color: var(--color-dim); font-style: italic; }
+.ph-cap.empty { font-size: var(--text-small); color: var(--color-faint); animation: none; }
+.phone[data-mode="quiet"][data-live="true"] .ph-cap-lines { max-height: 12em; }
+.phone[data-mode="quiet"][data-live="true"] .ph-cap { font-size: clamp(1.375rem, 6.2vw, 2rem); }
+@keyframes ph-rise { from { opacity: 0; transform: translateY(6px); } }
+
+/* ---------- controls ---------- */
+.ph-controls { display: grid; gap: var(--space-2); }
+.ph-row { display: flex; gap: var(--space-2); }
+.ph-row > .ph-btn { flex: 1 1 0; }
+.ph-btn {
+  position: relative;
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-bg-raise);
+  color: var(--color-fg);
+  font: 650 1.0625rem/1 var(--font-ui);
+  letter-spacing: -.01em;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out),
+    color var(--dur-quick) var(--ease-out), transform var(--dur-instant) var(--ease-out);
+}
+.ph-btn:active:not(:disabled) { transform: scale(.97); }
+.ph-btn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.ph-btn:disabled { color: var(--color-faint); border-color: transparent; background: transparent; }
+/* pressed is a neutral fill; green only while the stage really plays the isolated person (DESIGN.md, T-356) */
+.ph-btn[aria-pressed="true"] { background: color-mix(in oklab, var(--color-fg) 16%, transparent);
+  border-color: color-mix(in oklab, var(--color-fg) 55%, transparent); color: var(--color-fg); }
+.phone[data-live="true"][data-tone="focus"][data-ab="processed"][data-mode="focus_hq"] :is(.ph-modes .ph-btn[data-act="focus"], .ph-people .ph-btn[data-act="person"])[aria-pressed="true"] {
+  background: var(--color-focus); border-color: var(--color-focus); color: var(--color-on-state); }
+.ph-release { flex: 0 0 auto !important; padding: 0 var(--space-5); }
+.ph-btn[data-flash="sent"] { border-color: var(--color-fg); }
+.ph-btn[data-flash="failed"] { border-color: var(--color-bad); }
+
+.ph-foot { display: flex; gap: var(--space-4); align-items: baseline;
+  font: 500 var(--text-micro)/1 var(--font-mono); color: var(--color-faint); font-variant-numeric: tabular-nums; }
+.ph-leave { margin-left: auto; color: var(--color-dim); text-underline-offset: 3px; }
+
+/* ---------- lobby + Solo ---------- */
+.phone[data-role="lobby"] { grid-template-rows: auto auto 1fr; gap: var(--space-7); }
+.ph-lobby, .ph-solo { display: grid; gap: var(--space-4); align-content: start; }
+.ph-lobby-title { margin: 0; font: 800 clamp(48px, 14vw, 112px)/.9 var(--font-display); letter-spacing: -.05em; }
+.ph-lobby-title .dim { color: var(--color-faint); }
+.ph-lede { margin: 0; max-width: 40ch; font: 400 var(--text-small)/1.5 var(--font-ui); color: var(--color-dim); }
+.ph-sessions { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
+.ph-session { border-bottom: 1px solid var(--color-line); }
+.ph-session.empty { padding: var(--space-4) 0; font: 400 var(--text-small)/1.4 var(--font-ui); color: var(--color-faint); }
+.ph-session-link { display: flex; align-items: baseline; gap: var(--space-3); min-height: 56px; padding: var(--space-4) 0;
+  color: var(--color-fg); text-decoration: none; }
+.ph-session-client { font: 650 var(--text-lead)/1 var(--font-ui); }
+.ph-session-id { font: 500 var(--text-micro)/1 var(--font-mono); color: var(--color-dim); }
+.ph-session-go { margin-left: auto; font: 600 var(--text-small)/1 var(--font-ui); color: var(--color-fg); }
+.ph-solo { border-top: 1px solid var(--color-line); padding-top: var(--space-5); }
+.ph-solo-title { display: flex; align-items: baseline; gap: var(--space-3); margin: 0;
+  font: 800 var(--text-title)/1 var(--font-display); letter-spacing: -.03em; }
+.ph-tag { font: 500 14px/1 var(--font-ui); letter-spacing: 0; color: var(--color-dim); }
+.ph-solo-start { justify-self: start; min-width: 12rem; }
+.ph-solo-why { margin: 0; max-width: 42ch; font: 400 var(--text-small)/1.45 var(--font-ui); color: var(--color-dim); }
+.ph-solo-why[data-kind="refused"] { color: var(--color-warn); }
+.ph-solo-live { display: grid; gap: var(--space-3); }
+.ph-solo-state { margin: 0; font: 800 clamp(36px, 10vw, 72px)/.95 var(--font-display); letter-spacing: -.04em; color: var(--color-fg); }
+.ph-solo-facts, .ph-solo-lock { margin: 0; font: 500 var(--text-micro)/1.4 var(--font-mono); color: var(--color-dim); }
+
+/* wider screens: the companion stays a column, centred (a tablet or a laptop opening the link) */
+@media (min-width: 720px) {
+  .phone { max-width: 640px; margin: 0 auto; }
+}
+
+/* ---------- the laptop's QR card on Listen (connect.js) ---------- */
+.pl { position: relative; margin-left: auto; }
+.pl-toggle {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--color-line); border-radius: var(--radius-control, 4px); background: transparent; color: var(--color-dim);
+  font: 600 13px/1 var(--font-ui); cursor: pointer;
+  transition: color var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out);
+}
+.pl-toggle:hover, .pl[data-open="true"] .pl-toggle { color: var(--color-fg); border-color: var(--color-dim); }
+.pl-toggle:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.pl-toggle-glyph { width: 9px; height: 14px; border: 1.5px solid currentColor; border-radius: 2.5px; }
+.pl-card {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 20;
+  display: grid; gap: 10px; width: 280px; padding: 18px;
+  /* T-403: one defined edge, no shadow (a hairline plus a blur read as generated UI); the sheet radius */
+  border: 1px solid color-mix(in oklab, var(--color-fg) 22%, transparent); border-radius: var(--radius-sheet, 10px); background: var(--color-bg-raise);
+  transform-origin: top right;
+  animation: pl-in var(--dur-ui) var(--ease-out) backwards;
+}
+.pl-card[hidden] { display: none; }
+@keyframes pl-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.pl-eyebrow { margin: 0; font: 500 14px/1 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
+.pl-title { margin: 0; font: 700 18px/1.15 var(--font-display); letter-spacing: -.02em; color: var(--color-fg); }
+.pl-code { aspect-ratio: 1; padding: 10px; border-radius: 6px; background: #fff; }
+.pl-code:empty { background: var(--color-bg); border: 1px dashed var(--color-line); }
+.pl-code svg { display: block; width: 100%; height: 100%; }
+.pl-status { margin: 0; font: 500 12px/1.35 var(--font-mono); color: var(--color-dim); }
+.pl-url { font: 500 12px/1.35 var(--font-mono); color: var(--color-fg); word-break: break-all; }
+.pl-fine { margin: 0; font: 400 12px/1.45 var(--font-ui); color: var(--color-faint); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-cap, .pl-card { animation: none; }
+  .ph-btn:active:not(:disabled) { transform: none; }
+}
+
+/* the companion is a single-purpose remote: the shell's screen nav would only lead off the mirror */
+body[data-phone="companion"] #nav { display: none; }
+.ph-people .ph-btn { white-space: nowrap; padding: 0 var(--space-3); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* the QR is the laptop's: a phone showing Listen is already the device in hand (T-356) */
+@media (max-width: 600px) { .ls-top .pl { display: none; } }
+/* the stage in Quiet plays nothing: the mirrored word is not green (same as Listen, T-356) */
+.phone[data-mode="quiet"]:is([data-tone="focus"], [data-tone="raw"]) { --tone: var(--color-fg); }
+
+/* T-388: on a laptop the companion column sits on the shared stage; an opaque column cut the scene with a hard edge */
+@media (min-width: 761px) { .phone { background: transparent; } }

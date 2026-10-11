@@ -1,0 +1,192 @@
+/* Welcome (T-366): the first frame a judge sees. Type leads: one condensed hero line bottom-left, the
+   press-and-hold disc beside three plain facts, the sound field right of centre, flat until the mic streams.
+   Classes are wl-* because app.css still styles the shell's built-in welcome (.hold, .field, .welcome).
+   Layout and values follow web/app/DESIGN_SPEC.md 5.1 and comp/welcome.html. Transform/opacity motion only. */
+
+/* the ring's progress is a registered number so letting go can drain it with a transition */
+@property --wl-p { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.screen-welcome { padding-bottom: 0; }
+
+.wl {
+  --field-x: 64%;
+  --field-y: 42%;
+  --field-size: min(78vh, 62vw);
+  --disc: 168px;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: end;
+  min-height: calc(100dvh - 72px - var(--safe-t, 0px));
+  padding-bottom: calc(var(--safe-b, 0px) + clamp(28px, 6vh, 72px));
+}
+
+/* ---------- sound field (static placeholder until scene.js, T-349) ---------- */
+/* scene.js (motion.js sets html.has-scene) draws the real field and its label behind the stage: this stand-in gives way */
+html.has-scene .wl-field,
+html.has-scene .wl-field-label { display: none; }
+/* --wl-level 0..1 is the real mic peak (24 dB/s release, mapped -60..-6 dBFS); 0 and grey while idle. */
+.wl-field {
+  --wl-level: 0;
+  --ring: var(--color-idle, #3a3f45);
+  position: fixed;
+  z-index: -1;
+  left: var(--field-x);
+  top: var(--field-y);
+  width: var(--field-size);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: repeating-radial-gradient(circle,
+    transparent 0 calc(7.2% - 1px),
+    color-mix(in oklab, var(--ring) 80%, transparent) calc(7.2% - 1px) 7.2%);
+  -webkit-mask-image: radial-gradient(circle, #000 calc(16% + var(--wl-level) * 24%), transparent calc(44% + var(--wl-level) * 22%));
+          mask-image: radial-gradient(circle, #000 calc(16% + var(--wl-level) * 24%), transparent calc(44% + var(--wl-level) * 22%));
+}
+.wl-field[data-live="live"] { --ring: color-mix(in oklab, var(--color-fg) calc(22% + var(--wl-level) * 60%), var(--color-idle, #3a3f45)); }
+.wl-field[data-live="replay"] { --ring: var(--color-replay, #b9a6ff); opacity: 0.5; }
+/* the core: a light that only exists when there is level to show */
+.wl-field-core {
+  width: 12%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--ring) 90%, transparent);
+  background: radial-gradient(circle, color-mix(in oklab, var(--color-fg) calc(var(--wl-level) * 55%), transparent), transparent 70%);
+  scale: calc(1 + var(--wl-level) * 0.6);
+}
+.wl-field-label {
+  position: fixed;
+  z-index: -1;
+  left: var(--field-x);
+  top: calc(var(--field-y) + var(--field-size) * 0.135);
+  translate: -50% 0;
+  color: var(--color-faint);
+  font: var(--text-micro, 12px)/1.2 var(--font-mono);
+  font-variant-numeric: var(--numeric, tabular-nums);
+  white-space: nowrap;
+  padding: 2px 8px;
+  background: var(--color-bg); /* knock the ring line out behind the words */
+  pointer-events: none;
+}
+
+/* ---------- type ---------- */
+.wl-main {
+  display: grid;
+  gap: clamp(32px, 6vh, 64px);
+  position: relative;
+  z-index: var(--z-content, 10);
+}
+.wl-hero {
+  margin: 0;
+  max-width: 13ch;
+  font-family: var(--font-display);
+  font-size: var(--text-hero, clamp(52px, 7vw, 136px));
+  font-stretch: var(--stretch-display, 72%);
+  font-weight: var(--weight-display, 640);
+  line-height: 0.92;
+  letter-spacing: var(--tracking-display, -0.035em);
+  text-wrap: balance;
+  animation: wl-arrive var(--dur-cut, 520ms) var(--ease-out) backwards; /* backwards: no blur(0) layer left on the type */
+}
+
+.wl-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6, 32px) var(--space-8, 64px);
+  animation: wl-arrive var(--dur-cut, 520ms) var(--ease-out) 80ms backwards;
+}
+.wl-start { display: grid; justify-items: center; gap: var(--space-3, 12px); padding-left: 12px; } /* room for the ring */
+.wl-key { margin: 0; font-size: var(--text-small, 14px); color: var(--color-dim); }
+.wl-key kbd {
+  font: 500 var(--text-micro, 12px)/1 var(--font-mono);
+  padding: 4px 7px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  color: var(--color-fg);
+}
+@media (pointer: coarse), (max-width: 720px) { .wl-key { display: none; } }
+
+.wl-facts {
+  display: grid;
+  gap: var(--space-2, 8px);
+  max-width: 38ch;
+  color: var(--color-dim);
+  font-size: var(--text-lead, 20px);
+  line-height: 1.3;
+}
+.wl-facts p { margin: 0; }
+.wl-facts strong { color: var(--color-fg); font-weight: var(--weight-strong, 600); }
+.wl-install { font-size: var(--text-small, 14px); color: var(--color-dim); }
+.wl-problem { font-size: var(--text-body, 16px); color: var(--color-bad); max-width: 46ch; }
+.wl-problem:empty { display: none; }
+.wl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- the disc: press and hold, the ring is the press's own time ---------- */
+.wl-disc {
+  --wl-p: 0;
+  position: relative;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  width: var(--disc);
+  aspect-ratio: 1;
+  padding: var(--space-4, 16px);
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-fg);
+  color: var(--color-on-state, #060708);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: scale var(--dur-quick, 180ms) var(--ease-out), --wl-p var(--dur-quick, 180ms) var(--ease-in);
+}
+.wl-disc-label { font-weight: var(--weight-strong, 600); font-size: var(--text-lead, 20px); line-height: 1.08; text-wrap: balance; }
+.wl-disc-sub { font-size: var(--text-micro, 12px); opacity: 0.72; }
+.wl-ring {
+  position: absolute;
+  inset: -11px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-fg) calc(var(--wl-p) * 1turn), var(--color-line) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+          mask: radial-gradient(closest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  pointer-events: none;
+}
+@media (hover: hover) { .wl-disc[data-phase="idle"]:hover, .wl-disc[data-phase="failed"]:hover { scale: 1.02; } }
+/* while held the ring follows the press frame by frame (no easing on top of real time) */
+.wl-disc[data-phase="holding"] { scale: 0.97; transition: scale var(--dur-quick, 180ms) var(--ease-out); }
+.wl-disc[data-phase="armed"] { scale: 0.97; }
+.wl-disc[data-phase="starting"], .wl-disc[data-phase="full"] { cursor: progress; }
+.wl-disc[data-phase="failed"] .wl-ring { background: conic-gradient(var(--color-bad) 0 1turn); opacity: 0.6; }
+.wl-disc:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 16px; border-radius: 50%; }
+
+/* ---------- the unlock: the stillness before the cut ---------- */
+.wl[data-phase="done"] .wl-facts, .wl[data-phase="done"] .wl-key { opacity: 0.4; transition: opacity var(--dur-hold, 240ms) var(--ease-out); }
+
+@keyframes wl-arrive {
+  from { opacity: 0; filter: blur(var(--motion-blur, 10px)); translate: 0 var(--motion-distance, 24px); }
+}
+
+/* ---------- 390 px: one column, field up top and bleeding off both edges ---------- */
+@media (max-width: 720px) {
+  .wl { --field-x: 50%; --field-y: 24%; --field-size: 120vw; --disc: 140px; min-height: calc(100dvh - 60px - var(--safe-t, 0px)); }
+  .wl-row { gap: var(--space-5, 24px); }
+  .wl-disc-label { font-size: var(--text-body, 16px); }
+  .wl-facts { font-size: var(--text-body, 16px); }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .wl { --disc: 120px; }
+  .wl-hero { font-size: clamp(40px, 9vh, 96px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-hero, .wl-row { animation: none; }
+  .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; }
+}

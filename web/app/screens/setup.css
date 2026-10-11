@@ -1,0 +1,161 @@
+/* Setup screen (T-348). The level meter is the one moving thing; everything around it is still. Its band
+   (data-band on .setup: idle | quiet | good | clipping | stalled) colours the word, the fill and a faint wash.
+   Tokens come from app.css (and tokens.css when it lands). */
+.setup {
+  --su-band: var(--color-faint);
+  --su-line: var(--color-line, #1d2128);
+  position: relative; display: grid; align-content: start; gap: clamp(28px, 5vh, 64px); overflow-x: clip; /* the meter's light */
+  padding-top: clamp(16px, 4vh, 48px); max-width: 1480px; width: 100%; margin-inline: auto;
+}
+.setup[data-band="good"] { --su-band: var(--color-fg); } /* green is reserved for "you hear the person" (T-365 P1-6) */
+.setup[data-band="quiet"] { --su-band: var(--color-warn); }
+.setup[data-band="clipping"], .setup[data-band="stalled"] { --su-band: var(--color-bad); }
+
+.su-head { display: grid; gap: 12px; max-width: 60ch; }
+.su-title { margin: 0; font: 700 var(--text-title)/.95 var(--font-display); letter-spacing: -.03em; text-wrap: balance; }
+.su-lede { margin: 0; color: var(--color-dim); font-size: clamp(16px, 1.3vw, 19px); }
+.su-h2 { margin: 0 0 18px; font: 600 15px/1.2 var(--font-ui); color: var(--color-fg); }
+
+.su-grid { display: grid; gap: clamp(32px, 5vh, 56px) clamp(32px, 5vw, 96px); grid-template-columns: 1fr; }
+@media (min-width: 1024px) {
+  .su-grid { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); }
+  .su-meter { grid-column: 1; grid-row: 1; }
+  .su-devices { grid-column: 1; grid-row: 2; }
+  .su-check-panel { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+/* ---------- the meter ---------- */
+.su-meter { position: relative; display: grid; gap: 14px; isolation: isolate; }
+.su-meter::before { /* the band's light, behind the word; transparent while idle */
+  content: ""; position: absolute; z-index: -1; inset: -20% -10% -10% -30%; pointer-events: none;
+  background: radial-gradient(50% 60% at 30% 40%, color-mix(in oklab, var(--su-band) 16%, transparent), transparent 70%);
+  opacity: 0; transition: opacity .5s var(--ease-out), background .5s var(--ease-out);
+}
+.su-meter::before { display: none; } /* no coloured light leaking from the meter (T-365 anti-glow) */
+.su-word { margin: 0; font: 700 clamp(64px, 10vw, 168px)/.86 var(--font-display); letter-spacing: -.045em;
+  color: var(--su-band); transition: color .3s var(--ease-out); }
+.setup[data-band="idle"] .su-word { color: var(--color-faint); }
+.su-reading { margin: 0; display: flex; align-items: baseline; gap: 12px; }
+.su-db { font: 500 clamp(28px, 3vw, 44px)/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 4ch; }
+.su-unit { color: var(--color-dim); font-size: 14px; }
+
+.su-scale { position: relative; height: 44px; margin: 8px 0 30px; border-radius: 4px; overflow: visible;
+  background: color-mix(in oklab, var(--color-fg) 5%, transparent); }
+.su-zone { position: absolute; top: 0; bottom: 0; }
+.su-zone-quiet { left: 0; width: calc(var(--quiet) * 100%);
+  background: color-mix(in oklab, var(--color-idle, #3a3f45) 45%, transparent); border-radius: 4px 0 0 4px; }
+.su-zone-good { left: calc(var(--quiet) * 100%); width: calc((var(--clip) - var(--quiet)) * 100%); }
+.su-zone-clip { left: calc(var(--clip) * 100%); right: 0; background: color-mix(in oklab, var(--color-bad) 22%, transparent); border-radius: 0 4px 4px 0; }
+.su-fill { position: absolute; inset: 6px auto 6px 0; width: 100%; border-radius: 2px; transform-origin: left center; transform: scaleX(0);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--su-band) 55%, transparent), var(--su-band));
+  will-change: transform; }
+.su-ticks { position: absolute; left: 0; right: 0; top: 100%; height: 26px; margin: 0; padding: 0; list-style: none; }
+.su-ticks li { position: absolute; left: calc(var(--x) * 100%); top: 0; translate: -50% 0; padding-top: 10px;
+  font: 500 11px/1 var(--font-mono); color: var(--color-faint); font-variant-numeric: tabular-nums; }
+.su-ticks li::before { content: ""; position: absolute; left: 50%; top: 0; width: 1px; height: 6px; background: var(--color-faint); }
+.su-ticks li:first-child { translate: 0 0; }
+.su-ticks li:first-child::before { left: 0; }
+.su-band-note { margin: 0; color: var(--color-dim); max-width: 56ch; min-height: 3em; }
+
+.su-mic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 6px; }
+.su-mic-btn { font: 600 16px/1 var(--font-ui); padding: 16px 28px; min-height: 52px; border-radius: var(--radius-control, 4px); cursor: pointer;
+  border: 1px solid var(--color-fg); background: var(--color-fg); color: var(--color-bg);
+  transition: background-color .25s var(--ease-out), color .25s var(--ease-out), transform .3s var(--ease-out); }
+@media (hover: hover) { .su-mic-btn:hover { transform: translateY(-1px); } }
+.su-mic-btn:active { transform: scale(.98); }
+.su-mic-btn[data-on="true"] { background: transparent; color: var(--color-fg); border-color: var(--color-faint); }
+.su-mic-btn:disabled { opacity: .6; cursor: progress; transform: none; }
+.su-mic-problem { margin: 0; flex: 1 1 280px; color: var(--color-bad); font-size: 14px; }
+.su-mic-problem[hidden] { display: none; }
+
+/* ---------- pickers: devices.js markup, restyled. Its own meter, note and badge are replaced by this screen. */
+.su-pickers .devices { display: grid; gap: 14px; margin: 0; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.su-pickers .devices label { display: grid; gap: 8px; font: 500 13px/1.2 var(--font-ui); color: var(--color-dim); }
+.su-pickers .devices select {
+  appearance: none; -webkit-appearance: none; width: 100%; min-height: 52px; padding: 14px 44px 14px 16px;
+  font: 500 16px/1.2 var(--font-ui); color: var(--color-fg); border-radius: 12px; cursor: pointer;
+  border: 1px solid var(--su-line); background-color: var(--color-bg-raise);
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-dim) 50%), linear-gradient(-45deg, transparent 50%, var(--color-dim) 50%);
+  background-size: 6px 6px; background-position: calc(100% - 22px) 52%, calc(100% - 16px) 52%; background-repeat: no-repeat;
+  transition: border-color .2s var(--ease-out);
+}
+@media (hover: hover) { .su-pickers .devices select:hover { border-color: var(--color-dim); } }
+.su-pickers .devices select:disabled { opacity: .5; cursor: not-allowed; }
+.su-pickers .dev-meter, .su-pickers .dev-missing, .su-pickers .dev-bt { display: none; }
+.su-muted, .su-saved { margin: 14px 0 0; color: var(--color-faint); font-size: 13px; }
+/* this screen lists the same lines inline, next to the pickers: the page-level banner would repeat them */
+body[data-screen="setup"] [data-dev-banner] { display: none !important; }
+
+.su-warnings { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.su-warnings[hidden] { display: none; }
+.su-warn { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: baseline; padding: 14px 16px; border-radius: 12px;
+  background: color-mix(in oklab, var(--color-bad) 12%, transparent); border: 1px solid color-mix(in oklab, var(--color-bad) 40%, transparent);
+  font-size: 15px; line-height: 1.4; }
+.su-warn[data-kind="mic"], .su-warn[data-kind="missing"] { background: color-mix(in oklab, var(--color-warn) 10%, transparent);
+  border-color: color-mix(in oklab, var(--color-warn) 40%, transparent); }
+.su-warn[data-kind="info"] { background: color-mix(in oklab, var(--color-fg) 4%, transparent); border-color: var(--su-line); color: var(--color-dim); }
+.su-warn-tag { font: 600 12px/1.4 var(--font-mono); color: var(--color-bad); white-space: nowrap; }
+.su-warn[data-kind="mic"] .su-warn-tag, .su-warn[data-kind="missing"] .su-warn-tag { color: var(--color-warn); }
+.su-warn[data-kind="info"] .su-warn-tag { color: var(--color-dim); }
+
+/* ---------- checks: a preflight sequence, so numbered ---------- */
+.su-check-panel { align-self: start; padding: clamp(24px, 3vw, 36px); border-radius: 20px;
+  background: color-mix(in oklab, var(--color-bg-raise) 80%, transparent); border: 1px solid var(--su-line); }
+.su-checks { list-style: none; margin: 0; padding: 0; counter-reset: check; display: grid; }
+.su-check { counter-increment: check; display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 14px; align-items: baseline;
+  padding: 16px 0; border-top: 1px solid var(--su-line); }
+.su-check:first-child { border-top: 0; padding-top: 0; }
+.su-check-mark { grid-row: span 2; position: relative; width: 22px; height: 22px; border-radius: 50%; align-self: start; margin-top: 1px;
+  border: 1.5px solid var(--color-faint); display: grid; place-items: center; }
+.su-check-mark::after { content: counter(check); font: 600 11px/1 var(--font-mono); color: var(--color-dim); }
+.su-check[data-status="ok"] .su-check-mark { border-color: var(--color-dim); }
+.su-check[data-status="ok"] .su-check-mark::after { content: "✓"; color: var(--color-fg); font-size: 12px; }
+.su-check[data-status="warn"] .su-check-mark { border-color: var(--color-warn); }
+.su-check[data-status="warn"] .su-check-mark::after { content: "!"; color: var(--color-warn); }
+.su-check[data-status="fail"] .su-check-mark { border-color: var(--color-bad); background: color-mix(in oklab, var(--color-bad) 18%, transparent); }
+.su-check[data-status="fail"] .su-check-mark::after { content: "×"; color: var(--color-bad); font-size: 14px; }
+.su-check[data-status="wait"] .su-check-mark { border-style: dashed; }
+.su-check-label { font: 600 17px/1.25 var(--font-ui); }
+.su-check-value { font: 500 14px/1.25 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-dim); text-align: right; }
+.su-check[data-status="ok"] .su-check-value { color: var(--color-fg); }
+.su-check[data-status="warn"] .su-check-value { color: var(--color-warn); }
+.su-check[data-status="fail"] .su-check-value { color: var(--color-bad); }
+.su-check-detail { grid-column: 2 / -1; color: var(--color-dim); font-size: 14px; line-height: 1.45; }
+
+.su-delay { margin: 28px 0 0; padding-top: 24px; border-top: 1px solid var(--su-line); display: grid; gap: 8px; }
+.su-delay-big { font: 600 clamp(20px, 1.8vw, 26px)/1.2 var(--font-display); letter-spacing: -.01em; }
+.su-delay-now { color: var(--color-dim); font-size: 14px; }
+
+.su-foot { display: flex; justify-content: flex-end; }
+.su-next { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; padding: 18px 30px; min-height: 56px; border-radius: var(--radius-control, 4px);
+  font: 600 17px/1 var(--font-ui); color: var(--color-fg); border: 1px solid var(--color-faint);
+  transition: border-color .25s var(--ease-out), background-color .25s var(--ease-out); }
+.su-next::after { content: ""; width: 9px; height: 9px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; rotate: 45deg;
+  transition: translate .3s var(--ease-out); }
+@media (hover: hover) {
+  .su-next:hover { border-color: var(--color-fg); }
+  .su-next:hover::after { translate: 3px 0; }
+}
+.su-mic-btn, .su-next { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.setup[data-ready="true"] .su-next { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+
+@media (max-width: 560px) {
+  .su-scale { height: 36px; }
+  .su-ticks li:nth-child(5) { display: none; } /* -12 collides with -2 at phone width */
+  .su-mic-btn, .su-next { width: 100%; justify-content: center; }
+  .su-check { grid-template-columns: 24px 1fr auto; gap: 4px 10px; }
+}
+/* phone on its side: the word steps down so the meter and its reading share the first screen */
+@media (orientation: landscape) and (max-height: 540px) {
+  .setup { gap: 28px; padding-top: 8px; }
+  .su-title { font-size: clamp(26px, 8dvh, 40px); }
+  .su-word { font-size: clamp(48px, 18dvh, 80px); }
+  .su-meter { grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; align-items: end; }
+  .su-meter > * { grid-column: 1 / -1; }
+  .su-meter > .su-word { grid-column: 1; }
+  .su-meter > .su-reading { grid-column: 2; align-self: end; padding-bottom: 6px; }
+  .su-mic-btn, .su-next { width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .su-fill { transition: none; }
+}

@@ -1,0 +1,333 @@
+/* Listen (T-347): the stage screen. The whole frame takes the A/B colour (amber = Raw, the room; green =
+   Selective) so the back row reads it; one state word carries the screen. Tokens come from app.css /
+   tokens.css (task 1); fallbacks here only where a token may be missing. Transform/opacity motion only. */
+
+.screen-listen { padding-bottom: 0; overflow-x: clip; } /* the halo bleeds off the right edge on a phone, never into a scroll */
+
+.listen {
+  --wash-raw: var(--color-raw, #f0b35a);
+  --wash-focus: var(--color-focus, #4fd1a5);
+  --tone: var(--color-dim);
+  --ab: var(--wash-focus);
+  --rail-h: clamp(52px, 4.4vw, 76px);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto auto;
+  gap: clamp(14px, 2.2vh, 28px);
+  min-height: calc(100dvh - 72px - var(--safe-t, 0px));
+  padding-bottom: calc(var(--safe-b, 0px) + clamp(12px, 2vh, 24px));
+}
+.listen[data-ab="raw"] { --ab: var(--wash-raw); }
+
+/* ---------- the wash: two fixed layers cross-faded by opacity (Raw amber / Selective green) ---------- */
+.ls-wash { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.ls-wash::before, .ls-wash::after {
+  content: ""; position: absolute; inset: 0;
+  transition: opacity .55s var(--ease-film, ease);
+}
+.ls-wash::before {
+  background:
+    radial-gradient(120% 80% at 70% 110%, color-mix(in oklab, var(--wash-focus) 38%, transparent), transparent 64%),
+    linear-gradient(180deg, color-mix(in oklab, var(--wash-focus) 4%, transparent), color-mix(in oklab, var(--wash-focus) 14%, transparent));
+}
+.ls-wash::after {
+  opacity: 0;
+  background:
+    radial-gradient(120% 80% at 70% 110%, color-mix(in oklab, var(--wash-raw) 42%, transparent), transparent 64%),
+    linear-gradient(180deg, color-mix(in oklab, var(--wash-raw) 5%, transparent), color-mix(in oklab, var(--wash-raw) 16%, transparent));
+}
+.listen[data-ab="raw"] .ls-wash::before { opacity: 0; }
+.listen[data-ab="raw"] .ls-wash::after { opacity: 1; }
+/* not streaming: no wash at all, so no colour promises before anything plays (T-388: was 18 %, a green glow at Idle) */
+.listen[data-live="false"] .ls-wash::before, .listen[data-live="false"] .ls-wash::after { opacity: 0; }
+/* T-403: Selective while nobody is isolated plays the cleaned room, not the person: no green wash, white hear line
+   (DESIGN.md T-356: green appears only while the chosen person is isolated and Selective plays) */
+.listen[data-ab="processed"]:not([data-state="isolated"]) { --ab: var(--color-fg); }
+.listen[data-ab="processed"]:not([data-state="isolated"]) .ls-wash::before { opacity: 0; }
+/* REPLAY: a hatched frame, so a recording never passes for the live room */
+.listen[data-replay="true"] .ls-wash {
+  background: repeating-linear-gradient(135deg, color-mix(in oklab, var(--color-fg) 4%, transparent) 0 2px, transparent 2px 22px);
+  box-shadow: inset 0 0 0 3px color-mix(in oklab, var(--color-fg) 22%, transparent);
+}
+/* the shell's chrome follows the wash */
+body[data-screen="listen"]::before { opacity: .35; }
+
+/* ---------- banners and the REPLAY badge ---------- */
+.ls-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 16px; min-height: 0; }
+.ls-banners { display: grid; gap: 8px; flex: 1 1 420px; min-width: 0; }
+.ls-banners:not(:has(.ls-banner:not([hidden]))) { display: none; }
+.ls-banner {
+  --bn: var(--color-bad, #ff6b6b);
+  position: static; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 10px 16px; border-radius: var(--radius-control, 4px);
+  font: 600 clamp(15px, 1.15vw, 22px)/1.3 var(--font-ui);
+  background: var(--color-bg-raise, #15181c); color: var(--color-fg);
+  border: 1px solid color-mix(in oklab, var(--bn) 60%, transparent);
+  animation: ls-drop .35s var(--ease-out, ease) backwards;
+}
+.ls-banner[hidden] { display: none; }
+.ls-banner[data-kind="keys"] { --bn: var(--color-warn, #ffbb55); }
+.ls-banner-text { color: var(--bn); }
+.ls-banner-action { font: 700 15px/1 var(--font-ui); min-height: 44px; padding: 0 18px; border-radius: var(--radius-control, 4px); cursor: pointer;
+  background: transparent; color: var(--color-fg); border: 1px solid color-mix(in oklab, var(--color-fg) 30%, transparent); }
+.ls-banner select { min-height: 44px; max-width: 100%; padding: 0 12px; border-radius: var(--radius-control, 4px); font: 600 15px/1 var(--font-ui);
+  color: var(--color-fg); background: var(--color-bg); border: 1px solid color-mix(in oklab, var(--color-fg) 22%, transparent); }
+@media (max-width: 600px) { .ls-banner { flex-direction: column; align-items: stretch; } .ls-banner-action { width: 100%; } }
+@keyframes ls-drop { from { opacity: 0; transform: translateY(-8px); } }
+
+.ls-replay {
+  margin: 0 0 0 auto; display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 999px;
+  font: 800 clamp(15px, 1.3vw, 24px)/1 var(--font-display); letter-spacing: .02em;
+  color: var(--color-bg); background: var(--color-fg);
+}
+.ls-replay[hidden] { display: none; }
+.ls-replay-dot { width: .6em; height: .6em; border-radius: 2px; background: var(--color-bad, #ff6b6b); }
+
+/* ---------- body: the word on the left, the level halo (or captions) on the right ---------- */
+.ls-body {
+  position: relative; min-height: 0;
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: center; gap: clamp(16px, 3vw, 64px);
+}
+.ls-hero { display: grid; align-content: center; gap: clamp(6px, 1.2vh, 16px); min-width: 0; z-index: 1; container-type: inline-size; }
+.ls-hear { margin: 0; font: 500 clamp(15px, 1.25vw, 26px)/1.25 var(--font-ui); color: var(--color-dim); }
+.listen[data-live="true"] .ls-hear { color: color-mix(in oklab, var(--ab) 70%, var(--color-fg)); }
+
+/* The state word: >= 96 px at 1920 (here ~137 px), ~52 px at 390. Capped at 15 % of the hero's width: the longest
+   single word ("Reconnecting", 6.5 em in Archivo 800) still fits a 320 px phone without breaking mid-word. */
+.ls-word {
+  margin: 0;
+  font: 800 min(clamp(52px, calc(5.6vw + 30px), 216px), 15cqi)/.88 var(--font-display);
+  letter-spacing: -.045em;
+  color: var(--tone);
+  text-wrap: balance;
+  transition: color .45s var(--ease-out, ease);
+}
+.listen[data-tone="focus"] { --tone: var(--wash-focus); }
+.listen[data-tone="raw"] { --tone: var(--wash-raw); }
+.listen[data-tone="work"] { --tone: var(--color-fg); }
+.listen[data-tone="warn"] { --tone: var(--color-warn, #ffbb55); }
+.listen[data-tone="bad"] { --tone: var(--color-bad, #ff6b6b); }
+.listen[data-tone="idle"] { --tone: color-mix(in oklab, var(--color-fg) 46%, var(--color-bg)); }
+
+.ls-who { margin: 0; font: 700 clamp(30px, calc(2.6vw + 14px), 96px)/1 var(--font-display); letter-spacing: -.03em; color: var(--color-fg); }
+.ls-who[hidden] { display: none; }
+.ls-gate { margin: clamp(6px, 1vh, 14px) 0 0; padding: 4px 12px; border-radius: var(--radius-pill, 4px); font: 700 clamp(12px, .9vw, 16px)/1.2 var(--font-ui); letter-spacing: .08em; justify-self: start; align-self: start; display: inline-block; }
+.ls-gate[hidden] { display: none; }
+/* T-382's gate pill in the app's colours (T-356): an outline, no fill; green only for SOLO (shown only while
+   Selective plays the isolated person), warn-yellow for ducked (amber means Raw), bad-red for unsure */
+.ls-gate[data-gate] { border: 1px solid currentColor; background: transparent; }
+.ls-gate[data-gate="solo"] { color: var(--color-focus); }
+.ls-gate[data-gate="ducked"] { color: var(--color-warn); }
+.ls-gate[data-gate="unsure"] { color: var(--color-bad); }
+.ls-sentence { margin: clamp(4px, 1vh, 12px) 0 0; max-width: 38ch; font: 500 clamp(17px, 1.35vw, 28px)/1.3 var(--font-ui); color: var(--color-fg); }
+.ls-note { margin: 0; font: 600 clamp(14px, 1.05vw, 20px)/1.3 var(--font-ui); color: var(--color-warn, #ffbb55); }
+.ls-note[hidden] { display: none; }
+.ls-target { margin: 0; font: 500 clamp(14px, 1.05vw, 20px)/1.3 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
+.ls-target[hidden] { display: none; }
+
+/* level halo: radius follows the measured mic peak (--lvl 0..1), brightness the pick confidence (--conf).
+   Flat and grey while the mic is not streaming. */
+.ls-halo {
+  --lvl: 0; --conf: 0;
+  position: relative; justify-self: center; display: grid; place-items: center;
+  width: min(100%, 38vw, 560px); aspect-ratio: 1; pointer-events: none;
+}
+.ls-halo-ring, .ls-halo-core { grid-area: 1 / 1; border-radius: 50%; will-change: transform; }
+.ls-halo-ring {
+  width: calc(var(--k) * 33%); aspect-ratio: 1;
+  border: 1.5px solid color-mix(in oklab, var(--ab) calc(70% - var(--k) * 15%), transparent);
+  transform: scale(calc(.82 + var(--lvl) * (.1 + var(--k) * .09)));
+  transition: transform 90ms linear, border-color .45s var(--ease-out, ease), opacity .45s;
+}
+.ls-halo-core {
+  width: 6%; aspect-ratio: 1;
+  background: color-mix(in oklab, var(--ab) calc(30% + var(--conf) * 60%), transparent);
+  transform: scale(calc(.7 + var(--lvl) * .6));
+  transition: transform 90ms linear;
+}
+/* scene.js (html.has-scene) draws the one level-driven field behind the stage: the CSS stand-in keeps its cell only */
+html.has-scene .ls-halo { visibility: hidden; }
+.ls-halo[data-live="off"] .ls-halo-ring { border-color: color-mix(in oklab, var(--color-fg) 9%, transparent); transform: none; }
+.ls-halo[data-live="off"] .ls-halo-core { background: color-mix(in oklab, var(--color-fg) 9%, transparent); transform: none; }
+
+/* ---------- captions (Quiet; also any caption that arrived) ---------- */
+.ls-captions {
+  grid-column: 2; grid-row: 1; align-self: center; z-index: 1;
+  display: grid; gap: 14px; padding: clamp(14px, 1.6vw, 28px) 0 0;
+  border-top: 1px solid color-mix(in oklab, var(--color-fg) 22%, transparent);
+}
+.ls-captions[hidden] { display: none; }
+.listen[data-captions="true"] .ls-halo { grid-column: 2; grid-row: 1; opacity: .35; }
+.ls-cap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ls-cap-speaker { font: 700 clamp(18px, 1.5vw, 30px)/1 var(--font-display); color: var(--wash-focus); }
+.ls-cap-source { font: 500 13px/1.2 var(--font-ui); color: var(--color-dim); }
+.ls-cap-warn { margin: 0; font: 600 clamp(15px, 1.1vw, 21px)/1.3 var(--font-ui); color: var(--color-warn, #ffbb55); }
+/* paused / last-session lines step back by colour, not opacity (T-404: opacity .45 put them at 2.0-4.2:1) */
+.ls-cap-lines:is([data-paused="true"], [data-stale="true"]) .ls-cap { color: var(--color-dim); }
+.ls-cap-lines:is([data-paused="true"], [data-stale="true"]) .ls-cap:not(:last-child) { color: var(--color-faint); }
+.ls-cap-warn[hidden] { display: none; }
+.ls-cap-lines { display: grid; gap: 10px; }
+.ls-cap { margin: 0; font: 600 clamp(22px, 2.1vw, 46px)/1.22 var(--font-display); letter-spacing: -.01em; color: var(--color-fg);
+  animation: ls-rise .4s var(--ease-out, ease) backwards; }
+.ls-cap:not(:last-child) { color: color-mix(in oklab, var(--color-fg) 55%, transparent); }
+.ls-cap.partial { color: color-mix(in oklab, var(--color-fg) 72%, transparent); }
+.ls-cap.empty { font: 500 clamp(16px, 1.2vw, 22px)/1.35 var(--font-ui); color: var(--color-dim); animation: none; }
+@keyframes ls-rise { from { opacity: 0; transform: translateY(6px); filter: blur(6px); } } /* blur-fade, the newest line only */
+/* Quiet: the frame belongs to the captions; the word steps down but stays >= 96 px at 1920 */
+.listen[data-mode="quiet"] .ls-word { font-size: clamp(44px, calc(4vw + 20px), 160px); }
+.listen[data-mode="quiet"] .ls-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+/* Quiet plays nothing, so nothing is green or amber: the word, the hear line, the wash and the speaker go neutral
+   (the scene dims itself, scene.js quietDim). The captions are type under a hairline, no plate: over the dimmed
+   field a near-opaque plate (motion.css, T-379) read as a black box. */
+.listen[data-mode="quiet"] { --ab: var(--color-fg); }
+.listen[data-mode="quiet"]:is([data-tone="focus"], [data-tone="raw"]) { --tone: var(--color-fg); }
+.listen[data-mode="quiet"] .ls-wash::before, .listen[data-mode="quiet"] .ls-wash::after { opacity: 0; }
+.listen[data-mode="quiet"] .ls-cap-speaker { color: var(--color-fg); }
+html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
+
+/* ---------- the rail: A/B, mode, person, Start ---------- */
+.ls-rail { display: flex; flex-wrap: wrap; align-items: flex-end; gap: clamp(14px, 1.8vw, 32px); }
+.ls-rail-cell { display: grid; gap: 8px; min-width: 0; }
+.ls-rail-start { margin-left: auto; }
+.ls-rail-label { font: 500 13px/1 var(--font-ui); color: var(--color-dim); }
+.ls-group { display: flex; gap: 4px; padding: 4px; border-radius: calc(var(--radius-control, 4px) + 2px);
+  background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-fg) 12%, transparent); }
+.ls-seg {
+  display: inline-flex; align-items: center; gap: 12px;
+  min-height: var(--rail-h); padding: 0 clamp(16px, 1.5vw, 28px); border: 0; border-radius: var(--radius-control, 4px); cursor: pointer;
+  font: 700 clamp(17px, 1.3vw, 26px)/1 var(--font-display); letter-spacing: -.01em;
+  color: var(--color-fg); background: transparent;
+  transition: background-color .3s var(--ease-out, ease), color .3s var(--ease-out, ease), transform .2s var(--ease-out, ease);
+}
+@media (hover: hover) { .ls-seg:hover:not(:disabled) { background: color-mix(in oklab, var(--color-fg) 8%, transparent); } }
+.ls-seg:active:not(:disabled) { transform: scale(.97); }
+.ls-seg:disabled { cursor: not-allowed; color: var(--color-faint); }
+/* Pressed is a neutral fill; colour is a promise about the sound, so it only appears when it is true: amber while the
+   room plays (Raw, live), green while the chosen person is isolated and Selective plays (T-365 P0-3, P1-5). */
+.ls-seg[aria-pressed="true"] { background: color-mix(in oklab, var(--color-fg) 16%, transparent); color: var(--color-fg);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--color-fg) 55%, transparent); }
+.listen[data-live="true"]:not([data-mode="quiet"]) .ls-ab .ls-seg[data-ab="raw"][aria-pressed="true"] { background: var(--wash-raw); color: #1a1205; box-shadow: none; }
+.listen[data-live="true"][data-state="isolated"][data-tone="focus"][data-mode="focus_hq"] :is(.ls-ab .ls-seg[data-ab="processed"], .ls-people .ls-seg[data-person])[aria-pressed="true"] {
+  background: var(--wash-focus); color: #04140e; box-shadow: none; }
+.ls-mode-note { margin: 0; max-width: 40ch; font: 500 14px/1.35 var(--font-ui); color: var(--color-dim); }
+.ls-kbd { font: 600 11px/1 var(--font-mono); padding: 5px 7px; border-radius: 6px; white-space: nowrap;
+  background: color-mix(in oklab, currentColor 12%, transparent); color: var(--color-dim); }
+
+.ls-start {
+  min-height: calc(var(--rail-h) + 10px); padding: 0 clamp(22px, 2vw, 40px); border: 0; border-radius: var(--radius-control, 4px); cursor: pointer;
+  font: 800 clamp(18px, 1.4vw, 28px)/1 var(--font-display); letter-spacing: -.01em;
+  color: var(--color-bg); background: var(--color-fg);
+  transition: transform .2s var(--ease-out, ease), background-color .3s;
+}
+.ls-start[hidden] { display: none; }
+@media (hover: hover) { .ls-start:hover:not(:disabled) { transform: scale(1.03); } }
+.ls-start:disabled { opacity: .6; cursor: progress; }
+.ls-start[data-kind="stop"] { background: transparent; color: var(--color-fg); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--color-fg) 40%, transparent); }
+
+/* ---------- truth strip: measured numbers only ---------- */
+.ls-truth {
+  margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px clamp(16px, 2.2vw, 40px);
+  padding-top: clamp(10px, 1.4vh, 16px);
+  border-top: 1px solid color-mix(in oklab, var(--color-fg) 10%, transparent);
+}
+.ls-fact { display: inline-flex; align-items: baseline; gap: 8px; }
+.ls-fact dt { font: 500 12px/1 var(--font-ui); color: var(--color-dim); }
+.ls-fact dd { margin: 0; font: 600 clamp(13px, .9vw, 17px)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-fg); }
+.ls-fact-diag { margin-left: auto; }
+.ls-diag { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-control, 4px); cursor: pointer;
+  font: 600 13px/1 var(--font-ui); color: var(--color-dim); background: none; border: 1px solid color-mix(in oklab, var(--color-fg) 14%, transparent); }
+@media (hover: hover) { .ls-diag:hover { color: var(--color-fg); } }
+/* touch: no double-tap zoom wait, no text selection or callout on a long press of a stage control */
+.ls-seg, .ls-start, .ls-diag, .ls-banner-action { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* ---------- phone (390 px) ---------- */
+@media (max-width: 760px) {
+  .listen { min-height: calc(100dvh - 56px - var(--safe-t, 0px)); gap: 16px; }
+  .ls-body { grid-template-columns: 1fr; align-content: start; }
+  .listen[data-mode="quiet"] .ls-body { grid-template-columns: 1fr; }
+  .ls-halo { position: absolute; z-index: 0; top: 50%; right: -18%; width: 78vw; transform: translateY(-50%); opacity: .55; }
+  .listen[data-captions="true"] .ls-halo { display: none; }
+  .ls-captions { grid-column: 1; grid-row: auto; }
+  .ls-rail { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .ls-rail-start { margin-left: 0; order: -1; }
+  .ls-start { width: 100%; }
+  .ls-group { width: 100%; }
+  .ls-group .ls-seg { flex: 1 1 0; justify-content: center; padding: 0 10px; gap: 8px; }
+  .ls-kbd { display: none; }
+  .ls-fact-diag { margin-left: 0; }
+  .ls-cap:not(:nth-last-child(-n + 3)) { display: none; } /* the newest three lines; the rail stays in reach */
+  /* the captions header names the speaker: the hero keeps "what you hear" and the word, the rail clears the home bar */
+  .listen[data-captions="true"] .ls-hero :is(.ls-who, .ls-sentence, .ls-target) { display: none; }
+}
+@media (hover: none) { .ls-kbd { display: none; } }
+
+/* ---------- phone on its side (844 x 390): the word and the numbers left, the controls a thumb column right ---------- */
+@media (orientation: landscape) and (max-height: 540px) {
+  .listen {
+    --rail-h: 48px;
+    min-height: calc(100dvh - 56px - var(--safe-t, 0px));
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "top top" "body rail" "truth rail";
+    gap: 10px clamp(16px, 3vw, 32px);
+  }
+  .ls-top { grid-area: top; }
+  .ls-body { grid-area: body; grid-template-columns: 1fr; align-content: center; }
+  .listen[data-mode="quiet"] .ls-body { grid-template-columns: 1fr; }
+  .ls-word, .listen[data-mode="quiet"] .ls-word { font-size: min(clamp(40px, 15dvh, 72px), 15cqi); }
+  .ls-who { font-size: clamp(22px, 7dvh, 32px); }
+  .ls-sentence { font-size: 16px; }
+  .ls-hear, .ls-note, .ls-target { font-size: 14px; }
+  .ls-halo { position: absolute; z-index: 0; top: 50%; right: -8%; width: min(64dvh, 46vw); transform: translateY(-50%); opacity: .5; }
+  .listen[data-captions="true"] .ls-halo { display: none; }
+  /* Quiet: captions take the body; the word steps back to a line */
+  .ls-captions { grid-column: 1; grid-row: auto; padding: 14px 18px; gap: 8px; }
+  /* the captions header names the speaker, so the hero keeps only "what you hear" and the word */
+  .listen[data-captions="true"] .ls-hero :is(.ls-who, .ls-sentence, .ls-target) { display: none; }
+  .ls-cap:not(:nth-last-child(-n + 2)) { display: none; }
+  .listen[data-captions="true"] .ls-word { font-size: min(44px, 12dvh); }
+  .ls-cap { font-size: 20px; }
+  .ls-rail { grid-area: rail; display: grid; grid-template-columns: 1fr; align-content: center; gap: 8px; }
+  .ls-rail-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* the groups carry aria-labels */
+  .ls-rail-start { margin-left: 0; order: -1; }
+  .ls-start { width: 100%; min-height: 52px; }
+  .ls-group { width: 100%; padding: 4px; }
+  .ls-group .ls-seg { flex: 1 1 0; justify-content: center; padding: 0 8px; font-size: 16px; }
+  .ls-kbd { display: none; }
+  .ls-truth { grid-area: truth; gap: 4px 16px; padding-top: 8px; }
+  .ls-fact dd { font-size: 12px; }
+  .ls-fact-diag { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-halo-ring, .ls-halo-core { transition: none; }
+  .ls-banner, .ls-cap { animation: none; }
+}
+
+/* ---------- polish (T-356) ---------- */
+/* the state word fills its column: the display size, capped by its own length (--chars, set by listen.js) */
+.ls-word { font-size: min(var(--text-display, 208px), calc(100cqi / (var(--chars, 6) * .5))); font-stretch: var(--stretch-display, 72%); }
+.listen[data-mode="quiet"] .ls-word { font-size: min(clamp(56px, calc(6vw + 20px), 180px), calc(100cqi / (var(--chars, 6) * .5))); }
+/* key chips live in one legend line under the rail (keyboard screens only) */
+.ls-rail .ls-kbd { display: none; }
+.ls-legend { margin: calc(-1 * clamp(4px, 1vh, 14px)) 0 0; display: flex; flex-wrap: wrap; gap: 6px 22px; font: 500 14px/1.3 var(--font-ui); color: var(--color-dim); }
+.ls-legend .ls-kbd { margin-right: 4px; }
+@media (hover: none), (pointer: coarse), (max-width: 760px) { .ls-legend { display: none; } }
+.ls-sentence[hidden], .ls-fact[hidden] { display: none; }
+@media (pointer: coarse) { .ls-kbd { display: none; } }
+@media (hover: hover) and (pointer: fine) { .ls-mode-note { display: none; } } /* the title tooltip says it on desktop */
+/* keys off: the rail it disables dims with it */
+.listen:has(.ls-banner[data-kind="keys"]:not([hidden])) .ls-rail { opacity: .78; } /* T-404: .5 put the labels under 4.5:1 */
+/* phone hierarchy (T-365 P1-9): Hear is the one stage control; Mode and Person are smaller; Stop steps back */
+@media (max-width: 760px) {
+  .ls-ab .ls-seg { min-height: var(--tap-stage, 72px); }
+  .ls-mode .ls-seg, .ls-people .ls-seg { min-height: var(--tap, 48px); font-size: 17px; }
+  .ls-start[data-kind="stop"] { min-height: var(--tap, 48px); }
+}
+/* T-404 stage readability: Quiet's captions are what the back row reads, so they step up on a laptop/projector
+   (37 px at 1440, 50 px at 1920; was 30 / 40): an x-height of about 1/200 of a 5 m viewing distance on a 2.5 m screen */
+@media (min-width: 761px) { .listen[data-mode="quiet"] .ls-cap { font-size: clamp(24px, 2.6vw, 56px); } }
