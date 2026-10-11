@@ -1,6 +1,6 @@
 # App runbook (M14): HTTPS, install, stage and phone steps
 
-The app is the web page at `/app/` (`web/app/`, a PWA). `/judge` and `/simple` are untouched and stay served: **`/judge` is the stage fallback**, one URL change away. This file is the human checklist; design is in `web/app/DESIGN_SPEC.md`, the stage script is `docs/STAGE_CARD.md`, the generic phone notes are `docs/DEMO.md#phones`.
+The app is the web page at `/app/` (`web/app/`, a PWA). `/judge` and `/simple` are untouched and stay served: **`/judge` is the stage fallback**, one URL change away. This file is the human checklist; design is in `docs/FRONTEND_PLAN.md`, the stage script is `docs/STAGE_CARD.md`, the generic phone notes are `docs/DEMO.md#phones`.
 
 Facts below were checked on laptop-a, Oct 10 2026 (LAN IP `10.75.113.217`, Mac name `Aryans-MacBook-Pro.local`). Steps that need the iPhone itself are not checked here (no phone in the loop); they are marked *(not run: needs the iPhone)*.
 
@@ -85,7 +85,7 @@ Android (Chrome): download `/hearing-ca.crt` → Settings → Security → Encry
 
 - The QR / URLs on the terminal are the source of truth: `https://<ip>:8000/app/` and `https://Aryans-MacBook-Pro.local:8000/app/` (the `.local` name only where the network passes mDNS; prefer the IP).
 - Reprint them any time: `.venv/bin/python -m hearing qr --port 8000 --page /app/`.
-- Companion link: the laptop's **Listen** screen shows a QR to `/app/?watch=<session>` (M14 task 8, `web/app/DESIGN_SPEC.md`; not on main when this was written); scan that one for the companion role. The terminal QR opens `/app/` only (the app shell).
+- Companion link: the laptop's **Listen** screen shows a QR to `/app/?watch=<session>` (M14 task 8, `docs/FRONTEND_PLAN.md`; not on main when this was written); scan that one for the companion role. The terminal QR opens `/app/` only (the app shell).
 
 ## 4. Hotspot fallback (venue Wi-Fi isolates clients)
 

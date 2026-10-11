@@ -2,7 +2,7 @@
 
 The source for how `/app/` looks, moves and tells the truth. Tokens: `web/app/tokens.css`. Static comps
 (no JS, sample values): `web/app/comp/*.html`, screenshots in `web/app/comp/shots/`. Product shape and tech
-choices: `web/app/DESIGN_SPEC.md` (a)-(c). `/judge` and `/simple` are not touched by anything here.
+choices: `docs/FRONTEND_PLAN.md` (a)-(c). `/judge` and `/simple` are not touched by anything here.
 
 ## 1. Idea
 

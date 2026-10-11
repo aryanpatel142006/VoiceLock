@@ -11,12 +11,14 @@ Built at HackRU Fall 2026 by Aryan Patel, Joseph Roche and Ahmad Abbadi.
 - **Raw / isolated A/B** so the difference is audible on the spot.
 - **Listen screen**: drag a voice into the ring to choose who to follow, and a room dial to set how far the rest of the room is turned down. In Quiet, captions fade in as the selected person speaks.
 - **Welcome**: a short cinematic opening before setup.
-- **Optional low-delay window** (`HEARING_TSE_WINDOW_S=0.5 HEARING_TSE_HOP_S=0.25`): shrinks the enrolled tier's window from 1.0 s to 0.5 s (a 0.75 s window-plus-hop delay in the engine). Off by default, and its end-to-end delay and quality are not among the measured results below; see `docs/research/T-420_short_window.md`.
+- **Optional low-delay window** (`HEARING_TSE_WINDOW_S=0.5 HEARING_TSE_HOP_S=0.25`): shrinks the enrolled tier's window from 1.0 s to 0.5 s (a 0.75 s window-plus-hop delay in the engine). Off by default, and its end-to-end delay and quality are not among the measured results below.
 - **Optional fine-tuned team separator** (`HEARING_SEP_CKPT`, `HEARING_PICK=fixed`) for the two enrolled voices. Weights are not in this repository; see `docs/MODELS.md` and `docs/STAGE_CARD.md`.
 - **Saved voice profiles** for the people you want to follow, plus a live noise filter and level control.
 - Every session records its input, output and an event log, so results come from recordings.
 
 The engine is a chain of streaming stages (`hearing/`): audio I/O and level control, noise suppression, target-speaker extraction and picking, a fusion/gating mixer, and a FastAPI/WebSocket session server. The front end (`web/app/`) is a PWA with Listen, Setup and People screens, and a phone companion. `web/console/` is the developer console.
+
+This repository holds the demo app only. Tests, benchmark and evaluation tooling and research experiments live elsewhere; the benchmark results are summarised in `docs/BENCHMARKS.md`.
 
 ## Run it
 
@@ -50,12 +52,10 @@ Only numbers that were measured, with their conditions (from `docs/CLAIMS.md`, s
 | --- | --- |
 | `hearing/` | The voice engine and session server |
 | `web/` | The app (`web/app/`), developer console, JS SDK |
-| `scripts/` | Demo launcher, enrollment, checks, rehearsal and analysis tools |
+| `scripts/` | Demo launcher, setup, voice-profile enrollment and the GPU launcher |
 | `config/` | Presets and tier settings |
-| `tests/` | Python unit and integration tests; JS tests live in `web/app/tests/` |
-| `eval/` | Benchmarks, scenes and evaluation code |
-| `experiments/`, `gpu_jobs/`, `third_party/` | Research experiments and GPU job scripts |
-| `docs/` | Architecture, contracts, models, benchmarks, claims, runbooks, research notes |
+| `third_party/` | Small borrowed source files with their licences |
+| `docs/` | Demo runbook, app guide, stage card, claims, benchmarks, architecture, contracts, models |
 
 ## Team
 

@@ -1,5 +1,7 @@
 # Demo runbook
 
+> Note for readers of this repository: this is the team's full runbook. It mentions the test suite, evaluation and rehearsal scripts (`verify_fast.sh`, `rehearse.sh`, `judge_check`, `eval/...`) and some other docs that are not part of this demo-only repository. The commands for running the demo itself (`scripts/setup.sh`, `scripts/demo.sh`, `scripts/enroll_profiles.sh`) are all here.
+
 > **Sunday (M14, updated Oct 10 by T-405):** the stage page is the app, `bash scripts/demo.sh --judge --team --lan --app` (phones: `https://<laptop IP>:8000/app/`), with `/judge` as the fallback tab on the same server. Base vs fine-tuned separator: `docs/APP.md#1b-base-vs-fine-tuned-separator-the-ab`. The 8 stage steps and keys: `docs/STAGE_CARD.md`. The sections below are the `/judge` runbook they build on (no camera now: team preset, audio only).
 
 ## Judge Demo (60 seconds) — the one configuration we present with (T-088)
