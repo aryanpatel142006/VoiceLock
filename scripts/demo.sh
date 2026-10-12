@@ -161,7 +161,7 @@ cleanup() {
 }
 trap cleanup EXIT
 if [ -z "$PIDS" ]; then
-  launched_at="$($PY -c 'import time; print(time.time())')"
+  launched_at="$("$PY" -c 'import time; print(time.time())')"
   "$PY" -m hearing serve --port "$PORT" \
     ${SERVE_ARGS[@]+"${SERVE_ARGS[@]}"} > "$LOG" 2>&1 &
   new_pid=$!
