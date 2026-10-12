@@ -1,0 +1,79 @@
+/* "What I've Learned About You" (Comfort Companion). Calm, readable, phone-first (390 px), two columns from 960 px.
+   Uses the shell tokens; green is avoided on purpose (green = Focus on stage). The highlight is a soft, single fade. */
+.learned { --lr-accent: #b9d4ff; --lr-accent-wash: rgb(185 212 255 / 0.12); --lr-card: var(--color-bg-raise, #101215);
+  position: relative; z-index: 1; container: learned / inline-size; max-width: 72rem; margin: 0; padding: var(--space-5, 24px) 0 var(--space-8, 64px);
+  color: var(--color-fg, #f3f4f1); font-size: 18px; line-height: 1.5; }
+.lr-eyebrow { margin: 0 0 var(--space-2, 8px); font: 500 14px/1.3 var(--font-ui); letter-spacing: .04em; color: var(--color-dim, #a4aab0); }
+.lr-title { margin: 0 0 var(--space-3, 12px); font: 600 var(--text-title, 32px)/1.05 var(--font-display); font-stretch: var(--stretch-display, 72%); letter-spacing: -.015em; overflow-wrap: anywhere; }
+.lr-intro { margin: 0 0 var(--space-5, 24px); max-width: 38rem; color: var(--color-dim, #a4aab0); font-size: clamp(17px, 1.6vw, 21px); }
+
+.lr-switch { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); margin: 0 0 var(--space-4, 16px); }
+.lr-person { display: inline-flex; align-items: center; gap: var(--space-2, 8px); min-height: 48px; padding: 0 18px;
+  border: 1px solid var(--color-line, #23272c); border-radius: 999px; background: var(--color-bg, #060708); color: var(--color-fg, #f3f4f1);
+  font: 500 17px/1 var(--font-ui); cursor: pointer; transition: background-color var(--motion-fast, 160ms) var(--motion-ease, ease), border-color var(--motion-fast, 160ms) var(--motion-ease, ease); }
+.lr-person:hover { border-color: var(--color-dim, #a4aab0); }
+.lr-person[aria-pressed="true"] { background: var(--color-fg, #f3f4f1); color: var(--color-bg, #060708); border-color: var(--color-fg, #f3f4f1); }
+.lr-person-new { border-style: dashed; color: var(--color-dim, #a4aab0); }
+.lr-demo { font: 600 11px/1 var(--font-ui); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px;
+  border: 1px solid currentColor; opacity: .85; }
+
+.lr-who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2, 8px) var(--space-3, 12px); margin: var(--space-2, 8px) 0 var(--space-5, 24px); }
+.lr-name { margin: 0; font: 600 clamp(26px, 3vw, 36px)/1.1 var(--font-display); }
+.lr-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border-radius: 999px;
+  background: rgb(242 225 91 / 0.12); color: var(--color-warn, #f2e15b); border: 1px solid rgb(242 225 91 / 0.5); font: 600 14px/1 var(--font-ui); }
+.lr-demo-note { flex-basis: 100%; margin: 0; color: var(--color-dim, #a4aab0); font-size: 15px; }
+
+.lr-grid { display: grid; gap: var(--space-4, 16px); }
+/* sized by the panel, not the viewport: inside SOS the panel is a 44rem card even on a 1440 px screen */
+@container learned (min-width: 52rem) { .lr-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5, 24px); } }
+.lr-section { background: var(--lr-card); border: 1px solid var(--color-line, #23272c); border-radius: 14px; padding: 20px 20px 12px; min-width: 0;
+  container: lr-section / inline-size; text-align: start; }
+.lr-h { margin: 0 0 var(--space-2, 8px); font: 600 clamp(21px, 2vw, 26px)/1.2 var(--font-display); outline: none; }
+.lr-lede { margin: -4px 0 var(--space-2, 8px); color: var(--color-dim, #a4aab0); font-size: 16px; }
+.lr-empty { margin: 4px 0 12px; color: var(--color-dim, #a4aab0); font-size: 17px; }
+.lr-list { list-style: none; margin: 0; padding: 0; }
+.lr-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px 12px; min-height: 56px; padding: 6px 10px; margin: 0 -10px;
+  border-top: 1px solid var(--color-line, #23272c); border-radius: 8px; }
+.lr-list > .lr-item:first-child { border-top-color: transparent; }
+.lr-item > .lr-remove { grid-column: 3; }
+.lr-item-text { min-width: 0; font-size: 19px; overflow-wrap: anywhere; }
+.lr-pref { display: block; }
+/* a wrapping row: label above (beside it in a wide card), the value takes the room, New and Change keep their size and
+   drop to the next line before the value is squeezed (a 0-wide column broke the value one letter per line) */
+.lr-pref-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; min-height: 48px; }
+.lr-pref-label { flex: 1 0 100%; color: var(--color-dim, #a4aab0); font-size: 16px; }
+.lr-pref-value { flex: 1 1 8rem; min-width: 0; font-size: 19px; overflow-wrap: break-word; }
+.lr-pref-head :is(.lr-new, .lr-edit) { flex: none; }
+@container lr-section (min-width: 30rem) { .lr-pref-label { flex: 0 0 10rem; } }
+
+.lr-new { font: 600 12px/1 var(--font-ui); letter-spacing: .05em; text-transform: uppercase; padding: 5px 8px; border-radius: 4px;
+  color: var(--color-bg, #060708); background: var(--lr-accent); }
+.lr-item.is-new { background: var(--lr-accent-wash); }
+/* the "New" item: it rises in once, and its highlight settles slowly (a colour, not a flash) */
+.lr-item.is-glow { animation: mo-rise var(--motion-base, 240ms) var(--motion-ease, ease-out) both, lr-settle 2.4s var(--motion-ease, ease-out) both; }
+@keyframes lr-settle { from { background-color: rgb(185 212 255 / 0.3); } to { background-color: var(--lr-accent-wash); } }
+
+.lr-remove, .lr-edit, .lr-btn { min-height: 44px; min-width: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--color-line, #23272c); background: transparent; color: var(--color-dim, #a4aab0); font: 500 16px/1 var(--font-ui);
+  transition: color var(--motion-fast, 160ms) var(--motion-ease, ease), border-color var(--motion-fast, 160ms) var(--motion-ease, ease), scale var(--motion-fast, 160ms) var(--motion-ease, ease); }
+.lr-remove:hover, .lr-edit:hover, .lr-btn:hover { color: var(--color-fg, #f3f4f1); border-color: var(--color-dim, #a4aab0); }
+.lr-btn { color: var(--color-fg, #f3f4f1); }
+
+.lr-choices { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0 12px; }
+.lr-choice { min-height: 48px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--color-line, #23272c); background: transparent;
+  color: var(--color-fg, #f3f4f1); font: 500 17px/1 var(--font-ui); cursor: pointer; }
+.lr-choice[aria-pressed="true"] { background: var(--lr-accent); color: var(--color-bg, #060708); border-color: var(--lr-accent); }
+.lr-vol { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 0 12px; }
+.lr-range { flex: 1 1 12rem; min-height: 44px; accent-color: var(--lr-accent); }
+.lr-vol-out { min-width: 3.5em; font: 500 18px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.lr-status { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 0; margin: 0 0 var(--space-3, 12px); color: var(--color-dim, #a4aab0); font-size: 16px; }
+.lr-status:empty { margin: 0; }
+
+.learned :is(button, input):focus-visible { outline: 3px solid var(--lr-accent); outline-offset: 2px; }
+.lr-h:focus-visible { outline: 2px solid var(--lr-accent); outline-offset: 4px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-item.is-glow { animation: none; }
+  .learned * { transition: none !important; }
+}

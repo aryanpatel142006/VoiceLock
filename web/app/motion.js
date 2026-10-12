@@ -8,24 +8,24 @@
 //   person  the chosen person ([data-vt="person"], else .person[aria-pressed="true"] / .person.is-current)
 // Names are given to one element per side just for the cut (a duplicate name would cancel the transition), then
 // removed. Screens only need the data-vt attribute (or those classes).
-// Entrances (Motion, vendored): after the cut the screen's word blur-fades up and its controls follow with
-// stagger(0.04). Elements opt in with [data-enter]; without any, the first h1/.display and the screen's buttons.
+// Entrances (Motion, vendored): after the cut the screen's word fades up --motion-rise px and its controls follow
+// in one short stagger. Elements opt in with [data-enter]; without any, the first h1/.display and the screen's buttons.
 // Travel is a `transform` string, not Motion's `y`: Motion runs opacity/filter/transform on WAAPI (the compositor)
 // but independent transforms (`x`, `y`) in JS every frame, which stalls while the new screen mounts (T-379).
-// Nothing loops. Reduced motion: a 200 ms linear cross-fade, no shared glide, no travel, no blur, opacity only.
+// Nothing loops, nothing blurs. Reduced motion: a short linear cross-fade, no shared glide, no travel, opacity only.
 // No View Transitions (Firefox < 144, old Safari): the update runs at once and the entrance fades in over --dur-ui.
 //
 // Pass B (T-389, docs/ux-review-shots/MOTION_PASS_B.md lists every motion with its trigger and timing):
 // - cuts have a direction along the scene order (transitions.js cutDirection): forward pushes in, back pulls out,
 //   About/Phone dissolve; html[data-cut-dir] picks the keyframes in motion.css.
-// - People's cards arrive one by one on a spring (cardDelays, SPRINGS.reveal) after the title.
+// - People's cards arrive one by one on the calm curve (cardDelays) after the title.
 // - pulses: one compositor-only accent when the engine reports a real change (Listen goes Isolated or loses it, a
 //   card starts playing, the Start hold completes or fails), read from the attributes the screens write from
 //   telemetry (transitions.js pulseFor). Nothing pulses on a timer.
 
 import { animate, stagger } from "./vendor/motion.js";
 import { mountScene } from "./scene.js";
-import { cardDelays, cutDirection, pulseFor, pulseKeyframes, SPRINGS, tickPlan } from "./transitions.js";
+import { cardDelays, cutDirection, pulseFor, pulseKeyframes, tickPlan } from "./transitions.js";
 
 export const SHARED = {
   pill: ['[data-vt="pill"]', ".pill", '[role="status"]'],
@@ -33,6 +33,13 @@ export const SHARED = {
 };
 const MAX_ENTER = 14;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+/** --motion-ease (tokens.css) as a Motion cubic-bezier: calm ease-out, no overshoot. */
+export const EASE = [0.2, 0, 0, 1];
+/** --motion-rise in px (0 under reduced motion, where the token is 0px). */
+function rise() {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--motion-rise"));
+  return Number.isFinite(v) ? v : 8;
+}
 
 /** CSS time token ("520ms" / "0.2s") in seconds. */
 export function tokenS(name, fallbackS) {
@@ -107,8 +114,8 @@ export async function cut(update, { from = null, to = null } = {}) {
     if (html.dataset.cutTo === to) { delete html.dataset.cut; delete html.dataset.cutTo; delete html.dataset.cutDir; }
   });
   await vt.updateCallbackDone;
-  // the entrance starts while the dissolve is halfway in, so the word lands as the old screen is gone
-  enter(stage, { delay: reduced.matches ? 0 : tokenS("--dur-hold", 0.24) + tokenS("--dur-cut", 0.52) * 0.35 });
+  // the entrance starts while the cross-fade is a third in, so the word lands as the old screen is gone
+  enter(stage, { delay: reduced.matches ? 0 : tokenS("--dur-hold", 0) + tokenS("--motion-slow", 0.4) * 0.35 });
 }
 
 /** Which elements of a freshly mounted screen enter: [data-enter], else its word and its controls. */
@@ -129,57 +136,57 @@ export function cardTargets(root) {
   return root ? [...root.querySelectorAll(CARD)].filter(visible).slice(0, MAX_ENTER) : [];
 }
 
-/** One entrance per screen: blur-fade the word up, then the controls with stagger(0.04), the person cards on a spring. */
+/** One entrance per screen: the word fades up a few px, then the controls in one short stagger, then the person cards. */
 export function enter(root, { delay = 0 } = {}) {
   for (const a of running) a.stop?.();
   running.clear();
   const [word, ...rest] = entranceTargets(root);
   if (!word) return null;
   const cards = cardTargets(root);
-  const ease = [0.16, 1, 0.3, 1]; // --ease-out
+  const ease = EASE;
   for (const el of [word, ...rest, ...cards]) el.style.opacity = "0"; // hidden from the first frame, not only after the delay
   if (reduced.matches) {
     const a = animate([word, ...rest, ...cards], { opacity: [0, 1] }, { duration: tokenS("--dur-ui", 0.16), delay, ease: "linear" });
     running.add(a);
     return a;
   }
-  const blur = getComputedStyle(document.documentElement).getPropertyValue("--motion-blur").trim() || "10px";
-  const dist = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--motion-distance")) || 24;
+  const dist = rise();
+  const dur = tokenS("--motion-base", 0.24);
   const all = [
-    animate(word, { opacity: [0, 1], filter: [`blur(${blur})`, "blur(0px)"], transform: [`translateY(${dist}px)`, "none"] },
-      { duration: 0.62, delay, ease }),
+    animate(word, { opacity: [0, 1], transform: [`translateY(${dist}px)`, "none"] }, { duration: dur, delay, ease }),
   ];
   if (rest.length) {
-    all.push(animate(rest, { opacity: [0, 1], transform: [`translateY(${dist / 2}px)`, "none"] },
-      { duration: 0.42, delay: stagger(0.04, { startDelay: delay + 0.12 }), ease }));
+    all.push(animate(rest, { opacity: [0, 1], transform: [`translateY(${dist}px)`, "none"] },
+      { duration: dur, delay: stagger(0.03, { startDelay: delay + 0.06 }), ease }));
   }
-  if (cards.length) all.push(...revealCards(cards, { delay: delay + 0.18, track: false }));
+  if (cards.length) all.push(...revealCards(cards, { delay: delay + 0.1, track: false }));
   for (const a of all) {
     running.add(a);
     // the entrance must not leave inline styles that fight the screen's own CSS once it is done
     a.finished?.then(() => {
       running.delete(a);
-      for (const el of [word, ...rest, ...cards]) { el.style.filter = ""; el.style.transform = ""; el.style.opacity = ""; }
+      for (const el of [word, ...rest, ...cards]) { el.style.transform = ""; el.style.opacity = ""; }
     }).catch(() => undefined);
   }
   return all;
 }
 
 /**
- * The people arrive one by one: rise --motion-distance and settle on SPRINGS.reveal (Motion on WAAPI, compositor),
- * cardDelays apart. Runs in the screen's entrance, and again when the engine's first report turns the "—"
+ * The people arrive one by one: rise --motion-rise px on the calm curve (Motion on WAAPI, compositor), cardDelays
+ * apart (one short stagger). Runs in the screen's entrance, and again when the engine's first report turns the "—"
  * placeholder into cards (watchPulses). Reduced motion: opacity only, all at once.
  */
 export function revealCards(cards, { delay = 0, track = true } = {}) {
   if (!cards.length) return [];
   const delays = cardDelays(cards.length, { start: delay, reduced: reduced.matches });
-  const dist = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--motion-distance")) || 0;
+  const dist = rise();
+  const dur = tokenS("--motion-base", 0.24);
   const out = cards.map((el, i) => {
     el.style.opacity = "0";
     const a = reduced.matches
       ? animate(el, { opacity: [0, 1] }, { duration: tokenS("--dur-ui", 0.16), delay: delays[i], ease: "linear" })
       : animate(el, { opacity: [0, 1], transform: [`translateY(${dist}px)`, "none"] },
-        { duration: SPRINGS.reveal.ms / 1000, delay: delays[i], ease: cssEase(SPRINGS.reveal.ease) });
+        { duration: dur, delay: delays[i], ease: EASE });
     if (track) a.finished?.then(() => { el.style.transform = ""; el.style.opacity = ""; }).catch(() => undefined);
     return a;
   });
@@ -226,10 +233,10 @@ export function tick(el, from, to, format = (v) => String(Math.round(v))) {
   return to;
 }
 
-/** The 80 ms acknowledgement of a pressed control (the state change itself follows telemetry, not the key). */
+/** The short acknowledgement of a pressed control (the state change itself follows telemetry, not the key). */
 export function ack(el) {
   if (!el || reduced.matches) return null;
-  return animate(el, { scale: [0.96, 1] }, { duration: tokenS("--dur-instant", 0.08) * 2, ease: [0.16, 1, 0.3, 1] });
+  return animate(el, { scale: [0.98, 1] }, { duration: tokenS("--motion-fast", 0.16), ease: EASE });
 }
 
 // ---------- pulses: real engine events only ----------

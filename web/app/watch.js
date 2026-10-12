@@ -86,6 +86,25 @@ export function stageSessions(list) {
     .sort((a, b) => String(b.started || "").localeCompare(String(a.started || "")));
 }
 
+/** `?watch=latest`: the stable companion URL (the home-screen app's start_url) names no session; it joins the laptop's. */
+export const LATEST = "latest";
+
+/**
+ * What a companion URL asks for: {follow: "latest"|"session"|null, id}. `?watch=latest` (any case) or an empty
+ * `?watch=` joins whatever stage session is live; `?watch=<id>` that one session.
+ */
+export function companionTarget(params) {
+  if (!params?.has("watch")) return { follow: null, id: "" };
+  const id = String(params.get("watch") || "").trim();
+  if (!id || id.toLowerCase() === LATEST) return { follow: "latest", id: "" };
+  return { follow: "session", id };
+}
+
+/** The stage session `?watch=latest` joins: the newest one, other than `exclude` (the one that just ended); null when none. */
+export function pickLatest(list, { exclude = null } = {}) {
+  return stageSessions(list).find((s) => s.id && s.id !== exclude)?.id || null;
+}
+
 /** `GET /sessions` (an empty list when the server is unreachable or too old to have the route). */
 export async function listSessions(fetchImpl = globalThis.fetch) {
   try {
@@ -202,7 +221,8 @@ export function createWatch(sessionId, { loc = globalThis.location, WS = globalT
     };
   }
 
-  const tick = setInterval(() => { if (!closed) derive(); }, TICK_MS);
+  // Perf: a hidden tab (the phone in a pocket, a background tab) derives nothing; the next message or visible tick catches up
+  const tick = setInterval(() => { if (!closed && !globalThis.document?.hidden) derive(); }, TICK_MS);
   store.set({ connection: "connecting" });
   connect();
 
@@ -218,6 +238,27 @@ export function createWatch(sessionId, { loc = globalThis.location, WS = globalT
       sent += 1;
       watch({ sent });
       store.note(`sent ${action}${action === "person" ? ` ${opts.index + 1}` : ""} to the stage`);
+      return true;
+    },
+    /**
+     * Reconnect now (the home-screen app coming back to the front: iOS dropped the socket while it was hidden), not after
+     * the backoff. A link that is open and ticking is kept; an ended watch stays ended (follow the next session instead).
+     */
+    reconnect() {
+      if (closed) return false;
+      // a socket still opening, or open and ticking (or just opened, no telemetry yet), is kept
+      if (ws?.readyState === 0) return false;
+      if (ws?.readyState === 1 && (lastTelemetry == null || now() - lastTelemetry <= STALE_MS)) return false;
+      clearTimeout(retryTimer);
+      const sock = ws;
+      ws = null; // its onclose is ignored: this is not a drop to back off from
+      try { sock?.close(4000); } catch { /* closed */ }
+      store.set({ connection: "connecting", telemetry: null, retryInMs: null });
+      store.resetEngine();
+      lastTelemetry = null;
+      seqTrack = null;
+      attempt = 0;
+      connect();
       return true;
     },
     close() {

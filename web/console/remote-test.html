@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LockedIn · Remote input test</title>
+<style>body{background:#10151e;color:#eff6ff;font:18px system-ui;max-width:900px;margin:40px auto;padding:24px}h1{font-size:32px}#signal{font-size:36px;padding:24px;background:#154436;border-radius:16px;overflow-wrap:anywhere}#pad{padding:28px;border:2px dashed #9ab;margin:24px 0}button{font:inherit;padding:12px}li{font:14px monospace;margin:8px 0;overflow-wrap:anywhere}</style></head>
+<body><h1>LockedIn · Remote input test</h1><p>Plug in the receiver, power on the remote, click this page, then press each button separately. Release it, then test it again.</p>
+<p id="focus" role="status"></p><div id="signal" role="status" aria-live="polite">READY · press a remote button</div>
+<div id="pad" tabindex="0">Click here for focus. Mouse-style remote buttons are recorded over this pad.</div>
+<button id="clear" type="button">Clear test log</button>
+<p>This only flashes a TEST signal and logs browser input. It performs no app actions, audio, voice selection, or replay. Keyboard/mouse input also triggers the signal; it does not identify the physical device. A button with no event is unsupported by this browser page.</p>
+<ol id="events"></ol><script type="module">import {mountRemoteTest} from './remote-controls.js'; mountRemoteTest();</script></body></html>

@@ -193,6 +193,41 @@ export function clinks(seed, seconds, rate, count = 6) {
 
 // ---------------------------------------------------------------- the graph
 
+const ENV_RATE = 22050; // old WebKit only takes 22.05 kHz and up
+const VOICES = [
+  { f1: 520, f2: 1350, pan: -0.75, len: 6.7, lvl: 0.95 },
+  { f1: 640, f2: 1150, pan: 0.6, len: 7.9, lvl: 0.85 },
+  { f1: 430, f2: 1700, pan: -0.25, len: 8.3, lvl: 0.7 },
+  { f1: 700, f2: 1250, pan: 0.3, len: 7.1, lvl: 0.75 },
+  { f1: 380, f2: 2050, pan: -0.5, len: 9.4, lvl: 0.55 }, // further away: quieter, below
+  { f1: 560, f2: 1500, pan: 0.85, len: 8.8, lvl: 0.5 },
+];
+const CLINKS = [[-0.7, 7.3], [0.65, 9.1], [0.1, 11.7]]; // [pan, loop seconds]: different lengths, so they never line up
+
+const PRE = new Map(); // seed -> {rate, envs, clinks, steps}: the sampled envelopes, computed before the click
+/**
+ * Perf: the babble envelopes and the clink loops are a few million samples of arithmetic (100-200 ms on a phone), the
+ * bulk of the Enter click when they were rendered in it. `prepareWelcomeSound({seed, rate, idle})` renders them in
+ * pieces on `idle` (requestIdleCallback) while the curtain is up; without `idle` (or at the click, for what is left)
+ * it finishes synchronously and returns {rate, envs, clinks}. The clinks keep the rate they were rendered at.
+ */
+export function prepareWelcomeSound({ seed = 0x480, rate = 48000, idle = null } = {}) {
+  let p = PRE.get(seed);
+  if (!p) {
+    p = { rate, envs: [], clinks: [], steps: [] };
+    VOICES.forEach((v, k) => p.steps.push(() => { p.envs[k] = babble(seed + 11 * (k + 1), v.len, ENV_RATE); }));
+    CLINKS.forEach(([, len], k) => p.steps.push(() => { p.clinks[k] = clinks(seed + 101 * (k + 1), len, p.rate, k === 2 ? 3 : 5); }));
+    PRE.set(seed, p);
+  }
+  if (idle) {
+    const next = () => { const step = p.steps.shift(); if (step) { step(); idle(next); } };
+    idle(next);
+    return p;
+  }
+  while (p.steps.length) p.steps.shift()();
+  return p;
+}
+
 /** Move a param to `v` from wherever it is now (cancelAndHold where the browser has it; else cancel + set). */
 function retarget(param, v, at, tau) {
   if (typeof param.cancelAndHoldAtTime === "function") param.cancelAndHoldAtTime(at);
@@ -259,17 +294,10 @@ export function createWelcomeSound(ctx, { plan, wordStartsMs = [], seed = 0x480 
   };
 
   // six babbling voices: noise -> F1 and F2 band-passes (moved by the glide) -> syllable gate -> pan
-  const ENV_RATE = 22050; // old WebKit only takes 22.05 kHz and up
-  const VOICES = [
-    { f1: 520, f2: 1350, pan: -0.75, len: 6.7, lvl: 0.95 },
-    { f1: 640, f2: 1150, pan: 0.6, len: 7.9, lvl: 0.85 },
-    { f1: 430, f2: 1700, pan: -0.25, len: 8.3, lvl: 0.7 },
-    { f1: 700, f2: 1250, pan: 0.3, len: 7.1, lvl: 0.75 },
-    { f1: 380, f2: 2050, pan: -0.5, len: 9.4, lvl: 0.55 }, // further away: quieter, below
-    { f1: 560, f2: 1500, pan: 0.85, len: 8.8, lvl: 0.5 },
-  ];
+  const pre = prepareWelcomeSound({ seed, rate: ctx.sampleRate }); // the envelopes, rendered at idle when the curtain allowed it
+  PRE.delete(seed); // one use: a second graph (the offline render) renders its own
   VOICES.forEach((v, k) => {
-    const env = babble(seed + 11 * (k + 1), v.len, ENV_RATE);
+    const env = pre.envs[k];
     const src = noiseSrc(r() * 1.9);
     const f1 = ctx.createBiquadFilter();
     f1.type = "bandpass"; f1.frequency.value = v.f1; f1.Q.value = 3.2;
@@ -316,9 +344,9 @@ export function createWelcomeSound(ctx, { plan, wordStartsMs = [], seed = 0x480 
   });
 
   // cups and cutlery, left and right, looping at different lengths so they never line up
-  [[-0.7, 7.3], [0.65, 9.1], [0.1, 11.7]].forEach(([pan, len], k) => {
+  CLINKS.forEach(([pan], k) => {
     const s = keep(ctx.createBufferSource());
-    s.buffer = bufferFrom(ctx, clinks(seed + 101 * (k + 1), len, ctx.sampleRate, k === 2 ? 3 : 5));
+    s.buffer = bufferFrom(ctx, pre.clinks[k], pre.rate); // at the rate it was rendered at (the node resamples)
     s.loop = true;
     const g = ctx.createGain();
     g.gain.value = k === 2 ? 0.08 : 0.12;

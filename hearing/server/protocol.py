@@ -117,6 +117,7 @@ class Control(_Message):
     name_call: Literal["release"] | None = None  # Name Call: drop the current target, listen again
     agc: bool | None = None  # judge-profile output AGC; false = off (the remote leg of the remote path, T-169)
     sos: bool | None = None  # T-462: true = silence the output, captions off (mode kept); false = back as before
+    sos_captions: bool | None = None  # Comfort's Stay Quiet: true = Quiet's captions keep coming under SOS (output stays silent); SOS off resets it
 
 
 def parse_message(data: dict) -> Hello | Control:

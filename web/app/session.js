@@ -574,9 +574,12 @@ export function createSession({ store = appStore, url = null, devices = null, en
     if (devices) {
       Object.assign(mic, { label: devices.inputLabel() ?? null, output: devices.outputLabel() ?? null, missing: devices.missing() });
     }
-    mic.level = rt.audio ? rt.level : -60;
+    // Perf: the level itself stays on the "level" event (~50 Hz); the store only carries the band, so a 10 Hz tick
+    // does not re-render Listen while nothing visible changed
     mic.band = rt.audio ? meterStep(rt.level, -90, 0).band : "idle";
-    if (JSON.stringify(mic) !== JSON.stringify(st().mic)) set({ mic });
+    const cur = st().mic;
+    if (mic.band !== cur.band || mic.label !== cur.label || mic.output !== cur.output || mic.banner !== cur.banner
+      || JSON.stringify(mic.missing) !== JSON.stringify(cur.missing)) set({ mic });
     store.derive(env.perfNow(), { sinceFrameMs, rttMs: rt.rttMs });
   }
 

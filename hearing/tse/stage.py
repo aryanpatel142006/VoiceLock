@@ -60,6 +60,7 @@ import numpy as np
 
 from hearing import device as hdevice
 from hearing import registry
+from hearing.enhance import loudest_denoise
 from hearing.fusion import stream_vad
 from hearing.fusion.mixer import CONFIDENCE_KEY, OVERLAP_KEY, RESIDUAL_KEY
 from hearing.tse.base import LIPS_FPS, SR, conform_output, get_candidate
@@ -88,6 +89,8 @@ def _round(x, nd=3):
 
 PAUSE_KWARGS = ("pause_floor", "pause_p", "pause_action", "pause_max_s")  # enrolled candidate only
 RAMP_MS = 10.0  # fade between TSE output and the fallback mix
+VAD_OPEN_MS = 5.0  # foreground-speech gate ramps (hearing.enhance.loudest_denoise.ForegroundVad)
+VAD_CLOSE_MS = 30.0
 LIP_GAP_S = 0.08  # a window frame counts as covered when a real crop is within 2 video frames
 MIN_LIPS = 0.5  # covered share of a window's frames needed to run an AV candidate
 HEALTH_WINDOWS = 4  # windows the overrun/late count looks back over (2 s at the default hop)
@@ -238,6 +241,20 @@ class FocusHQ:
         self.require_gpu = bool(require_gpu)
         self.residual = bool(residual)
         self.min_lips = float(min_lips)
+        # HEARING_PICK=loudest (default on, HEARING_LOUDEST_DENOISE=0 = off): DeepFilterNet3 on the input before the
+        # separator, a soft expander on the played voice (hearing.enhance.loudest_denoise; their delay joins latency_ms)
+        self._denoise_in = self._denoise_out = None
+        self._vad_gate_db: float | None = None  # the foreground-speech gate on the last emitted chunk (telemetry)
+        if self._loudest_on() and loudest_denoise.enabled():
+            # HEARING_LOUDEST_VAD (default on): the foreground-speech gate decided on the input, applied aligned in
+            # _emit (closed = mute) so café babble with nobody talking plays as silence
+            vad = loudest_denoise.ForegroundVad(**loudest_denoise.vad_settings()) if loudest_denoise.vad_enabled() else None
+            self._denoise_in = loudest_denoise.LoudestDenoiser(vad=vad)
+            self._denoise_out = loudest_denoise.OutputGate() if loudest_denoise.gate_enabled() else None
+        self._vad_on = self._denoise_in is not None and self._denoise_in.vad is not None
+        self._vad_step_up = 1.0 / max(1.0, VAD_OPEN_MS * SR / 1000.0)
+        self._vad_step_down = 1.0 / max(1.0, VAD_CLOSE_MS * SR / 1000.0)
+        self._denoise_samples = sum(d.latency_samples for d in (self._denoise_in, self._denoise_out) if d is not None)
         self._set_hop(0)
         self.name = f"tse({self.candidate}@{self.window_s:g}s)"
         self._weights = {h: crossfade_window(self.window, h) for h in self.hops}
@@ -279,7 +296,7 @@ class FocusHQ:
         self.hop = self.hops[i]
         self.hop_s = self.hop / SR
         self.delay = self.window + (self.hop if self.threaded else 0)
-        self.latency_ms = 1000.0 * self.delay / SR
+        self.latency_ms = 1000.0 * (self.delay + self._denoise_samples) / SR
 
     def pin_hop(self) -> None:
         """Keep the current hop from now on (T-135: the judge profile pins it once the target is
@@ -312,6 +329,8 @@ class FocusHQ:
             self.error = "no GPU: Focus HQ needs CUDA/MPS locally or the remote GPU path"
             return
         t0 = time.perf_counter()
+        if self._denoise_in is not None:
+            self._denoise_in.warm()  # off the audio thread; a failed load leaves a same-length delay line
         try:
             with TORCH_LOCK:
                 self.cand.load()
@@ -352,6 +371,12 @@ class FocusHQ:
         self._ovl: float | None = None  # overlap share of the last emitted chunk (None = not measured)
         if self._vad is not None:
             self._vad.reset()
+        for d in (self._denoise_in, self._denoise_out):
+            if d is not None:
+                d.reset()
+        self._vacc = np.zeros(0, np.float32)  # foreground-speech gate per input sample (with _in; 1 = open)
+        self._vad_gain = 0.0
+        self._vad_gate_db = None
         self._n_in = 0
         self._next_k = 0
         self._set_hop(0)
@@ -605,7 +630,16 @@ class FocusHQ:
                     self.enroller = self._own_enroller
                 self._shared_enroller = None
                 self.enroller.update(x, ctx)
+        if self._denoise_in is not None:  # loudest mode: the separator gets the room without the café noise
+            x = self._denoise_in.process(x)
         self._in = np.concatenate([self._in, x])
+        if self._vad_on:
+            vm = self._denoise_in.vad_mask
+            if vm is None or len(vm) != n:
+                vm = np.ones(n, np.float32)  # not decided (never happens with whole hops): play
+            if self._denoise_in.vad_retro > 0:  # onset pre-roll into samples not yet played
+                self._vacc[max(0, len(self._vacc) - self._denoise_in.vad_retro):] = 1.0
+            self._vacc = np.concatenate([self._vacc, vm])
         if self._want_asd:
             self._asd = np.concatenate([self._asd, np.full(n, _target_p(ctx), np.float32)])
         self._acc = np.concatenate([self._acc, np.zeros(n)])
@@ -629,6 +663,8 @@ class FocusHQ:
         self._settle()
         out, mix = self._emit_chunk(n)
         self._trim(self._out)
+        if self._denoise_out is not None:
+            out = self._denoise_out.process(out)
         if self.residual and self._loudest_on():  # loudest voice only: the room / other voice never comes back
             ctx.telemetry.extras[RESIDUAL_KEY] = np.zeros_like(out, dtype=np.float32)
             ctx.telemetry.extras[CONFIDENCE_KEY] = 1.0
@@ -639,6 +675,11 @@ class FocusHQ:
             if self._ovl is not None:
                 ctx.telemetry.extras[OVERLAP_KEY] = self._ovl
         ctx.telemetry.extras["tse"] = {**self.health(), "confidence": self._conf}
+        if self._denoise_in is not None:
+            ctx.telemetry.extras["tse"]["denoise"] = {
+                **self._denoise_in.health(),
+                "gate_db": None if self._denoise_out is None else round(self._denoise_out.gain_db, 1),
+                "vad_gate_db": self._vad_gate_db}  # mean gain of the foreground-speech gate on this chunk
         if self._vad is not None:
             ctx.telemetry.extras["tse"]["overlap"] = self._ovl
         return replace(chunk, samples=out)
@@ -693,6 +734,11 @@ class FocusHQ:
         goal = np.where(ok | ~live, 0.0, 1.0)  # warm-up is silence either way
         gain = self._ramp(goal)
         out = gain * mix + (1.0 - gain) * tse
+        if self._vad_on:  # the foreground-speech gate decided on the input, aligned to these positions
+            vg = np.where(live, self._vacc[idx] if len(self._vacc) else 1.0, 0.0)
+            g = self._vad_ramp(vg)
+            out = out * g
+            self._vad_gate_db = round(20.0 * math.log10(float(np.mean(g)) + 1e-6), 1)
         return out.astype(np.float32), mix
 
     def _final(self, pos: np.ndarray) -> np.ndarray:
@@ -705,10 +751,18 @@ class FocusHQ:
 
     def _ramp(self, goal: np.ndarray) -> np.ndarray:
         """Slope-limited follower of ``goal`` (0/1 per sample), carried across chunks."""
+        self._mix_gain, out = self._follow_goal(goal, self._mix_gain, self._ramp_step, self._ramp_step)
+        return out
+
+    def _vad_ramp(self, goal: np.ndarray) -> np.ndarray:
+        """The foreground-speech gate: VAD_OPEN_MS up, VAD_CLOSE_MS down (no clicks, onsets intact)."""
+        self._vad_gain, out = self._follow_goal(goal, self._vad_gain, self._vad_step_up, self._vad_step_down)
+        return out
+
+    @staticmethod
+    def _follow_goal(goal: np.ndarray, g: float, step_up: float, step_down: float) -> tuple[float, np.ndarray]:
         out = np.empty(len(goal))
-        g = self._mix_gain
         i = 0
-        step = self._ramp_step
         while i < len(goal):
             j = i + 1
             while j < len(goal) and goal[j] == goal[i]:
@@ -717,14 +771,13 @@ class FocusHQ:
             if g == target:
                 out[i:j] = g
             else:
-                s = step if target > g else -step
+                s = step_up if target > g else -step_down
                 ramp = g + s * np.arange(1, j - i + 1)
                 ramp = np.minimum(ramp, target) if s > 0 else np.maximum(ramp, target)
                 out[i:j] = ramp
                 g = float(ramp[-1])
             i = j
-        self._mix_gain = g
-        return out
+        return g, out
 
     def _trim(self, emitted: int) -> None:
         keep = min(emitted, self._next_start)
@@ -733,6 +786,8 @@ class FocusHQ:
             return
         self._in, self._acc, self._wsum = self._in[cut:], self._acc[cut:], self._wsum[cut:]
         self._cacc, self._cwsum = self._cacc[cut:], self._cwsum[cut:]
+        if self._vad_on:
+            self._vacc = self._vacc[cut:]
         self._oacc, self._owsum = self._oacc[cut:], self._owsum[cut:]
         if self._want_asd:
             self._asd = self._asd[cut:]

@@ -483,7 +483,11 @@ _ERROR_TYPES = {
 def _ws_connect(url: str, headers: dict):
     from websockets.sync.client import connect
 
-    return connect(url, additional_headers=headers, open_timeout=5, max_size=None)
+    # certifi CAs: the python.org build has none (same fix as TTS)
+    from hearing.synth.tts import tls_context
+
+    tls = {"ssl": tls_context()} if url.startswith("wss://") else {}
+    return connect(url, additional_headers=headers, open_timeout=5, max_size=None, **tls)
 
 
 class ElevenLabsASR:

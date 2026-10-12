@@ -8,7 +8,7 @@
 .about-note { color: var(--color-dim); font-size: 14px; max-width: 40rem; margin: 0 0 var(--space-3); }
 .about-list { list-style: none; margin: var(--space-4) 0 var(--space-5); padding: 0; display: grid; gap: 0; border-top: 1px solid var(--color-line); }
 .claim { display: grid; gap: var(--space-1); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-line);
-  animation: claim-in 600ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 50ms); }
+  animation: claim-in var(--motion-base) var(--motion-ease) backwards; animation-delay: calc(var(--i) * 40ms); }
 .claim-value { font: 640 clamp(30px, 6vw, 56px)/1 var(--font-display); font-stretch: var(--stretch-display, 72%); color: var(--color-fg); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .claim-label { font-size: 16px; overflow-wrap: anywhere; }
 .claim-cond { font: 12px/1.4 var(--font-mono); color: var(--color-dim); overflow-wrap: anywhere; }
@@ -16,6 +16,11 @@
   .claim { grid-template-columns: 14rem 1fr; column-gap: var(--space-4); align-items: baseline; }
   .claim-cond { grid-column: 2; }
 }
-@keyframes claim-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes claim-in { from { opacity: 0; transform: translateY(var(--motion-rise, 8px)); } }
 @media (prefers-reduced-motion: reduce) { .claim { animation: none; } }
+.about .link { display: inline-block; padding-block: 14px; } /* a 44px-tall target for any pointer */
 :root[data-touch] .about .link { display: inline-flex; align-items: center; min-height: 44px; } /* T-458: a thumb-sized target (was 17 px tall) */
+/* plain-language pass: the technical terms behind the claims, in a closed disclosure (styles in app.css .disclose) */
+.about-measured { margin: 0 0 var(--space-4); }
+.about-measured-list { margin: var(--space-2) 0 0; padding: 0 0 0 1.2em; display: grid; gap: var(--space-1); max-width: 44rem;
+  font: 14px/1.5 var(--font-mono); color: var(--color-dim); overflow-wrap: anywhere; }

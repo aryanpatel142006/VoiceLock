@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Who's speaking · VoiceLock</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="who.css">
+  <script type="module" src="who.js"></script>
+</head>
+<body>
+  <!-- Who's speaking: the second half of the research (which voice is whose), on its own. Live mic in, no audio out.
+       hearing/server/who.py scores every window with the fine-tuned fixed-slot team separator (+ ECAPA) and
+       hearing.who.WhoSmoother keeps the label calm. Not part of the main app; reached from /judge or by URL. -->
+  <main class="stage" id="stage" data-cls="idle">
+    <header class="top">
+      <h1>Who's speaking</h1>
+      <p class="caption" id="caption">Fine-tuned on our two voices · speaker ID only, no audio output</p>
+      <label class="mic-pick">Mic <select id="mic" aria-label="Microphone"><option value="">Default microphone</option></select></label>
+    </header>
+    <section class="who" aria-live="polite">
+      <p class="big" id="big">Press Start</p>
+      <p class="sub" id="sub">the demo mic listens, nothing plays back</p>
+      <div class="conf" aria-label="Confidence"><div class="conf-bar" id="conf"></div></div>
+    </section>
+    <section class="live" aria-label="Live voice">
+      <canvas id="wave" height="72" aria-hidden="true"></canvas>
+      <div class="people">
+        <div class="person p0" id="person0" data-on="false">
+          <p class="pname" id="pname0">Aryan</p>
+          <div class="vp" id="vp0" aria-hidden="true"></div>
+          <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter0" aria-labelledby="pname0"><div class="meter-fill" id="fill0"></div></div>
+          <p class="pct" id="pct0">Match 0%</p>
+        </div>
+        <div class="person p1" id="person1" data-on="false">
+          <p class="pname" id="pname1">Joseph</p>
+          <div class="vp" id="vp1" aria-hidden="true"></div>
+          <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter1" aria-labelledby="pname1"><div class="meter-fill" id="fill1"></div></div>
+          <p class="pct" id="pct1">Match 0%</p>
+        </div>
+      </div>
+      <p class="match-caption" id="match-caption">Match = similarity to each saved voice profile (speaker embedding + our fine-tuned model)</p>
+    </section>
+    <section class="strip" aria-label="Who spoke when (last 60 s)">
+      <canvas id="timeline" height="36"></canvas>
+      <p class="legend" id="legend"><span class="key p0">Aryan</span><span class="key p1">Joseph</span><span class="dim">last 60 s</span></p>
+    </section>
+    <p class="status" id="status"></p>
+    <p class="notice" id="notice" hidden></p>
+    <button type="button" class="go" id="go">Start</button>
+    <p class="foot"><a href="/judge">← back to the Listen demo</a></p>
+  </main>
+</body>
+</html>

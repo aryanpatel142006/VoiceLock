@@ -23,7 +23,7 @@
 .phone[data-tone="warn"] { --tone: var(--color-warn); }
 .phone[data-tone="bad"] { --tone: var(--color-bad); }
 .phone[data-tone="work"] { --tone: var(--color-fg); }
-.phone[data-tone="idle"] { --tone: var(--color-dim); }
+.phone[data-tone="idle"], .phone[data-tone="dim"] { --tone: var(--color-dim); }
 
 
 /* ---------- top line ---------- */
@@ -67,7 +67,7 @@
 .ph-cap.empty { font-size: var(--text-small); color: var(--color-faint); animation: none; }
 .phone[data-mode="quiet"][data-live="true"] .ph-cap-lines { max-height: 12em; }
 .phone[data-mode="quiet"][data-live="true"] .ph-cap { font-size: clamp(1.375rem, 6.2vw, 2rem); }
-@keyframes ph-rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes ph-rise { from { opacity: 0; transform: translateY(var(--motion-rise, 8px)); } }
 
 /* ---------- controls ---------- */
 .ph-controls { display: grid; gap: var(--space-2); }
@@ -102,8 +102,9 @@
 .ph-btn[data-flash="sent"] { border-color: var(--color-fg); }
 .ph-btn[data-flash="failed"] { border-color: var(--color-bad); }
 
-.ph-foot { display: flex; gap: var(--space-4); align-items: baseline;
+.ph-foot { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); align-items: center;
   font: 500 var(--text-micro)/1 var(--font-mono); color: var(--color-faint); font-variant-numeric: tabular-nums; }
+.ph-fact { white-space: nowrap; }
 .ph-leave { margin-left: auto; color: var(--color-dim); text-underline-offset: 3px; }
 
 /* ---------- lobby + Solo ---------- */
@@ -111,7 +112,7 @@
 .ph-lobby, .ph-solo { display: grid; gap: var(--space-4); align-content: start; }
 .ph-lobby-title { margin: 0; font: 800 clamp(48px, 14vw, 112px)/.9 var(--font-display); letter-spacing: -.05em; }
 .ph-lobby-title .dim { color: var(--color-faint); }
-.ph-lede { margin: 0; max-width: 40ch; font: 400 var(--text-small)/1.5 var(--font-ui); color: var(--color-dim); }
+.ph-lede { margin: 0; max-width: 40ch; font: 400 max(16px, var(--text-small))/1.5 var(--font-ui); color: var(--color-dim); }
 .ph-sessions { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-line); }
 .ph-session { border-bottom: 1px solid var(--color-line); }
 .ph-session.empty { padding: var(--space-4) 0; font: 400 var(--text-small)/1.4 var(--font-ui); color: var(--color-faint); }
@@ -156,14 +157,21 @@
   animation: pl-in var(--dur-ui) var(--ease-out) backwards;
 }
 .pl-card[hidden] { display: none; }
-@keyframes pl-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+@keyframes pl-in { from { opacity: 0; transform: translateY(calc(var(--motion-rise, 8px) * -0.5)); } }
 .pl-eyebrow { margin: 0; font: 500 14px/1 var(--font-ui); font-stretch: 125%; color: var(--color-dim); }
 .pl-title { margin: 0; font: 700 18px/1.15 var(--font-display); letter-spacing: -.02em; color: var(--color-fg); }
 .pl-code { aspect-ratio: 1; padding: 10px; border-radius: 6px; background: #fff; }
 .pl-code:empty { background: var(--color-bg); border: 1px dashed var(--color-line); }
 .pl-code svg { display: block; width: 100%; height: 100%; }
 .pl-status { margin: 0; font: 500 12px/1.35 var(--font-mono); color: var(--color-dim); }
-.pl-url { font: 500 12px/1.35 var(--font-mono); color: var(--color-fg); word-break: break-all; }
+.pl-link { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pl-link[hidden] { display: none; }
+.pl-url { flex: 1 1 auto; min-width: 0; font: 500 12px/1.35 var(--font-mono); color: var(--color-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-copy { flex: none; min-height: 32px; padding: 0 10px; border: 1px solid var(--color-line); border-radius: var(--radius-control, 4px);
+  background: transparent; color: var(--color-dim); font: 600 12px/1 var(--font-ui); cursor: pointer; }
+.pl-copy:hover { color: var(--color-fg); border-color: var(--color-dim); }
+.pl-copy:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
 .pl-fine { margin: 0; font: 400 12px/1.45 var(--font-ui); color: var(--color-faint); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -188,3 +196,108 @@ body[data-phone="companion"] #nav { display: none; }
 .ph-session[data-live="true"] .ph-session-state { color: var(--color-fg); }
 .ph-session[data-live="false"] .ph-session-client, .ph-session[data-live="false"] .ph-session-go { color: var(--color-faint); }
 :root[data-touch] .ph-leave { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; }
+
+/* Auto voice focus (board Q-2010): the companion's hero control, the stage's A/B read from its telemetry */
+.ph-switch { --sw: var(--color-fg); display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 72px; padding: 12px 12px 12px 18px; border: 0; border-radius: 16px; cursor: pointer; text-align: left;
+  color: var(--color-fg); background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--sw) 40%, transparent); touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.ph-switch:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+.ph-switch:disabled { opacity: .55; cursor: default; }
+.phone[data-live="true"] .ph-switch[data-on="true"] { --sw: var(--color-focus, #4fd1a5); }
+.phone[data-live="true"] .ph-switch[data-on="false"] { --sw: var(--color-raw, #f0b35a); }
+.ph-switch-text { display: grid; gap: 4px; min-width: 0; }
+.ph-switch-label { font: 800 20px/1.1 var(--font-display, system-ui); letter-spacing: -.01em; }
+.ph-switch-line { font: 500 14px/1.25 var(--font-ui, system-ui); color: color-mix(in oklab, var(--sw) 75%, var(--color-fg)); }
+.ph-switch-track { position: relative; flex: none; width: 88px; height: 48px; border-radius: 999px;
+  background: color-mix(in oklab, var(--sw) 16%, transparent); box-shadow: inset 0 0 0 1.5px var(--sw);
+  transition: background-color var(--motion-base, 240ms) var(--motion-ease, ease), box-shadow var(--motion-base, 240ms) var(--motion-ease, ease); }
+.ph-switch[data-on="true"] .ph-switch-track { background: var(--sw); box-shadow: none; }
+.ph-switch-word { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px;
+  font: 800 13px/1 var(--font-mono, monospace); letter-spacing: .06em; }
+.ph-switch[data-on="true"] .ph-switch-word { justify-content: flex-start; color: var(--color-bg); }
+.ph-switch-knob { position: absolute; top: 5px; left: 5px; width: 38px; height: 38px; border-radius: 50%; background: var(--color-fg);
+  transition: translate var(--motion-base, 240ms) var(--motion-ease, ease), background-color var(--motion-base, 240ms) var(--motion-ease, ease); }
+.ph-switch[data-on="true"] .ph-switch-knob { translate: 40px 0; background: var(--color-bg); }
+@media (prefers-reduced-motion: reduce) { .ph-switch-knob, .ph-switch-track { transition: none; } }
+
+/* Phone QA (iPhone SE 320x568 and 375x667, landscape): the footer facts never break mid-phrase, and on a short screen
+   the companion tightens so Auto voice focus and Focus/Quiet stay above the fold without scrolling. The companion
+   supplies its own padding, so the shell's bottom padding under it only made the page scroll. */
+.ph-fact { white-space: nowrap; }
+.ph-foot { flex-wrap: wrap; row-gap: var(--space-1); column-gap: var(--space-3); }
+.screen-phone { padding-bottom: 0; }
+@media (max-height: 760px) and (orientation: portrait) {
+  .phone[data-role="companion"] { gap: var(--space-2); padding-block: var(--space-2); }
+  .phone[data-role="companion"] .ph-top { min-height: 24px; }
+  .phone[data-role="companion"] .ph-word { font-size: clamp(44px, 14vw, 72px); }
+  .phone[data-role="companion"] .ph-who { font-size: 1.375rem; }
+  .phone[data-role="companion"] .ph-sentence { display: none; }
+  .phone[data-role="companion"] .ph-captions { gap: var(--space-1); padding-top: var(--space-2); }
+  .phone[data-role="companion"] .ph-cap-lines { max-height: 3.9em; }
+  .phone[data-role="companion"] .ph-cap { font-size: var(--text-body); }
+  .phone[data-role="companion"] .ph-controls { gap: var(--space-2); }
+  .phone[data-role="companion"] .ph-switch { min-height: 60px; padding-block: 6px; }
+  .phone[data-role="companion"] .ph-switch-label { font-size: 17px; }
+  .phone[data-role="companion"] .ph-switch-line { font-size: 13px; }
+  .phone[data-role="companion"] .ph-btn { min-height: 52px; }
+  /* Quiet's larger captions (rules above in the file) give way to the same fold */
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-word { font-size: clamp(40px, 12vw, 64px); }
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-cap-lines { max-height: 6em; }
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-cap { font-size: 1.1875rem; }
+}
+/* landscape phone: hero on the left, captions and controls on the right, all in one screen */
+@media (orientation: landscape) and (max-height: 500px) {
+  .phone[data-role="companion"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+    column-gap: var(--space-4); row-gap: var(--space-2); padding-block: var(--space-2);
+    min-height: calc(100dvh - 52px - var(--safe-t, 0px)); }
+  .phone[data-role="companion"] .ph-top { grid-column: 1 / -1; min-height: 24px; }
+  .phone[data-role="companion"] .ph-hero { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+  .phone[data-role="companion"] .ph-word { font-size: clamp(36px, 7.5vw, 60px); }
+  .phone[data-role="companion"] .ph-sentence { display: none; }
+  .phone[data-role="companion"] .ph-captions { grid-column: 2; grid-row: 2; align-self: end; padding-top: var(--space-2); }
+  .phone[data-role="companion"] .ph-cap-lines { max-height: 3.9em; }
+  .phone[data-role="companion"] .ph-cap { font-size: var(--text-body); }
+  .phone[data-role="companion"] .ph-controls { grid-column: 2; grid-row: 3; gap: var(--space-2); }
+  .phone[data-role="companion"] .ph-foot { grid-column: 1 / -1; }
+  .phone[data-role="companion"] .ph-switch { min-height: 56px; padding-block: 4px; }
+  .phone[data-role="companion"] .ph-switch-label { font-size: 17px; }
+  .phone[data-role="companion"] .ph-btn { min-height: 48px; }
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-word { font-size: clamp(36px, 7.5vw, 60px); }
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-cap-lines { max-height: 3.9em; }
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-cap { font-size: var(--text-body); }
+}
+/* very short landscape (Safari with its bars: about 320-345 px tall): drop the one-line explainers */
+@media (orientation: landscape) and (max-height: 380px) {
+  .phone[data-role="companion"] { padding-block: var(--space-1); row-gap: var(--space-1); }
+  .phone[data-role="companion"] .ph-stage { display: none; }
+  .phone[data-role="companion"] .ph-switch { min-height: 48px; }
+  .phone[data-role="companion"] .ph-switch-line { display: none; }
+  .phone[data-role="companion"] .ph-switch-track { height: 40px; width: 76px; }
+  .phone[data-role="companion"] .ph-switch-knob { width: 30px; height: 30px; }
+  .phone[data-role="companion"] .ph-switch[data-on="true"] .ph-switch-knob { translate: 36px 0; }
+  .phone[data-role="companion"] .ph-btn { min-height: 44px; }
+  .phone[data-role="companion"] .ph-cap-lines,
+  .phone[data-role="companion"][data-mode="quiet"][data-live="true"] .ph-cap-lines { max-height: 2.7em; }
+}
+
+/* ---------- home-screen companion: the install hint (install.js), gone once the app runs standalone ---------- */
+.ph-install { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-bg-raise); }
+.ph-install[hidden], .ph-install-go[hidden] { display: none; }
+.ph-install-text { grid-column: 1; margin: 0; font: 500 var(--text-small)/1.4 var(--font-ui); color: var(--color-fg); }
+.ph-install-go { grid-column: 1; justify-self: start; min-height: 44px; padding: 0 var(--space-5); }
+.ph-install-trust { grid-column: 1; justify-self: start; display: inline-flex; align-items: center; min-height: 44px;
+  font: 500 14px/1.3 var(--font-ui); color: var(--color-dim); text-underline-offset: 3px; }
+.ph-install-close { grid-column: 2; grid-row: 1; align-self: start; width: 44px; height: 44px; margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--color-dim); font: 400 24px/1 var(--font-ui); cursor: pointer; }
+.ph-install-close:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+@media (orientation: landscape) and (max-height: 500px) { .phone[data-role="companion"] .ph-install { grid-column: 1 / -1; } }
+@media (orientation: landscape) and (max-height: 380px) { .phone[data-role="companion"] .ph-install { display: none; } }
+/* installed (iOS black-translucent status bar): the shell's header already clears the notch, so the companion does not
+   pad for it twice; the bottom keeps the home-indicator inset */
+@media (display-mode: standalone) {
+  .ph-install { display: none !important; }
+  body[data-phone="companion"] .phone { padding-top: var(--space-4); }
+}

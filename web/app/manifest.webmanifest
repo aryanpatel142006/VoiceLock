@@ -1,7 +1,7 @@
 {
   "id": "/app/",
-  "name": "Selective Hearing",
-  "short_name": "Hearing",
+  "name": "VoiceLock",
+  "short_name": "VoiceLock",
   "description": "Turn down the world without disconnecting from it: choose whose voice you hear.",
   "start_url": "/app/",
   "scope": "/app/",

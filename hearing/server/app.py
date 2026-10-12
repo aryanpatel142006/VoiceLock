@@ -35,6 +35,7 @@ from hearing.server.static import mount_console
 from hearing.server.tap import SessionTap
 from hearing.server.team import read_git_rev
 from hearing.server.watch import SessionWatch
+from hearing.server.who import mount_who
 from hearing.tse.enroll import list_profiles, profile_versions
 from hearing.tse.stage import tse_window
 
@@ -257,6 +258,7 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
                 tap.close()
 
     rehearsal.mount(app)  # T-285: /api/rehearsal/*
+    mount_who(app, sessions)  # /ws/who + /who/status: the Who's speaking page (hearing.who), no audio out
     mount_connect(app, config.console_dir)
     mount_console(app, config.console_dir)
     return app

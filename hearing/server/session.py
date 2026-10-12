@@ -550,6 +550,7 @@ class Session:
         self._quiet_feed: dict | None = None  # telemetry ``quiet``: feed focus|paused and why
         self._caption_tap: np.ndarray | None = None  # the active pipeline's output this hop (Quiet's ASR input)
         self.sos = False  # T-462: SOS on: Quiet's ramp to silence, no captions; the mode underneath is untouched
+        self.sos_captions = False  # Comfort's Stay Quiet (inside SOS): Quiet's captions keep coming, output stays silent
         self.namecall: NameCaller | None = None  # Name Call mode (T-120), built on first use
         self._name: tuple[str, list[str]] = ("", [])
         self._name_match, self._name_exclude = NAME_DEFAULT_MATCH, []  # T-123 false-trigger guards
@@ -1098,8 +1099,15 @@ class Session:
         if "sos" in fields and control.sos is not None and control.sos != self.sos:
             self.sos = control.sos
             log.info("SOS %s (mode %s kept)", "on" if self.sos else "off", self.mode)
+            if not self.sos:
+                self.sos_captions = False  # the next SOS starts captionless again
             if self._quiet_synth is not None:
                 self._quiet_synth.reset()  # nothing heard during SOS captions afterwards
+            self._quiet_feed = None
+        if "sos_captions" in fields and control.sos_captions is not None and control.sos_captions != self.sos_captions:
+            self.sos_captions = control.sos_captions
+            if self._quiet_synth is not None:
+                self._quiet_synth.reset()  # captions start from what is said after Stay Quiet, not before
             self._quiet_feed = None
         if "target" in fields:
             old = self.ctx.target
@@ -1320,7 +1328,7 @@ class Session:
         synth = self._quiet_synth if self._quiet_on else self._synth()
         if synth is not None:
             captions = synth.drain_captions()  # drained under SOS too: nothing queued shows up afterwards
-            if not self.sos:
+            if self._captions_on:
                 out.extend({"type": "caption", **c} for c in captions)
         self._server_sum += 1000.0 * (time.perf_counter() - start)
         self._server_n += 1
@@ -1367,6 +1375,11 @@ class Session:
             self._caption_tap = y
             return self._apply_quiet(self._crossfade(before, y, pipeline), out)
 
+    @property
+    def _captions_on(self) -> bool:
+        """T-462: no captions under SOS, unless Comfort's Stay Quiet asked for them (``sos_captions``)."""
+        return not self.sos or self.sos_captions
+
     def _apply_quiet(self, y: np.ndarray, out: list) -> np.ndarray:
         """T-149: Quiet's output gain ramp (digital silence within :data:`QUIET_FADE_MS`, also for
         whatever a crossfade or a priming pipeline would still play) and its captions."""
@@ -1378,7 +1391,7 @@ class Session:
             if self._quiet_synth is not None:
                 self._quiet_synth.reset()
             self._quiet_feed = None
-        if quiet and not self.sos:
+        if quiet and self._captions_on:
             self._quiet_captions(len(y), out)
         goal = 0.0 if quiet or self.sos else 1.0  # T-462: SOS takes the same ramp, whatever the mode
         if self._quiet_gain == goal:
@@ -1677,7 +1690,8 @@ class Session:
         # T-134 confidence; T-382 gated / soft_gated (the enrolled pick's last window) for the gate pill
         tse = {"confidence": ours.get("confidence"), "gated": ours.get("gated"), "soft_gated": ours.get("soft_gated"),
                "separator": ours.get("separator"),  # T-465: stock / team separator of the last enrolled window
-               "locked": ours.get("locked"), "lock_duck_db": ours.get("lock_duck_db")}  # T-487: team slot locked
+               "locked": ours.get("locked"), "lock_duck_db": ours.get("lock_duck_db"),  # T-487: team slot locked
+               "denoise": ours.get("denoise")}  # loudest mode: DFN model/ready, expander gate, foreground VAD state
         remote = self._remote_report(latency)
         if remote is not None and remote["source"] != "local":
             # T-156: the GPU's audio plays, so what it isolates is the remote session's state

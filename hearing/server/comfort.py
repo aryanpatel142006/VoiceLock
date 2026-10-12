@@ -91,11 +91,12 @@ def comfort_enabled() -> bool:
 
 
 def gemini_json(api_key: str, model: str, system: str, user: dict, schema: dict, *, timeout_s: float,
-                max_tokens: int = 320, temperature: float = 0.3) -> Any:
-    """One ``generateContent`` call returning the parsed JSON the response schema forced. Raises on any failure."""
+                max_tokens: int = 320, temperature: float = 0.3, contents: list[dict] | None = None) -> Any:
+    """One ``generateContent`` call returning the parsed JSON the response schema forced. Raises on any failure.
+    ``contents`` (a multi-turn conversation) replaces the single JSON ``user`` turn when given."""
     request_body = {
         "system_instruction": {"parts": [{"text": system}]},
-        "contents": [{"role": "user", "parts": [{"text": json.dumps(user)}]}],
+        "contents": contents or [{"role": "user", "parts": [{"text": json.dumps(user)}]}],
         "generationConfig": {"responseMimeType": "application/json", "temperature": temperature,
                              "maxOutputTokens": max_tokens, "responseSchema": schema},
     }
@@ -138,12 +139,14 @@ DEMO_PROFILES = (
      "talk_amount": "little", "activities": ["drawing", "listening to music"],
      "helps": ["breathing", "lofi"], "avoid": ["loud noise"], "favorite_sound": "pad", "volume": 40,
      "sound_volume": 40, "guidance_style": "short", "questions": "normal",
-     "spoken_guidance": "only when requested", "history": []},
+     "spoken_guidance": "only when requested", "history": [],
+     "support_contact": {"name": "Jordan (sister)", "phone": "555-0100"}},
     {"id": "sam-demo", "preferred_name": "Sam", "demo": True, "fictional": True, "preferred_mode": "silence",
      "talk_amount": "little", "activities": ["holding a familiar object"],
      "helps": ["silence", "sensory-object"], "avoid": ["breathing", "loud noise"], "favorite_sound": None,
      "volume": 0, "sound_volume": 0, "guidance_style": "short", "questions": "minimal",
-     "spoken_guidance": "only when requested", "history": []},
+     "spoken_guidance": "only when requested", "history": [],
+     "support_contact": {"name": "Riley (friend)", "phone": "555-0101"}},
 )
 
 
@@ -166,6 +169,18 @@ def _history(value: Any) -> list[dict]:
                             "label": str(item.get("label", item["strategy"]))[:48], "helpful": item["helpful"],
                             "text": str(item.get("text", ""))[:120]})
     return entries
+
+
+def _contact(value: Any) -> dict | None:
+    """``support_contact``: {name, phone} for "Call my person", or null. The phone is digits and + - ( ) . spaces."""
+    if value is None:
+        return None
+    if not isinstance(value, dict) or not isinstance(value.get("name"), str) or not isinstance(value.get("phone"), str):
+        raise HTTPException(422, "support_contact must be {name, phone} or null")
+    name, phone = value["name"].strip()[:40], value["phone"].strip()
+    if not name or not re.fullmatch(r"\+?[0-9][0-9 ().-]{2,24}", phone):
+        raise HTTPException(422, "support_contact needs a name and a phone number")
+    return {"name": name, "phone": phone}
 
 
 def normalize_profile(profile_id: str, data: dict) -> dict:
@@ -212,6 +227,7 @@ def normalize_profile(profile_id: str, data: dict) -> dict:
             "volume": volume, "sound_volume": volume,
             "guidance_style": style, "questions": questions, "spoken_guidance": spoken,
             "history": _history(data.get("history", [])),
+            "support_contact": _contact(data.get("support_contact")),
             # mirrors for the plan layer / PR #402 clients
             "dislikes": list(avoid), "worked": list(helps),
             "breathing_helps": "breathing" in lowered, "movement_helps": "movement" in lowered}
@@ -227,6 +243,8 @@ class ComfortStore:
         for seed in DEMO_PROFILES:  # seed, or upgrade a pre-learning-loop demo profile
             if seed["id"] not in saved or "helps" not in saved[seed["id"]]:
                 saved[seed["id"]] = normalize_profile(seed["id"], seed)
+            elif "support_contact" not in saved[seed["id"]]:  # a pre-"Call my person" demo profile
+                saved[seed["id"]]["support_contact"] = seed["support_contact"]
         self._write(saved)
 
     def reset_demo(self) -> list[str]:
@@ -263,6 +281,8 @@ class ComfortStore:
             raise HTTPException(422, "Invalid profile ID")
         saved = self._read()
         kept = history if history is not None else saved.get(profile_id, {}).get("history", [])
+        if isinstance(data, dict) and "support_contact" not in data:  # a client that doesn't know the field keeps it
+            data = {**data, "support_contact": saved.get(profile_id, {}).get("support_contact")}
         profile = normalize_profile(profile_id, {**data, "history": kept}) if isinstance(data, dict) \
             else normalize_profile(profile_id, data)
         saved[profile_id] = profile
@@ -401,8 +421,8 @@ GUIDANCE_SYSTEM = (
 ACTIONS = {"sound": "play", "breathing": "breathe", "silence": "quiet"}
 CLAIMS = re.compile(r"\b(?:is|are|now|already) playing\b|\bready (?:to play|for you)\b|\bplaying (?:now|for you)\b"
                     r"|\bi(?:'ve| have| just)? ?(?:started|put on|turned on|queued)\b|\bi(?:'ll| will) (?:play|start)\b",
-                    re.I)
-TAP = re.compile(r"\b(?:tap|press|click|button)\b", re.I)
+                    re.IGNORECASE)
+TAP = re.compile(r"\b(?:tap|press|click|button)\b", re.IGNORECASE)
 
 
 class WordingError(ValueError):
@@ -690,6 +710,363 @@ def make_plan(catalog: dict, trigger: str, *, sound_now: str | None = None, prof
             "latency_ms": int((time.perf_counter() - t0) * 1000), "plan": plan}
 
 
+# ---------------------------------------------------------------- Talk to Me: a calm, multi-turn spoken conversation
+
+CHAT_TIMEOUT_S = 6.0
+CHAT_TEMPERATURE = 0.8
+MAX_CHAT_TURNS = 12  # history turns sent to Gemini (the client keeps the rest on screen)
+MAX_TURN_CHARS = 600
+MAX_REPLY_WORDS = 70
+MAX_AUDIO_BYTES = 6_000_000
+STT_URL = "https://api.elevenlabs.io/v1/speech-to-text"
+DEFAULT_STT_MODEL = "scribe_v1"
+STT_TIMEOUT_S = 10.0
+CRISIS_LINE = ("If you might hurt yourself or you are in danger, please call or text 988, the Suicide and Crisis "
+               "Lifeline, or call 911 in an emergency. You could also reach out to someone you trust right now.")
+CRISIS = re.compile(
+    r"\b(?:kill(?:ing)? my ?self|suicid\w*|end (?:it all|my life)|don'?t want to (?:live|be alive|be here anymore)"
+    r"|want(?:ed)? to die|hurt(?:ing)? my ?self|self[- ]?harm\w*|cut(?:ting)? my ?self|overdose"
+    r"|not safe|in danger|someone (?:is )?(?:hurting|following|attacking) me|being (?:hurt|attacked|followed))\b",
+    re.IGNORECASE)
+NOT_A_THERAPIST = re.compile(r"\b(?:i am|i'm|as) (?:a |your )?(?:therapist|counsel(?:l)?or|doctor|psychologist|"
+                             r"psychiatrist|nurse)\b|\bdiagnos", re.IGNORECASE)
+CHAT_SYSTEM = (
+    "You are 'Talk to Me', a warm, calm voice companion inside the LockedIn hearing app. The person you are talking "
+    "with is autistic and may be in sensory overload right now; they opened you on purpose. Your words are spoken "
+    "aloud by a calm voice, so write plain spoken sentences: no lists, no emoji, no markdown.\n"
+    "How to talk:\n"
+    "- Reply to what the person actually said. Help with what they ask for when you can.\n"
+    "- Keep replies short: 1 to 3 short sentences (follow the profile's guidance_style: 'short' means 1 or 2 short "
+    "sentences). Ask at most one question per reply; if questions is 'minimal', ask none unless you must.\n"
+    "- Be literal and clear. No idioms, no sarcasm, no metaphors. Calm and kind, never bubbly.\n"
+    "- Use their preferred name sometimes, not every reply.\n"
+    "- When it fits, offer simple grounding: slow breathing (in for 4, out for 6), slowing down, noticing feet on the "
+    "floor, a sound they like, their familiar object, a quieter spot. Offer, never force. Talk them through one step "
+    "at a time if they say yes.\n"
+    "- Use the profile: helps are things that helped before; favorite_sound and activities are things they like; "
+    "history is what they confirmed. NEVER suggest or mention anything in avoid, even as an option.\n"
+    "- You cannot play sounds or press other buttons in the app. Do not say you started, played or turned anything "
+    "on. The one thing you CAN do is start a call to their trusted person (below).\n"
+    "- You are not a therapist, doctor or medical care. Never diagnose, never give medical advice, never claim to be "
+    "a professional. If asked, say you are a calm voice in the app that can talk with them.\n"
+    "- SAFETY: if the person mentions self-harm, suicide, wanting to die, or being in danger, respond with care, say "
+    "they matter, and tell them they can call or text 988 (the Suicide and Crisis Lifeline in the US), reach out to "
+    "someone they trust, or call 911 in an emergency.\n"
+    "- Their trusted person is support_contact (may be null). You CAN start a call to support_contact: when the "
+    "person asks you to call, phone or ring them (by name, as 'my person', or as their sister, friend and so on), set "
+    "action to 'call' and reply only with something short like 'Okay. Calling Jordan now.' The app then opens the "
+    "call. Never say you cannot make calls, and never say the call connected or that they answered. If "
+    "support_contact is null, say there is no one saved to call yet. If they want someone or feel unsafe but did not "
+    "ask you to call, gently say you can call support_contact for them if they want, and set offer_call to true.\n"
+    "Remembering: if in their LAST message the person clearly states that a specific thing helps or does not help "
+    "them (for example 'rain helps me' or 'breathing doesn't help me'), set remember_strategy to the matching id "
+    "from remember_options and remember_helpful to true or false. Otherwise set remember_strategy to 'none'. "
+    "Do not say you saved it; the app asks them first.\n"
+    "Return only JSON with reply, remember_strategy, remember_helpful, offer_call and action ('call' or 'none')."
+)
+
+
+def chat_timeout_s(env: dict | None = None) -> float:
+    env = os.environ if env is None else env
+    try:
+        return max(0.5, float(env.get("COMFORT_CHAT_TIMEOUT_S", CHAT_TIMEOUT_S)))
+    except ValueError:
+        return CHAT_TIMEOUT_S
+
+
+def clean_chat_history(value: Any) -> list[dict]:
+    """``history``: [{role: user|assistant, text}], the last ``MAX_CHAT_TURNS`` kept, each turn capped."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise HTTPException(422, "history must be a list of {role, text}")
+    turns = []
+    for item in value:
+        if not isinstance(item, dict) or item.get("role") not in {"user", "assistant"} \
+                or not isinstance(item.get("text"), str):
+            raise HTTPException(422, "history entries need role user|assistant and text")
+        text = item["text"].strip()[:MAX_TURN_CHARS]
+        if text:
+            turns.append({"role": item["role"], "text": text})
+    return turns[-MAX_CHAT_TURNS:]
+
+
+def chat_profile_context(catalog: dict, profile: dict) -> dict:
+    """What Gemini knows about the person: their own words and confirmed history, ids shown as plain labels."""
+    def label(key: str) -> str:
+        s = find_strategy(catalog, key)
+        return s["label"].lower() if s else key
+
+    sounds = {"pad": "soft music", "brown": "brown noise", "rain": "rain sound", "white": "white noise"}
+    return {"preferred_name": profile["preferred_name"], "guidance_style": profile["guidance_style"],
+            "questions": profile["questions"], "preferred_mode": profile.get("preferred_mode"),
+            "helps": [label(h) for h in profile["helps"]], "avoid": [label(a) for a in profile["avoid"]],
+            "favorite_sound": sounds.get(profile.get("favorite_sound") or "", None),
+            "activities": profile.get("activities", []),
+            "history": [h["text"] for h in profile["history"][-5:] if h.get("text")],
+            "support_contact": (profile.get("support_contact") or {}).get("name")}
+
+
+def avoid_terms(catalog: dict, profile: dict) -> list[str]:
+    """Words that mean the reply suggests an avoided strategy (Sam avoids breathing: 'breathe', 'breath'...). Only
+    avoided catalog strategies are checked here (they are the things a reply could suggest); a free-text avoid entry
+    such as 'loud noise' is a trigger the reply may name with empathy, and Gemini is told never to suggest it."""
+    terms = set()
+    for a in profile.get("avoid", []):
+        s = find_strategy(catalog, a)
+        if s:
+            terms.update(t for t in (s["id"].replace("-", " "), s["label"].lower()) if len(t) >= 4)
+    if {"breathing", "slow breathing"} & terms:
+        terms.add("breath")  # breathe, breaths, breathing
+    return sorted(terms)
+
+
+def is_crisis(text: str) -> bool:
+    return bool(text and CRISIS.search(text))
+
+
+def default_chat_reply(catalog: dict, profile: dict, *, crisis: bool = False, greeting: bool = False) -> str:
+    name = profile["preferred_name"]
+    if crisis:
+        return f"{name}, I'm really glad you told me. You matter. {CRISIS_LINE}"
+    if greeting:
+        return f"Hey {name}, I'm here. What's going on?"
+    if any(t in "i'm here with you. let's take one slow breath together." for t in avoid_terms(catalog, profile)):
+        return "I'm here with you. We can stay quiet together for a moment."
+    return "I'm here with you. Let's take one slow breath together."
+
+
+def check_chat_reply(text: Any, catalog: dict, profile: dict, *, crisis: bool) -> str:
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("empty reply")
+    reply = re.sub(r"\s+", " ", text.replace("*", "")).strip()
+    words = reply.split()
+    if len(words) > MAX_REPLY_WORDS:
+        reply = " ".join(words[:MAX_REPLY_WORDS]).rstrip(",;:") + "."
+    low = reply.lower()
+    if NOT_A_THERAPIST.search(reply):
+        raise ValueError("reply claims a professional role or diagnoses")
+    if CLAIMS.search(reply):
+        raise ValueError("reply claims the app is playing something")
+    hit = next((t for t in avoid_terms(catalog, profile) if t in low), None)
+    if hit:
+        raise ValueError(f"reply mentions something the person avoids ({hit})")
+    if crisis and "988" not in reply:
+        reply = f"{reply} {CRISIS_LINE}"
+    return reply
+
+
+CALL_VERB = re.compile(r"\b(?:call|phone|ring|dial|facetime)\b", re.IGNORECASE)
+# "don't call her", "should I call Jordan?", "I'm scared to ring my mum": not a request (words, no commas, between)
+CALL_NOT = re.compile(r"\b(?:don'?t|do not|never|shouldn'?t|should i|should we|scared to|afraid to|nervous to|stop)"
+                      r"(?:\s+\w+){0,2}?\s+(?:call|calling|phone|ring|dial|facetime)\b", re.IGNORECASE)
+CALL_TARGETS = ("my person", "my support", "my sister", "my brother", "my mom", "my mum", "my mother", "my dad",
+                "my father", "my parent", "my parents", "my friend", "my partner", "my wife", "my husband",
+                "my girlfriend", "my boyfriend", "my aunt", "my uncle", "my grandma", "my grandpa", "my cousin",
+                "my roommate", "my carer", "my caregiver", "my trusted person", "my contact")
+CANT_CALL = re.compile(r"\bI\s+(?:can'?not|can'?t|am unable to|am not able to)\s+(?:\w+\s+){0,3}?(?:calls?|phone|dial)\b",
+                       re.IGNORECASE)
+CALL_CLAIM = re.compile(r"\b(?:call (?:is |has )?connected|you'?re connected|connected you|picked up|answered|on the line"
+                        r"|is ringing)\b|\b(?:i'?m|i am) calling\b|\bcalling \w+ now\b", re.IGNORECASE)
+
+
+def contact_names(contact: dict | None) -> tuple[str, str] | None:
+    """'Jordan (sister)' -> ('Jordan', 'sister'): the first name the reply uses and the relation in brackets."""
+    name = (contact or {}).get("name") or ""
+    if not name.strip():
+        return None
+    first = re.split(r"[\s(]", name.strip())[0] or name.strip()
+    rel = re.search(r"\(([^)]+)\)", name)
+    return first, (rel.group(1).strip() if rel else "")
+
+
+def wants_call(text: str, contact: dict | None) -> bool:
+    """A plain request to call the trusted person: a call verb plus their name, their relation, 'my person', 'my
+    sister'... ('Can you please call Jordan?', 'ring my person'). 'Should I call...', 'don't call...' are not."""
+    text = (text or "").replace("\u2019", "'")
+    if not CALL_VERB.search(text) or CALL_NOT.search(text):
+        return False
+    low = text.lower()
+    names = contact_names(contact)
+    targets = list(CALL_TARGETS)
+    if names:
+        targets += [names[0].lower()] + ([f"my {names[1].lower()}", names[1].lower()] if names[1] else [])
+    return any(re.search(rf"\b{re.escape(t)}\b", low) for t in targets)
+
+
+def call_reply(profile: dict) -> str:
+    """The spoken line when the app opens the call. Never claims it connected."""
+    names = contact_names(profile.get("support_contact"))
+    if not names:
+        return "There's no one saved to call yet. You can add your person to your profile."
+    return f"Okay. Calling {names[0]} now."
+
+
+def remember_options(catalog: dict) -> list[str]:
+    return [s["id"] for s in catalog["strategies"]]
+
+
+def gemini_chat(catalog: dict, profile: dict, history: list[dict], user_text: str, *, api_key: str, model: str,
+                timeout_s: float, greeting: bool = False) -> dict:
+    """One Gemini turn over the whole (capped) conversation. Raises on any failure or off-format output."""
+    system = (CHAT_SYSTEM + "\nThe person's profile (JSON): " + json.dumps(chat_profile_context(catalog, profile))
+              + "\nremember_options: " + json.dumps(
+                  {s["id"]: s["label"] for s in catalog["strategies"]}))
+    contents = [{"role": "model" if t["role"] == "assistant" else "user", "parts": [{"text": t["text"]}]}
+                for t in history]
+    if greeting:
+        contents.append({"role": "user", "parts": [{"text": (
+            "(The person just opened Talk to Me and has not said anything yet. Greet them by their preferred name, "
+            "say you are here, and ask gently how they are doing or what is going on. One or two short sentences.)")}]})
+    else:
+        contents.append({"role": "user", "parts": [{"text": user_text}]})
+    schema = {"type": "OBJECT", "properties": {
+        "reply": {"type": "STRING"},
+        "remember_strategy": {"type": "STRING", "enum": ["none", *remember_options(catalog)]},
+        "remember_helpful": {"type": "BOOLEAN"}, "offer_call": {"type": "BOOLEAN"},
+        "action": {"type": "STRING", "enum": ["none", "call"]}},
+        "required": ["reply", "remember_strategy"]}
+    out = gemini_json(api_key, model, system, {}, schema, timeout_s=timeout_s, max_tokens=220,
+                      temperature=CHAT_TEMPERATURE, contents=contents)
+    if not isinstance(out, dict):
+        raise ValueError("reply is not an object")  # noqa: TRY004 (callers catch ValueError)
+    return out
+
+
+def suggest_remember(catalog: dict, profile: dict, out: dict, user_text: str) -> dict | None:
+    """A 'Remember this?' offer, only for a clear statement in the user's own words, never saved here."""
+    sid, helpful = out.get("remember_strategy"), out.get("remember_helpful")
+    strategy = find_strategy(catalog, sid) if sid and sid != "none" else None
+    if strategy is None or not isinstance(helpful, bool) or not user_text.strip():
+        return None
+    target = profile["helps"] if helpful else profile["avoid"]
+    if any(x.lower() in {strategy["id"], strategy["label"].lower()} for x in target):
+        return None  # already known
+    label = strategy["label"].lower()
+    return {"strategy": strategy["id"], "helpful": helpful, "label": strategy["label"],
+            "ask": f"Remember that {label} helps?" if helpful else f"Remember that {label} doesn't help?"}
+
+
+def make_chat_reply(catalog: dict, profile: dict, history: list[dict], user_text: str, *, env: dict | None = None,
+                    chat=gemini_chat) -> dict:
+    """The /comfort/chat body without audio: Gemini's reply when it answers in time and passes the checks, else a
+    gentle default (``source: default`` with a reason). A crisis message always carries 988."""
+    env = os.environ if env is None else env
+    api_key = env.get("GEMINI_API_KEY") or ""
+    model = env.get("GEMINI_MODEL") or DEFAULT_MODEL
+    greeting = not user_text and not history
+    crisis = is_crisis(user_text)
+    t0 = time.perf_counter()
+    source, reason, reply, remember, offer_call = "default", None, None, None, False
+    contact = profile.get("support_contact")
+    # a plain "call Jordan" opens the call at once, without waiting on Gemini
+    action = "call" if not greeting and wants_call(user_text, contact) else None
+    if action:
+        reason = "call_request"
+    elif not api_key:
+        reason = "no_key"
+    else:
+        try:
+            out = chat(catalog, profile, history, user_text, api_key=api_key, model=model,
+                       timeout_s=chat_timeout_s(env), greeting=greeting)
+            reply = check_chat_reply(out.get("reply"), catalog, profile, crisis=crisis)
+            remember = None if greeting or crisis else suggest_remember(catalog, profile, out, user_text)
+            offer_call = out.get("offer_call") is True
+            if out.get("action") == "call" and not greeting:
+                action, reply = "call", None  # the app's own line: short, and never "connected"
+            elif contact and not crisis and CANT_CALL.search(reply.replace("\u2019", "'")):
+                # it can call; it must never say it can't
+                reply, offer_call = f"I can call {contact_names(contact)[0]} for you if you want. Just ask me.", True
+            elif CALL_CLAIM.search(reply):
+                raise ValueError("reply claims a call that the app did not start")
+            source = "gemini"
+        except (OSError, KeyError, IndexError, TypeError, ValueError) as exc:
+            reason, reply, remember, offer_call = failure_reason(exc), None, None, False
+            log.warning("Talk to Me fell back to default (%s): %s: %s", reason, type(exc).__name__,
+                        _redact(str(exc)[:200], api_key))
+    if action == "call":
+        reply = call_reply(profile)
+        if not contact:
+            action = None  # nobody to call: the reply says so, nothing opens
+        elif crisis:
+            reply = f"{reply} {CRISIS_LINE}"
+    if reply is None:
+        reply = default_chat_reply(catalog, profile, crisis=crisis, greeting=greeting)
+    return {"profile_id": profile["id"], "user_text": user_text, "reply": reply, "source": source,
+            "reason": reason, "model": model if source == "gemini" else None, "crisis": crisis,
+            "latency_ms": int((time.perf_counter() - t0) * 1000), "suggest_remember": remember,
+            # "Call my person" is offered next to 988 on any crisis words, or when Gemini offers it
+            "offer_call": bool(contact) and (crisis or offer_call or action == "call"),
+            # "call": the person asked to call their trusted person; the app opens the call (it never says connected)
+            "action": action}
+
+
+def audio_mime(data: bytes, hint: Any = None) -> tuple[str, str]:
+    if data[:4] == b"RIFF":
+        return "audio/wav", "turn.wav"
+    if data[:4] == b"OggS":
+        return "audio/ogg", "turn.ogg"
+    if data[:4] == b"\x1aE\xdf\xa3":
+        return "audio/webm", "turn.webm"
+    if data[4:8] == b"ftyp":
+        return "audio/mp4", "turn.m4a"
+    if isinstance(hint, str) and re.fullmatch(r"audio/[a-z0-9.+-]{1,24}", hint.split(";")[0]):
+        return hint.split(";")[0], "turn.bin"
+    return "application/octet-stream", "turn.bin"
+
+
+def transcribe(audio: bytes, *, api_key: str, mime: str | None = None, timeout_s: float = STT_TIMEOUT_S) -> str:
+    """ElevenLabs batch speech-to-text (multipart upload). Returns the text; raises on failure."""
+    content_type, filename = audio_mime(audio, mime)
+    boundary = "----lockedin" + os.urandom(8).hex()
+    fields = {"model_id": os.environ.get("ELEVENLABS_STT_MODEL") or DEFAULT_STT_MODEL, "language_code": "en",
+              "tag_audio_events": "false"}
+    body = io.BytesIO()
+    for key, value in fields.items():
+        body.write(f'--{boundary}\r\nContent-Disposition: form-data; name="{key}"\r\n\r\n{value}\r\n'.encode())
+    body.write(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+               f"Content-Type: {content_type}\r\n\r\n".encode())
+    body.write(audio)
+    body.write(f"\r\n--{boundary}--\r\n".encode())
+    request = Request(STT_URL, data=body.getvalue(), method="POST",
+                      headers={"xi-api-key": api_key, "Content-Type": f"multipart/form-data; boundary={boundary}"})
+    try:
+        with urlopen(request, timeout=timeout_s, context=ssl_context()) as response:
+            result = json.load(response)
+    except HTTPError as exc:
+        try:
+            detail = (exc.read() or b"")[:300].decode("utf-8", "replace")
+        except OSError:
+            detail = ""
+        raise OSError(f"ElevenLabs STT HTTP {exc.code}: {_redact(detail, api_key)}") from None
+    text = result.get("text") if isinstance(result, dict) else None
+    if not isinstance(text, str):
+        raise ValueError("ElevenLabs STT returned no text")  # noqa: TRY004 (callers catch ValueError)
+    return re.sub(r"\s+", " ", text).strip()[:MAX_TURN_CHARS]
+
+
+def speak_text(text: str) -> dict:
+    """ElevenLabs speech for one line: {audio_base64, engine, error, tts_ms}. The key is never returned or logged."""
+    if not os.environ.get("ELEVENLABS_API_KEY"):
+        return {"audio_base64": None, "engine": None, "error": "ElevenLabs key is not configured", "tts_ms": 0}
+    api_key = os.environ["ELEVENLABS_API_KEY"]
+    voice_id = os.environ.get("ELEVENLABS_VOICE_ID") or DEFAULT_VOICE_ID
+    model_id = os.environ.get("ELEVENLABS_MODEL_ID") or DEFAULT_TTS_MODEL
+    t0 = time.perf_counter()
+    out = {"audio_base64": None, "engine": None, "error": None}
+    try:
+        samples = ElevenLabsTTS(model_id=model_id).synthesize(text, voice_id)
+        if samples.size == 0:
+            raise TtsError("no audio was returned")
+        out.update(audio_base64=wav_base64(samples), engine="elevenlabs")
+    except (TtsError, OSError, ValueError) as exc:
+        log.warning("comfort: ElevenLabs speech failed (voice %s, model %s): %s", voice_id, model_id,
+                    _redact(str(exc), api_key)[:300])
+        out["error"] = "ElevenLabs unavailable"
+    out["tts_ms"] = int((time.perf_counter() - t0) * 1000)
+    return out
+
+
 def wav_base64(samples: np.ndarray) -> str:
     buffer = io.BytesIO()
     with wave.open(buffer, "wb") as output:
@@ -781,20 +1158,54 @@ def mount_comfort(app: FastAPI) -> None:
                   "error": None}
         if data.get("speak") is not True:
             return result
-        if not os.environ.get("ELEVENLABS_API_KEY"):
-            return {**result, "error": "ElevenLabs key is not configured"}
-        api_key = os.environ["ELEVENLABS_API_KEY"]
-        voice_id = os.environ.get("ELEVENLABS_VOICE_ID") or DEFAULT_VOICE_ID
-        model_id = os.environ.get("ELEVENLABS_MODEL_ID") or DEFAULT_TTS_MODEL
-        t0 = time.perf_counter()
-        try:
-            samples = ElevenLabsTTS(model_id=model_id).synthesize(result["text"], voice_id)
-            if samples.size == 0:
-                raise TtsError("no audio was returned")
-            result.update(audio_base64=wav_base64(samples), engine="elevenlabs")
-        except (TtsError, OSError, ValueError) as exc:
-            log.warning("comfort: ElevenLabs speech failed (voice %s, model %s): %s", voice_id, model_id,
-                        _redact(str(exc), api_key)[:300])
-            result["error"] = "ElevenLabs unavailable"
-        result["tts_ms"] = int((time.perf_counter() - t0) * 1000)
-        return result
+        return {**result, **speak_text(result["text"])}
+
+    @app.post("/comfort/chat")
+    def chat(data: dict) -> dict:
+        """Talk to Me: one turn of a calm spoken conversation. {profile_id, history:[{role, text}], text?, audio_b64?,
+        audio_mime?, speak}. Audio is transcribed by ElevenLabs, Gemini replies (profile as context, avoid respected,
+        988 on any crisis words), ElevenLabs speaks the reply when speak is true. Nothing is saved here:
+        ``suggest_remember`` is only an offer the UI confirms through /comfort/feedback."""
+        if not isinstance(data.get("speak", False), bool):
+            raise HTTPException(422, "speak must be a boolean")
+        text = data.get("text")
+        if text is not None and not isinstance(text, str):
+            raise HTTPException(422, "text must be a string")
+        history = clean_chat_history(data.get("history"))
+        profile = get_store().get(data.get("profile_id"))
+        user_text, stt_ms, stt_error = (text or "").strip()[:MAX_TURN_CHARS], None, None
+        audio_b64 = data.get("audio_b64")
+        if audio_b64 is not None:
+            if not isinstance(audio_b64, str):
+                raise HTTPException(422, "audio_b64 must be base64 text")
+            try:
+                audio = base64.b64decode(audio_b64.split(",", 1)[-1], validate=False)
+            except ValueError:
+                raise HTTPException(422, "audio_b64 is not base64") from None
+            if not audio or len(audio) > MAX_AUDIO_BYTES:
+                raise HTTPException(422, "audio is empty or too long")
+            key = os.environ.get("ELEVENLABS_API_KEY")
+            t0 = time.perf_counter()
+            if not key:
+                stt_error = "ElevenLabs key is not configured"
+            else:
+                try:
+                    user_text = transcribe(audio, api_key=key, mime=data.get("audio_mime"))
+                except (OSError, ValueError, KeyError) as exc:
+                    log.warning("Talk to Me: speech-to-text failed: %s", _redact(str(exc), key)[:300])
+                    stt_error = "Speech-to-text unavailable"
+            stt_ms = int((time.perf_counter() - t0) * 1000)
+            if not user_text:
+                reply = ("Sorry, I couldn't hear that. You can try again, or type instead." if stt_error
+                         else "I didn't catch that. You can try again, or type instead.")
+                result = {"profile_id": profile["id"], "user_text": "", "reply": reply, "source": "default",
+                          "reason": "stt_error" if stt_error else "no_speech", "model": None, "crisis": False,
+                          "latency_ms": 0, "suggest_remember": None, "offer_call": False,
+                          "action": None}
+                out = {**result, "stt_ms": stt_ms, "stt_error": stt_error}
+                return {**out, **(speak_text(reply) if data.get("speak") else
+                                  {"audio_base64": None, "engine": None, "error": None, "tts_ms": 0})}
+        result = {**make_chat_reply(catalog, profile, history, user_text), "stt_ms": stt_ms, "stt_error": stt_error}
+        if data.get("speak") is not True:
+            return {**result, "audio_base64": None, "engine": None, "error": None, "tts_ms": 0}
+        return {**result, **speak_text(result["reply"])}

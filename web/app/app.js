@@ -22,22 +22,28 @@
 // keydown on Start: create or resume the AudioContext here, iOS wants it inside the gesture); "start"
 // (the hold completed, from rAF ~0.7 s later, still inside the transient user activation).
 
+import { captureInstallPrompt } from "./install.js";
+
+// The companion's Install button (screens/phone.js) needs Chrome's beforeinstallprompt, which can fire before that screen loads
+captureInstallPrompt(window);
+
 export const SCREENS = [
   { id: "welcome", title: "Welcome", nav: true },
   { id: "setup", title: "Setup", nav: true },
-  { id: "people", title: "People", nav: true },
+  { id: "people", title: "People", nav: false }, // Q-2010: nobody chooses a name on stage; #people stays for enrollment
   { id: "listen", title: "Listen", nav: true },
-  { id: "about", title: "About", nav: true },
+  { id: "about", title: "About", nav: false }, // cut from the nav (Aryan, judging day): the pitch numbers live on the slides
   { id: "phone", title: "Phone", nav: false },
   { id: "diag", title: "Diagnostics", nav: false, sheet: true },
   { id: "sos", title: "Pair the band", nav: false }, // T-461: SOS remote pairing, linked from About
+  { id: "learned", title: "Your profile", nav: true }, // comfort: "What I've learned about you" (screens/learned.js)
 ];
 const DEFAULT = "welcome";
 const byId = new Map(SCREENS.map((s) => [s.id, s]));
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 const listeners = new Map();
-const state = { screen: null, cleanup: null, controller: null, sheet: null, sheetCleanup: null, token: 0 };
+const state = { screen: null, previous: null, cleanup: null, controller: null, sheet: null, sheetCleanup: null, token: 0 };
 
 export const app = {
   screens: SCREENS,
@@ -45,6 +51,7 @@ export const app = {
   store: null,
   ready: false,
   get screen() { return state.screen; },
+  get previous() { return state.previous; }, // the screen before this one (null: the first screen of this page load)
   get sheet() { return state.sheet; },
   go(id) { location.hash = id; },
   openSheet(id = "diag") { location.hash = id; },
@@ -152,6 +159,9 @@ function renderNav() {
   $nav.replaceChildren(...SCREENS.filter((s) => s.nav && have(s)).map((s, i) => el("a", {
     href: `#${s.id}`, "data-screen": s.id, class: "nav-item",
   }, el("span", { class: "nav-index", text: String(i + 1).padStart(2, "0") }), el("span", { class: "nav-label", text: s.title }))));
+  // "Who's speaking" is its own page (/who), not a hash screen: a normal link, never marked current here
+  $nav.append(el("a", { href: "/who", class: "nav-item nav-ext", "data-external": "who" },
+    el("span", { class: "nav-label", text: "Who's speaking" })));
 }
 
 function markNav(id) {
@@ -223,6 +233,7 @@ async function show(id) {
     state.cleanup = null;
     const controller = new AbortController();
     state.controller = controller;
+    state.previous = previous;
     state.screen = id;
     document.body.dataset.screen = id;
     markNav(id);
@@ -233,7 +244,7 @@ async function show(id) {
     if (token === state.token) state.cleanup = cleanup;
     else runCleanup(cleanup);
     placeBanner();
-    document.title = `${screen.title} · Selective Hearing`;
+    document.title = `${screen.title} · VoiceLock`;
     // T-463: every screen opens at its top (Setup's scroll used to carry over to People)
     if (previous !== null) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, previous, id);
@@ -256,7 +267,7 @@ async function showSheet(screen) {
   $sheet.hidden = false;
   coverUnder(true);
   document.body.dataset.sheet = screen.id;
-  document.title = `${screen.title} · Selective Hearing`; // T-403: the tab named the screen under the sheet
+  document.title = `${screen.title} · VoiceLock`; // T-403: the tab named the screen under the sheet
   const root = el("div", { class: "screen", "data-screen": screen.id });
   $sheetBody.replaceChildren(el("div", { class: "sheet-head" },
     el("button", { type: "button", class: "sheet-close", "aria-label": "Close diagnostics", text: "Close" })), root);
@@ -283,7 +294,7 @@ function hideSheet() {
   sheetOpener = null;
   back.focus({ preventScroll: true });
   const under = byId.get(state.screen);
-  if (under) document.title = `${under.title} · Selective Hearing`;
+  if (under) document.title = `${under.title} · VoiceLock`;
 }
 
 // ---------- the shared device banner (web/console/devices.js) ----------
@@ -383,10 +394,28 @@ export function workerOutcome(err) {
   if (err?.name === "SecurityError" && /certificate|ssl/i.test(message)) return { state: "untrusted" };
   return { state: "failed", message };
 }
+// The build this page runs (the server stamps app.js?v=<git rev>-<hash>, hearing/server/static.py): compare devices.
+app.build = new URL(import.meta.url).searchParams.get("v") || "dev";
+document.querySelector(".brand")?.setAttribute("title", `VoiceLock · build ${app.build}`);
+// A new worker took over a page an older worker served: reload once so every device runs the current build after a
+// normal reload. Never while a session is live (the mic and the socket would drop mid-demo); that page picks the new
+// build up on its next load anyway (the worker is network-first).
+function reloadOnNewWorker() {
+  if (!navigator.serviceWorker.controller) return; // first install: this page already came from the network
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    const live = Boolean(app.store?.store?.state?.started || app.store?.store?.state?.replaying);
+    let reloaded = false;
+    try { reloaded = sessionStorage.getItem("hearing.sw-reload") === app.build; } catch { /* storage off */ }
+    if (live || reloaded) return;
+    try { sessionStorage.setItem("hearing.sw-reload", app.build); } catch { /* storage off */ }
+    location.reload();
+  }, { once: true });
+}
 async function registerWorker() {
   if (!("serviceWorker" in navigator) || !window.isSecureContext) {
     app.sw = { state: "unsupported" };
   } else {
+    reloadOnNewWorker();
     try {
       await navigator.serviceWorker.register("sw.js", { scope: "./", updateViaCache: "none" });
       app.sw = workerOutcome(null);

@@ -1,0 +1,151 @@
+/*
+ * Quiet mode surface (PR #402). Loaded by quiet.js. Calm and plain: the stage colours, no amber or green (those mean
+ * "you hear the room" / "you hear the person", and in Quiet the app plays neither). Text >= 7:1 on the card, targets
+ * >= 44 px, a 240 ms fade-in for a new card and none under reduced motion. Phone first (390 px); at wide widths the
+ * column stays a readable measure in the middle of the stage.
+ */
+
+.qm {
+  --qm-bg: var(--color-bg, #060708);
+  --qm-card: var(--color-bg-raise, #101215);
+  --qm-line: var(--color-line, #23272c);
+  --qm-fg: var(--color-fg, #f3f4f1);
+  --qm-dim: var(--color-dim, #a4aab0);
+  --qm-ring: #9cc8ff; /* focus ring: calm blue, 10.9:1 on the stage */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  padding: var(--safe-top, 16px) var(--space-4, 16px) var(--safe-bottom, 16px);
+  display: grid;
+  gap: var(--space-5, 24px);
+  color: var(--qm-fg);
+  background: var(--qm-bg);
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-weight: var(--weight-ui, 440);
+}
+.qm *, .qm *::before, .qm *::after { box-sizing: inherit; }
+/* embedded (Comfort's Stay Quiet card in SOS): the host card is the frame, so no second slab, padding or measure */
+.qm[data-embedded="1"] { max-width: none; padding: 0; background: transparent; gap: var(--space-3, 12px); }
+.qm[data-embedded="1"] .qm-empty { padding: var(--space-4, 16px); font-size: 1rem; }
+.qm[data-embedded="1"] .qm-card, .qm[data-embedded="1"] .qm-status {
+  background: rgb(255 255 255 / 0.06); border-color: rgb(255 255 255 / 0.08); border-radius: 16px;
+}
+.qm[data-embedded="1"] .qm-status { border-left: 3px solid rgb(255 255 255 / 0.3); }
+.qm [hidden] { display: none !important; }
+
+/* ---- header ---- */
+.qm-head { display: grid; gap: var(--space-2, 8px); justify-items: start; }
+.qm-title {
+  margin: 0;
+  font-family: var(--font-display, system-ui);
+  font-stretch: var(--stretch-display, 72%);
+  font-weight: var(--weight-display, 640);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.qm-sub { margin: 0; color: var(--qm-dim); font-size: 1rem; line-height: 1.4; max-width: 34ch; }
+
+.qm-btn, .qm-back {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-4, 16px);
+  border-radius: var(--radius-control, 4px);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: var(--weight-strong, 600);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.qm-back {
+  margin-top: var(--space-2, 8px);
+  color: var(--qm-fg);
+  background: transparent;
+  border: 1px solid var(--qm-dim);
+}
+.qm-back:hover { background: rgb(255 255 255 / 0.06); }
+.qm-btn:focus-visible, .qm-back:focus-visible {
+  outline: 3px solid var(--qm-ring);
+  outline-offset: 2px;
+}
+
+.qm-status {
+  margin: 0;
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border-left: 3px solid var(--color-warn, #f2e15b);
+  background: var(--qm-card);
+  color: var(--qm-fg);
+  font-size: 0.95rem;
+}
+
+/* ---- empty state ---- */
+.qm-empty {
+  margin: 0;
+  padding: var(--space-6, 32px) var(--space-5, 24px);
+  border: 1px dashed var(--qm-line);
+  border-radius: var(--radius-sheet, 10px);
+  color: var(--qm-dim);
+  font-size: 1.125rem;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* ---- cards ---- */
+.qm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3, 12px); }
+.qm-card {
+  display: grid;
+  gap: var(--space-2, 8px);
+  padding: var(--space-4, 16px);
+  background: var(--qm-card);
+  border: 1px solid var(--qm-line);
+  border-radius: var(--radius-sheet, 10px);
+}
+.qm-card[data-enter="1"] { animation: qm-in var(--motion-base, 240ms) var(--motion-ease, ease-out) both; }
+.qm-card.qm-partial .qm-text { color: var(--qm-dim); }
+.qm-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1, 4px) var(--space-3, 12px);
+  font-size: 0.875rem;
+  color: var(--qm-dim);
+}
+.qm-who {
+  color: var(--qm-fg);
+  font-stretch: var(--stretch-wide, 118%);
+  font-weight: var(--weight-strong, 600);
+  letter-spacing: 0.02em;
+}
+.qm-time { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.8125rem; }
+.qm-text { margin: 0; font-size: 1.25rem; line-height: 1.4; overflow-wrap: anywhere; }
+.qm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); justify-content: flex-end; }
+.qm-clear { color: var(--qm-fg); background: transparent; border: 1px solid var(--qm-line); }
+.qm-clear:hover { border-color: var(--qm-dim); }
+
+.qm-live {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; margin: 0;
+}
+
+@keyframes qm-in {
+  from { opacity: 0; transform: translateY(var(--motion-rise, 8px)); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qm-card[data-enter="1"] { animation: none; }
+}
+.qm[data-still="1"] .qm-card { animation: none; }
+
+@media (min-width: 900px) {
+  .qm { padding-top: var(--space-8, 64px); gap: var(--space-6, 32px); }
+  .qm-text { font-size: 1.375rem; }
+}
+
+@media (forced-colors: active) {
+  .qm-card, .qm-empty, .qm-back, .qm-btn { border: 1px solid CanvasText; }
+}

@@ -1,0 +1,138 @@
+/* Play My Sounds (sounds.js). Night blue like the SOS calm frame: not amber (the room) or green (the person). */
+.snd {
+  --snd-bg: #0d1b33;
+  --snd-raise: #142749;
+  --snd-line: #2a4170;
+  --snd-fg: #f3f4f1;
+  --snd-soft: #c9d6ec;
+  --snd-ring: #9cc3ff;
+  --snd-star: #ffd98a;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 24px;
+  background: var(--snd-bg);
+  color: var(--snd-fg);
+  font-family: var(--font-ui, system-ui, -apple-system, "Segoe UI", sans-serif);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.snd *, .snd *::before, .snd *::after { box-sizing: border-box; }
+:where(.snd) button { font: inherit; color: inherit; cursor: pointer; min-height: 48px; border-radius: 10px; }
+.snd button:focus-visible, .snd input:focus-visible { outline: 3px solid var(--snd-ring); outline-offset: 2px; }
+:where(.snd) button[disabled] { opacity: 0.45; cursor: default; }
+
+.snd-title { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; }
+.snd-intro { margin: -8px 0 0; color: var(--snd-soft); font-size: 1rem; line-height: 1.4; }
+
+.snd-now {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 16px;
+  background: var(--snd-raise);
+  border: 1px solid var(--snd-line);
+  border-radius: 12px;
+  display: grid;
+  gap: 16px;
+}
+.snd-glow {
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(156 195 255 / 0.28), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.96);
+  transition: opacity var(--motion-slow, 400ms) var(--motion-ease, ease), transform var(--motion-slow, 400ms) var(--motion-ease, ease);
+}
+/* playing: the glow fades in once and rests (no breathing loop) */
+.snd.is-playing .snd-glow { opacity: 1; transform: none; }
+
+.snd-now-text { position: relative; display: flex; flex-direction: column; gap: 2px; }
+.snd-now-name { font-size: 1.5rem; font-weight: 700; }
+.snd-now-state { font-size: 1rem; color: var(--snd-ring); min-height: 1.4em; }
+
+.snd-controls { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.snd-play {
+  grid-column: 1 / -1;
+  min-height: 64px !important;
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: var(--snd-ring);
+  color: #0d1b33 !important;
+  border: 0;
+}
+.snd-stop, .snd-fav-now {
+  background: transparent;
+  border: 2px solid var(--snd-soft);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.snd-fav-now[aria-pressed="true"] { border-color: var(--snd-star); color: var(--snd-star); }
+
+.snd-vol-row { position: relative; display: grid; grid-template-columns: auto 1fr 3.5em; align-items: center; gap: 12px; }
+.snd-vol-label { font-size: 1.05rem; font-weight: 600; }
+.snd-vol-out { font-variant-numeric: tabular-nums; text-align: right; color: var(--snd-soft); font-size: 1.05rem; }
+.snd-vol { width: 100%; height: 44px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; }
+.snd-vol::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: var(--snd-line); }
+.snd-vol::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 32px; height: 32px; margin-top: -12px; border-radius: 50%;
+  background: var(--snd-fg); border: 3px solid var(--snd-ring);
+}
+.snd-vol::-moz-range-track { height: 8px; border-radius: 4px; background: var(--snd-line); }
+.snd-vol::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--snd-fg); border: 3px solid var(--snd-ring); }
+
+.snd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.snd-row { display: grid; grid-template-columns: 1fr 56px; gap: 8px; }
+.snd-pick {
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--snd-raise);
+  border: 2px solid var(--snd-line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.snd-row.is-current .snd-pick { border-color: var(--snd-soft); }
+.snd-pick, .snd-fav, .snd-play, .snd-stop, .snd-fav-now { transition: background-color var(--motion-fast, 160ms) var(--motion-ease, ease), border-color var(--motion-fast, 160ms) var(--motion-ease, ease), box-shadow var(--motion-fast, 160ms) var(--motion-ease, ease), scale var(--motion-fast, 160ms) var(--motion-ease, ease); }
+.snd-pick[aria-pressed="true"] { border-color: var(--snd-ring); box-shadow: inset 4px 0 0 var(--snd-ring); }
+.snd-pick-name { font-size: 1.1rem; font-weight: 700; }
+.snd-pick-note { font-size: 0.95rem; color: var(--snd-soft); }
+.snd-fav { background: var(--snd-raise); border: 2px solid var(--snd-line); font-size: 1.5rem; line-height: 1; }
+.snd-fav[aria-pressed="true"] { color: var(--snd-star); border-color: var(--snd-star); }
+
+.snd-silence {
+  background: transparent;
+  border: 2px solid var(--snd-line);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--snd-soft) !important;
+}
+
+.snd-offer { padding: 14px 16px; border: 2px solid var(--snd-star); border-radius: 12px; background: var(--snd-raise); }
+.snd-offer[hidden] { display: none; }
+.snd-offer-text { margin: 0 0 10px; font-size: 1.05rem; }
+.snd-offer-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+.snd-offer-yes { background: var(--snd-star); color: #0d1b33 !important; border: 0; padding: 0 18px; font-weight: 700; }
+.snd-offer-no { background: transparent; border: 2px solid var(--snd-soft); padding: 0 18px; }
+.snd-save { margin: 0; min-height: 1.3em; color: var(--snd-soft); font-size: 0.95rem; }
+
+@media (min-width: 900px) {
+  .snd {
+    max-width: 1040px; padding: 32px; column-gap: 28px; row-gap: 16px;
+    display: grid; grid-template-columns: 1fr 1fr; align-items: start;
+    grid-template-areas: "title title" "intro intro" "offer offer" "now list" "now silence" "save save";
+  }
+  .snd-title { grid-area: title; } .snd-intro { grid-area: intro; } .snd-offer { grid-area: offer; }
+  .snd-now { grid-area: now; position: sticky; top: 16px; } .snd-list { grid-area: list; }
+  .snd-silence { grid-area: silence; } .snd-save { grid-area: save; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snd-glow { transition: none; transform: none; }
+}

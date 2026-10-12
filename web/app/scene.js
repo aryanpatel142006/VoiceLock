@@ -575,17 +575,20 @@ export function mountScene({ store = appStore, app = globalThis.hearingApp, host
     draw(rt.lastStaticAt);
   }
 
+  // covered: the tab is hidden, or the SOS calm frame (an opaque full-screen layer, body[data-sos="on"]) is over the
+  // field; a frame drawn then is raster and GPU time spent on pixels nobody sees, next to the engine on the same GPU
+  const covered = () => document.hidden || document.body?.dataset.sos === "on";
   function schedule(now = false) {
     if (!cfg.animate) {
       // reduced motion: static frames only, light (alpha) changes at most 4 times a second; a look change at once
-      if (document.hidden) return;
+      if (covered()) return;
       if (now) { clearTimeout(rt.staticTimer); rt.dirty = true; staticDraw(); return; }
       if (!rt.staticTimer) {
         rt.staticTimer = setTimeout(staticDraw, Math.max(0, REDUCED_MIN_MS - (performance.now() - rt.lastStaticAt)));
       }
       return;
     }
-    if (!rt.raf && !document.hidden) { idleFrames = 0; rt.raf = requestAnimationFrame(loop); }
+    if (!rt.raf && !covered()) { idleFrames = 0; rt.raf = requestAnimationFrame(loop); }
   }
 
   const ro = new ResizeObserver(resize);
@@ -603,11 +606,16 @@ export function mountScene({ store = appStore, app = globalThis.hearingApp, host
   }
   watchDpr();
   const onVis = () => {
-    if (document.hidden) { cancelAnimationFrame(rt.raf); rt.raf = 0; clearTimeout(rt.staticTimer); rt.staticTimer = 0; stats.pause(); }
+    if (covered()) { cancelAnimationFrame(rt.raf); rt.raf = 0; clearTimeout(rt.staticTimer); rt.staticTimer = 0; stats.pause(); }
     else { rt.lastT = 0; rt.dirty = true; schedule(!cfg.animate); }
   };
   document.addEventListener("visibilitychange", onVis);
-  const emitter = setInterval(() => app?.emit?.("scene", api.stats()), 1000);
+  let sosWatch = null; // body[data-sos] (sos.js show()): the field pauses under the calm frame and resumes after it
+  try {
+    sosWatch = new MutationObserver(onVis);
+    sosWatch.observe(document.body, { attributes: true, attributeFilter: ["data-sos"] });
+  } catch { sosWatch = null; }
+  const emitter = setInterval(() => { if (!covered()) app?.emit?.("scene", api.stats()); }, 1000); // nothing to report while covered
   resize();
 
   const api = {
@@ -630,6 +638,7 @@ export function mountScene({ store = appStore, app = globalThis.hearingApp, host
       dprMq?.removeEventListener("change", onDpr);
       clearTimeout(rt.staticTimer);
       document.removeEventListener("visibilitychange", onVis);
+      sosWatch?.disconnect();
       clearInterval(emitter);
       cancelAnimationFrame(rt.raf);
       root.remove();

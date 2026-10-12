@@ -1,0 +1,72 @@
+/* Who's speaking (/who): one big calm label, a confidence bar and a timeline strip. Same dark palette as /judge. */
+:root { --bg: #0b0d10; --fg: #eef1f5; --dim: #8a94a3; --p0: #4fa3ff; --p1: #ffb84f; --none: #3b4350; --bad: #ff6b6b; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.stage { min-height: 100dvh; display: grid; gap: clamp(16px, 3vh, 32px); align-content: start;
+  padding: clamp(16px, 4vw, 48px) 16px 110px; max-width: 1100px; margin: 0 auto; }
+.top h1 { margin: 0; font: 600 clamp(18px, 2.2vw, 24px)/1.2 system-ui, sans-serif; color: var(--dim); letter-spacing: .02em; }
+.caption { margin: 4px 0 0; color: var(--dim); font-size: clamp(13px, 1.4vw, 16px); }
+.who { display: grid; justify-items: center; gap: 10px; padding: clamp(24px, 8vh, 80px) 0 12px; text-align: center; }
+.big { margin: 0; font: 800 clamp(56px, 14vw, 160px)/1 system-ui, sans-serif; letter-spacing: -.02em;
+  transition: color .35s ease, opacity .35s ease; }
+.sub { margin: 0; font: 500 clamp(16px, 2.2vw, 26px)/1.3 system-ui, sans-serif; color: var(--dim); min-height: 1.3em; }
+.stage[data-cls="p0"] .big { color: var(--p0); }
+.stage[data-cls="p1"] .big { color: var(--p1); }
+.stage[data-cls="none"] .big { color: var(--dim); font-weight: 600; }
+.stage[data-cls="idle"] .big { color: var(--none); font-weight: 600; }
+.stage[data-cls="bad"] .big { color: var(--bad); font-weight: 600; }
+.conf { width: min(420px, 70vw); height: 8px; border-radius: 999px; background: #1b2028; overflow: hidden; margin-top: 14px; }
+.conf-bar { height: 100%; width: 0; border-radius: 999px; background: var(--dim); transition: width .3s ease, background-color .35s ease; }
+.stage[data-cls="p0"] .conf-bar { background: var(--p0); }
+.stage[data-cls="p1"] .conf-bar { background: var(--p1); }
+.strip { display: grid; gap: 8px; }
+.strip canvas { width: 100%; height: 36px; display: block; border-radius: 8px; background: #141820; }
+.legend { margin: 0; display: flex; gap: 16px; font-size: 14px; color: var(--dim); }
+.legend .key::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend .p0::before { background: var(--p0); }
+.legend .p1::before { background: var(--p1); }
+.legend .dim { margin-left: auto; }
+.status { margin: 0; color: var(--dim); font-size: 14px; min-height: 1.4em; }
+.notice { margin: 0; padding: 10px 16px; border-radius: 8px; background: #3a3014; color: #ffe2a3; font-weight: 600; }
+.notice[hidden] { display: none; }
+.go { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); border: 0; border-radius: 999px; cursor: pointer;
+  padding: 18px 56px; font: 800 clamp(20px, 3vw, 32px)/1 system-ui, sans-serif; background: var(--fg); color: var(--bg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5); }
+.go[data-on="true"] { background: #2a3039; color: var(--fg); }
+.foot { margin: 0; font-size: 14px; }
+.foot a { color: var(--dim); text-decoration: none; }
+@media (max-width: 480px) {
+  .stage { padding-bottom: 96px; }
+  .big { font-size: clamp(44px, 18vw, 72px); }
+  .go { padding: 14px 40px; }
+}
+/* Live voice: the mic picker, a calm waveform, a match meter and a voiceprint per person. Motion is transform,
+   opacity and canvas only; prefers-reduced-motion keeps everything still (who.js stops animating too). */
+.mic-pick { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--dim); font-size: 14px; }
+.mic-pick select { min-height: 44px; min-width: 44px; max-width: min(360px, 70vw); padding: 0 12px; border-radius: 10px;
+  border: 1px solid #2a3039; background: #141820; color: var(--fg); font: inherit; font-size: 15px; }
+.live { display: grid; gap: 14px; }
+.live canvas { width: 100%; height: 72px; display: block; border-radius: 12px; background: #11151b; }
+.people { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.person { display: grid; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #141820; }
+.pname { margin: 0; font: 700 clamp(18px, 2.2vw, 24px)/1.2 system-ui, sans-serif; opacity: .55; transition: opacity .4s ease; }
+.person.p0 .pname { color: var(--p0); }
+.person.p1 .pname { color: var(--p1); }
+.person[data-on="true"] .pname { opacity: 1; }
+.vp { display: flex; align-items: center; gap: 3px; height: 28px; opacity: .25; transition: opacity .4s ease; }
+.person[data-on="true"] .vp { opacity: 1; }
+.vp span { flex: 1; height: 100%; border-radius: 2px; transform: scaleY(.08); transform-origin: center; will-change: transform; }
+.person.p0 .vp span { background: var(--p0); }
+.person.p1 .vp span { background: var(--p1); }
+.meter { height: 10px; border-radius: 999px; background: #1f252e; overflow: hidden; }
+.meter-fill { height: 100%; width: 100%; border-radius: 999px; transform: scaleX(0); transform-origin: left; will-change: transform; }
+.person.p0 .meter-fill { background: var(--p0); }
+.person.p1 .meter-fill { background: var(--p1); }
+.pct { margin: 0; color: var(--dim); font-size: 14px; font-variant-numeric: tabular-nums; }
+.match-caption { margin: 0; color: var(--dim); font-size: 13px; }
+@media (max-width: 480px) { .people { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .big, .conf-bar, .pname, .vp { transition: none; }
+  .vp span { will-change: auto; }
+}

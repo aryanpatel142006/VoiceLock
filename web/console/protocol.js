@@ -127,7 +127,7 @@ export function abDelayMs(telemetry) {
 }
 
 const TIER_LABELS = {
-  focus_hq: "Focus HQ", enrolled: "Enrolled voice", gate: "AV · gate", av: "AV", "audio-only": "Audio-only",
+  focus_hq: "Focus HQ", enrolled: "Saved voice", gate: "AV · gate", av: "AV", "audio-only": "Audio-only",
 };
 const AUDIO_TIERS = new Set(["audio-only", "enrolled"]); // no camera in the audio path
 

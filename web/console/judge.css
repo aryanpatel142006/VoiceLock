@@ -4,17 +4,14 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .stage { min-height: 100dvh; display: grid; gap: clamp(16px, 4vh, 40px);
   padding: clamp(16px, 4vw, 48px); padding-bottom: 72px; align-content: start; }
-.ab { display: grid; grid-template-columns: 1fr 1fr; border-radius: 999px; background: #161a20; padding: 8px; gap: 8px; }
-.ab button { border: 0; border-radius: 999px; padding: clamp(18px, 5vh, 48px) 12px; cursor: pointer;
-  font: 800 clamp(22px, 5vw, 64px)/1 system-ui, sans-serif; letter-spacing: .02em; color: var(--dim); background: transparent; }
-.ab button[data-ab="raw"][aria-pressed="true"] { background: var(--raw); color: #1b1307; }
-.ab button[data-ab="processed"][aria-pressed="true"] { background: var(--on); color: #04140e; }
 .pill { justify-self: center; margin: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: center;
   padding: 14px 28px; border-radius: 999px; background: #1b2028; text-align: center;
   font: 700 clamp(18px, 3.2vw, 36px)/1.2 system-ui, sans-serif; }
 .pill[data-state="isolated"] { background: #0f3b2d; color: #b6f5dd; }
+.pill[data-state="raw"] { background: #3a3014; color: #ffe2a3; } /* Q-2010: Auto voice focus off, the whole room plays */
 .pill[data-state="calibrating"], .pill[data-state="speak"] { background: #3a3014; color: #ffe2a3; }
 .pill[data-state="fallback"], .pill[data-state="lost"] { background: #3d1717; color: #ffc9c9; }
+.pill { transition: background-color 240ms cubic-bezier(.2, 0, 0, 1), color 240ms cubic-bezier(.2, 0, 0, 1); } /* a state change cross-fades; nothing flashes */
 .pill small { font-size: .55em; font-weight: 600; color: var(--warn); }
 .bg-notice { justify-self: center; margin: 0; padding: 6px 16px; border-radius: 8px; background: #3a3014; color: #ffe2a3;
   font: 600 clamp(14px, 1.6vw, 20px)/1.3 system-ui, sans-serif; }
@@ -71,17 +68,6 @@ kbd { border: 1px solid #2c3540; border-radius: 4px; padding: 0 4px; }
 .captions-panel [hidden] { display: none; }
 .captions { flex: 1; }
 
-/* Choose saved person + Release (T-177): keys 1/2 and Shift+0 as buttons, under the A/B switch */
-.people { display: flex; flex-direction: column; gap: 8px; }
-.people h2 { margin: 0; font: 700 clamp(13px, 1.6vw, 18px)/1.2 system-ui, sans-serif; color: var(--dim);
-  text-transform: uppercase; letter-spacing: .05em; text-align: center; }
-.people-buttons { display: grid; grid-template-columns: 1fr 1fr auto; gap: clamp(8px, 2vw, 16px); }
-.people button { border: 2px solid #2c3540; border-radius: 16px; background: #161a20; color: var(--fg); cursor: pointer;
-  padding: clamp(12px, 2.4vh, 24px) clamp(10px, 2vw, 24px); font: 800 clamp(20px, 3.4vw, 36px)/1 system-ui, sans-serif; }
-.people button kbd { font-size: .5em; vertical-align: middle; color: var(--dim); }
-.people button[aria-pressed="true"] { border-color: var(--on); background: #0f3b2d; }
-.people button#release[aria-pressed="true"] { border-color: var(--raw); background: #3a3014; color: #ffe2a3; }
-.people button:disabled { cursor: default; color: #4a5260; }
 .target-line { justify-self: center; margin: calc(-1 * clamp(8px, 2vh, 24px)) 0 0; color: var(--fg);
   font: 700 clamp(16px, 2.2vw, 26px)/1.2 system-ui, sans-serif; }
 /* "Keys off" (T-177): the window or a text field has the keys; persistent until focus returns */
@@ -89,9 +75,57 @@ kbd { border: 1px solid #2c3540; border-radius: 4px; padding: 0 4px; }
   border-radius: 8px; background: var(--warn); color: #1b1307; font: 700 clamp(14px, 1.8vw, 20px)/1.2 system-ui, sans-serif;
   white-space: nowrap; pointer-events: none; }
 .keys-off[hidden] { display: none; }
+.target-line[hidden] { display: none; }
+/* devices.js's fixed red device banner (wrong mic / output) covered the Focus / Quiet buttons: push the stage down */
+body:has([data-dev-banner][style*="display: flex"]) .stage { padding-top: calc(clamp(16px, 4vw, 48px) + 64px); }
 
 /* T-382: gate-state pill */
 .gate-pill { justify-self: center; margin: 0; padding: 4px 14px; border-radius: 999px; font: 700 14px/1.2 var(--font-ui, system-ui); letter-spacing: .08em; }
 .gate-pill[data-gate="solo"] { background: #0f3b2d; color: #b6f5dd; }
+.gate-pill[data-gate="loudest"] { background: #0f3b2d; color: #b6f5dd; }
 .gate-pill[data-gate="ducked"] { background: #3a3014; color: #ffe2a3; }
 .gate-pill[data-gate="unsure"] { background: #3d1717; color: #ffc9c9; }
+
+/* Auto voice focus (board Q-2010): the one switch. ON = the loudest voice isolated, OFF = the whole room (Space). */
+.autofocus { display: flex; align-items: center; justify-content: space-between; gap: clamp(16px, 3vw, 40px);
+  width: 100%; min-height: 88px; padding: clamp(14px, 3vh, 32px) clamp(16px, 2vw, 28px) clamp(14px, 3vh, 32px) clamp(20px, 3vw, 40px);
+  border: 0; border-radius: 999px; background: #161a20; color: var(--fg); cursor: pointer; text-align: left;
+  --sw: var(--dim); box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--sw) 45%, transparent);
+  transition: box-shadow 240ms cubic-bezier(.2, 0, 0, 1), scale 160ms cubic-bezier(.2, 0, 0, 1); touch-action: manipulation; }
+.autofocus:active { scale: .98; }
+.autofocus:focus-visible { outline: 3px solid var(--fg); outline-offset: 4px; }
+.autofocus[data-on="true"] { --sw: var(--on); }
+.autofocus[data-on="false"] { --sw: var(--raw); }
+.autofocus-text { display: grid; gap: 6px; min-width: 0; }
+.autofocus-text strong { font: 800 clamp(22px, 4.4vw, 56px)/1 system-ui, sans-serif; letter-spacing: -.01em; }
+.autofocus-text small { font: 600 clamp(14px, 1.8vw, 22px)/1.25 system-ui, sans-serif; color: color-mix(in oklab, var(--sw) 80%, var(--fg)); }
+.autofocus-track { position: relative; flex: none; width: clamp(96px, 12vw, 168px); height: clamp(52px, 6.4vw, 84px); border-radius: 999px;
+  background: color-mix(in oklab, var(--sw) 18%, transparent); box-shadow: inset 0 0 0 2px var(--sw); transition: background-color 240ms cubic-bezier(.2, 0, 0, 1), box-shadow 240ms cubic-bezier(.2, 0, 0, 1); }
+.autofocus[data-on="true"] .autofocus-track { background: var(--sw); }
+.autofocus-word { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding: 0 clamp(12px, 1.6vw, 22px);
+  font: 800 clamp(14px, 1.8vw, 24px)/1 ui-monospace, monospace; letter-spacing: .06em; color: var(--fg); }
+.autofocus[data-on="true"] .autofocus-word { justify-content: flex-start; color: #04140e; }
+.autofocus-knob { position: absolute; top: 6px; bottom: 6px; left: 6px; aspect-ratio: 1; border-radius: 50%; background: var(--fg);
+  box-shadow: 0 2px 8px rgb(0 0 0 / .45);
+  /* the thumb travels by translate (compositor), track width minus its own height, on the calm curve with no overshoot */
+  transition: translate 240ms cubic-bezier(.2, 0, 0, 1), background-color 240ms cubic-bezier(.2, 0, 0, 1), opacity 240ms cubic-bezier(.2, 0, 0, 1); }
+.autofocus[data-on="true"] .autofocus-knob { translate: calc(clamp(96px, 12vw, 168px) - clamp(52px, 6.4vw, 84px)) 0; background: #04140e; }
+.autofocus[data-pending="true"] .autofocus-knob { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .autofocus, .autofocus-knob, .autofocus-track, .pill { transition: none; } .autofocus:active { scale: none; } }
+
+/* ---- entrance: the stage rises in once when the page opens, on the app's calm motion (web/app/tokens.css values and
+   the shared mo-rise keyframe from web/app/motion.css, mirrored here because /judge does not load the app's CSS):
+   opacity plus an 8 px rise, 240 ms on one ease-out curve, a short 40 ms stagger. The fixed Start button and the
+   drawer only fade (their own transform places them). Nothing moves under reduced motion. ---- */
+:root { --motion-base: 240ms; --motion-ease: cubic-bezier(0.2, 0, 0, 1); --motion-rise: 8px; }
+@keyframes mo-rise { from { opacity: 0; transform: translateY(var(--motion-rise, 8px)); } }
+@keyframes mo-fade-in { from { opacity: 0; } }
+.stage > :not(.go, .namecall) { animation: mo-rise var(--motion-base) var(--motion-ease) backwards; }
+.stage > :nth-child(2) { animation-delay: 40ms; }
+.stage > :nth-child(3) { animation-delay: 80ms; }
+.stage > :nth-child(4) { animation-delay: 120ms; }
+.stage > :nth-child(n + 5) { animation-delay: 160ms; }
+.go, .drawer { animation: mo-fade-in var(--motion-base) var(--motion-ease) 160ms backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .stage > *, .go, .drawer { animation: none; }
+}

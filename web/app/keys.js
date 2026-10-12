@@ -1,15 +1,16 @@
 // App keys (M14, T-347): the stage keys, identical to /judge (web/console/judge.js onKey) so STAGE_CARD.md holds.
-//   Space      RAW <-> Selective (A/B)
+//   Space      Auto voice focus on / off (the A/B switch: on = isolated, off = the whole room)
 //   Shift+F/Q  Focus / Quiet            (bare F/Q do nothing, T-150: a judge leaning on the keyboard fires nothing)
-//   1 / 2      saved person 1 / 2
-//   Shift+0    Release                  (or 0 with the Diagnostics sheet open, as with /judge's drawer)
+//   (board Q-2010: no 1 / 2 person keys and no Release: nobody chooses a name, the closest voice is isolated)
 //   D          Diagnostics sheet (the /judge drawer)
 //   Shift+R    replay clip (REPLAY badge) on / off
 //   Shift+C    calibrate a new voice (off the stage path, as on /judge)
 // /judge's N (Name Call) has no app counterpart: it is ignored here.
 // keyAction() is pure (node --test covers it); bindKeys()/watchKeyFocus() wire it to the document.
+// Space on a keyboard-focused control (Tab then Space) presses that control: only mouse users (the presenter) get the
+// global Space. A screen-reader or switch user can then reach every button without toggling Auto voice focus.
 
-import { KeyFocus, isReleaseKey } from "../console/judge-targets.js";
+import { KeyFocus } from "../console/judge-targets.js";
 import { modeForKey } from "../console/judge-modes.js";
 
 export { KEYS_OFF_TEXT } from "../console/judge-targets.js";
@@ -19,17 +20,15 @@ export const KEY_HINTS = {
   ab: "Space",
   focus_hq: "Shift F",
   quiet: "Shift Q",
-  person0: "1",
-  person1: "2",
-  release: "Shift 0",
   diag: "D",
   replay: "Shift R",
 };
 
 /**
  * What a keydown asks for, exactly as /judge decides it, or null.
- * `e`: {key, code, shiftKey, altKey, ctrlKey, metaKey, repeat, inField}; `drawerOpen`: the Diagnostics sheet is open.
- * Returns {type: "ab"} | {type: "mode", mode} | {type: "person", index} | {type: "release"} | {type: "diag"}
+ * `e`: {key, code, shiftKey, altKey, ctrlKey, metaKey, repeat, inField, onControl}; `drawerOpen`: the Diagnostics
+ * sheet is open. `onControl`: a keyboard-focused control has the focus, so Space belongs to it (returns null).
+ * Returns {type: "ab"} | {type: "mode", mode} | {type: "diag"}
  *       | {type: "replay"} | {type: "calibrate"}; `preventDefault` is true for Space (no page scroll).
  */
 export function keyAction(e, { drawerOpen = false } = {}) {
@@ -38,22 +37,27 @@ export function keyAction(e, { drawerOpen = false } = {}) {
   const guarded = e.shiftKey || drawerOpen;
   // T-135/T-150: C/R/N/F/Q act only with Shift or the drawer open
   if ("crnfq".includes(key) && key.length === 1 && !guarded) return null;
-  if (isReleaseKey(key, e.code) || (e.shiftKey && e.key === ")")) { // T-177; ")" = Shift+0 on a US layout
-    return guarded && !e.repeat ? { type: "release" } : null;
-  }
+  if (key === " " && e.onControl) return null;
   if (key === " ") return e.repeat ? { type: "none", preventDefault: true } : { type: "ab", preventDefault: true };
   const mode = modeForKey(key);
   if (mode) return e.repeat ? null : { type: "mode", mode };
   if (key === "c") return { type: "calibrate" };
   if (key === "r") return e.repeat ? null : { type: "replay" };
   if (key === "d") return e.repeat ? null : { type: "diag" };
-  if ((key === "1" || key === "2") && !e.repeat) return { type: "person", index: Number(key) - 1 };
   return null;
 }
 
 /** /judge's onKey ignores keys typed into these. */
 function inField(target) {
   return Boolean(target?.closest?.("input, select, textarea"));
+}
+
+/** A control reached with the keyboard (focus ring showing): Space must press it, not toggle Auto voice focus. */
+export function onFocusedControl(target) {
+  try {
+    return Boolean(target?.matches?.(":focus-visible")
+      && target.closest?.("button, a[href], [role=button], [role=switch], [role=slider], summary"));
+  } catch { return false; }
 }
 
 /**
@@ -64,13 +68,16 @@ export function bindKeys(doc, handlers, { signal, drawerOpen = () => false } = {
   doc.addEventListener("keydown", (e) => {
     const action = keyAction({
       key: e.key, code: e.code, shiftKey: e.shiftKey, altKey: e.altKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey,
-      repeat: e.repeat, inField: inField(e.target),
+      repeat: e.repeat, inField: inField(e.target), onControl: e.key === " " && onFocusedControl(e.target),
     }, { drawerOpen: drawerOpen() });
     if (!action) return;
     if (action.preventDefault) e.preventDefault();
     handlers[action.type]?.(action, e);
   }, { signal });
-  doc.addEventListener("keyup", (e) => { if (e.key === " " && !inField(e.target)) e.preventDefault(); }, { signal });
+  doc.addEventListener("keyup", (e) => {
+    if (e.key !== " " || inField(e.target) || onFocusedControl(e.target)) return;
+    e.preventDefault();
+  }, { signal });
 }
 
 /**

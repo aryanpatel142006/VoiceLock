@@ -110,7 +110,7 @@ export function mount(root, ctx = {}) {
   const section = node("section", "diag");
   section.setAttribute("aria-labelledby", "diag-title");
   const head = node("header", "diag-head");
-  head.append(node("p", "eyebrow", "Diagnostics · live"), Object.assign(node("h2", "diag-title", "What the engine says"), { id: "diag-title" }),
+  head.append(Object.assign(node("h2", "diag-title", "What the engine says"), { id: "diag-title" }),
     node("p", "diag-note", store ? "Every value is from engine telemetry or measured on this page. — means not reported yet."
       : "The app store is not on this server, so there is nothing to show. Nothing here is simulated."));
   section.append(head);

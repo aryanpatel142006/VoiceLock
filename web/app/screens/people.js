@@ -37,23 +37,21 @@ export function loadNames(storage = globalThis.localStorage) {
 /** Empty "Person N" slots up to MAX_PEOPLE, so the list reads as four places to fill. */
 export function emptySlots(n) { return Array.from({ length: Math.max(0, MAX_PEOPLE - n) }, (_, i) => `Person ${n + i + 1}`); }
 
-const finePointer = typeof matchMedia === "function" && matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-/** A card's one line of status, in plain words; the stage key only where there is a keyboard (T-365 P1-14). */
-export function cardMeta(c, { playing = false, streaming = false, keys = true, held = "" } = {}) {
+/** A card's one line of status, in plain words (no "Key 1." line: the person keys are gone from the stage). */
+export function cardMeta(c, { playing = false, streaming = false, held = "" } = {}) {
   const state = !c.current ? "Saved voice." : playing ? "Following now."
     : streaming && held === "raw" ? "Chosen. Raw plays the room for now."
       : streaming && held === "quiet" ? "Chosen. Quiet: captions only."
         : streaming ? "Chosen. Finding them." : "Chosen. Plays when you start.";
-  return [state, c.version ? `Profile ${c.version}.` : null, keys && c.key ? `Key ${c.key}.` : null].filter(Boolean).join(" ");
+  return [state, c.version ? `Profile ${c.version}.` : null].filter(Boolean).join(" ");
 }
 
 /** What the Calibrate control shows, from telemetry `enrollment` (as web/console/calibrate.js). */
 export function calibrateView(t, { started = false, connected = false } = {}) {
   const e = t?.enrollment;
-  if (!connected) return { state: "off", button: `Calibrate ${CALIBRATE_S} s`, disabled: true, note: "Needs the engine." };
+  if (!connected) return { state: "off", button: `Learn a voice (${CALIBRATE_S} s)`, disabled: true, note: "Needs the engine." };
   if (!started) {
-    return { state: "off", button: `Calibrate ${CALIBRATE_S} s`, disabled: true,
+    return { state: "off", button: `Learn a voice (${CALIBRATE_S} s)`, disabled: true,
       note: "Start the mic on Setup first: calibration listens to the live room." };
   }
   if (e?.state === "calibrating") {
@@ -66,10 +64,10 @@ export function calibrateView(t, { started = false, connected = false } = {}) {
       note: "Too quiet: under 1 s of speech in the window. Move closer and try again." };
   }
   if (e?.source && e.source !== "profile") {
-    return { state: "calibrated", button: `Calibrate again (${CALIBRATE_S} s)`, disabled: false,
+    return { state: "calibrated", button: `Learn it again (${CALIBRATE_S} s)`, disabled: false,
       note: "A calibrated voice is the target now. Pick a saved person to go back to the stage setup." };
   }
-  return { state: "ready", button: `Calibrate ${CALIBRATE_S} s`, disabled: false,
+  return { state: "ready", button: `Learn a voice (${CALIBRATE_S} s)`, disabled: false,
     note: "Talk alone for about 5 seconds. The next 5 s become their voice." };
 }
 
@@ -95,7 +93,7 @@ export function mount(root, { app, signal }) {
   const status = h("p", { class: "pp-status", "aria-live": "polite" });
   const cards = h("div", { class: "pp-cards" });
   const release = h("button", { type: "button", class: "pp-release" },
-    h("span", { class: "pp-release-label", text: "Release" }), h("span", { class: "pp-release-note", text: "stop following anyone" }));
+    h("span", { class: "pp-release-label", text: "Stop following" }), h("span", { class: "pp-release-note", text: "follow no one" }));
   const target = h("p", { class: "pp-target", "aria-live": "polite" });
   const calBtn = h("button", { type: "button", class: "pp-cal-btn" });
   const calNote = h("p", { class: "pp-cal-note" });
@@ -110,7 +108,7 @@ export function mount(root, { app, signal }) {
     h("div", { class: "pp-actions" }, release, target),
     h("aside", { class: "pp-cal", "aria-labelledby": "pp-cal-title" },
       h("div", { class: "pp-cal-copy" },
-        h("h2", { id: "pp-cal-title", class: "pp-cal-title", text: "Calibrate a new voice" }),
+        h("h2", { id: "pp-cal-title", class: "pp-cal-title", text: "Learn a new voice" }),
         // T-458: stage-crew copy; a visitor's phone sees it only with ?dev=1
         showDevFacts() ? h("p", { class: "pp-cal-off", text: "Off the stage path. The demo uses the saved voices above." }) : null,
         calNote),
@@ -145,7 +143,7 @@ export function mount(root, { app, signal }) {
           disabled: !connected, "aria-describedby": c.key ? null : "pp-extra" },
         h("span", { class: "pp-card-key", "aria-hidden": "true", text: c.key || "·" }),
         h("span", { class: "pp-card-name", text: c.label }),
-        h("span", { class: "pp-card-meta", text: cardMeta(c, { playing, streaming, keys: finePointer, held }) }));
+        h("span", { class: "pp-card-meta", text: cardMeta(c, { playing, streaming, held }) }));
         card.addEventListener("click", () => choose(i, c.name), { signal });
         const ren = h("button", { type: "button", class: "pp-rename", "aria-label": `Rename ${c.label}`, text: "Rename" });
         ren.addEventListener("click", () => {
@@ -157,7 +155,7 @@ export function mount(root, { app, signal }) {
         }, { signal });
         return h("div", { class: "pp-slot" }, card, ren);
       }), ...emptySlots(list.length).map((label) => h("div", { class: "pp-slot pp-slot-empty" },
-        h("p", { class: "pp-empty-slot", text: `${label}: empty. Talk alone for about 5 seconds (Calibrate below).` }))));
+        h("p", { class: "pp-empty-slot", text: `${label}: empty. Talk alone for about 5 seconds (Learn a voice, below).` }))));
       if (list.length > STAGE_KEYS) {
         cards.append(h("p", { id: "pp-extra", class: "pp-extra",
           text: "Keys 1 and 2 on Listen and /judge reach the first two; tap a card for the others." }));
@@ -167,7 +165,7 @@ export function mount(root, { app, signal }) {
       cards.replaceChildren(h("div", { class: "pp-empty" },
         h("p", { class: "pp-empty-title", text: t ? "No one saved yet" : "—" }),
         h("p", { class: "pp-empty-note" }, t
-          ? "No voice is saved on this laptop. Calibrate one below, or record the team's voices on the laptop and restart it (scripts/enroll_profiles.sh)."
+          ? "No voice is saved on this laptop. Learn one below, or record the team's voices on the laptop and restart it (scripts/enroll_profiles.sh)."
           : "The saved voices appear once the engine reports them.")));
     }
 

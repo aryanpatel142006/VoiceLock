@@ -5,18 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#07080a">
-  <meta name="description" content="Turn down the world without disconnecting from it: choose whose voice you hear.">
+  <meta name="description" content="Turn down the world without disconnecting from it: the voice closest to you comes through, everything else goes quiet.">
   <!-- iOS: Add to Home Screen runs full screen under a translucent status bar (safe areas in app.css) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Hearing">
+  <meta name="apple-mobile-web-app-title" content="VoiceLock">
   <meta name="format-detection" content="telephone=no">
-  <title>Selective Hearing</title>
+  <title>VoiceLock</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="app.css">
+  <!-- Perf: the SOS cards' stylesheets (quiet.js, sounds.js) load with the page, so the first press appends no link -->
+  <link rel="stylesheet" href="quiet.css" data-quiet-css>
+  <link rel="stylesheet" href="sounds.css" data-sounds-css>
   <script type="module" src="app.js"></script>
   <script type="module" src="sos.js"></script>
 </head>
@@ -26,9 +29,9 @@
        module is not on the server shows a placeholder. -->
   <a class="skip" href="#stage">Skip to content</a>
   <header class="chrome" id="chrome">
-    <a class="brand" href="#welcome" aria-label="Selective Hearing, home">
+    <a class="brand" href="#welcome" aria-label="VoiceLock, home">
       <img src="icons/favicon-32.png" alt="" width="20" height="20">
-      <span class="brand-name">Selective Hearing</span>
+      <span class="brand-name">VoiceLock</span>
     </a>
     <nav class="nav" id="nav" aria-label="Screens"></nav>
   </header>

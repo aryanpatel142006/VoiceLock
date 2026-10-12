@@ -1,5 +1,6 @@
 import { BackgroundWatch, frameClock } from "./frame-clock.js";
-import { renderGate } from "./gate-state.js";
+import { loudestMode, renderGate } from "./gate-state.js";
+import { autoFocusState } from "./auto-focus.js";
 import { showServerInfo } from "./server-info.js";
 import { audioOnly, helloVideo } from "./audio-only.js";
 import { replayControls } from "./replay.js";
@@ -9,8 +10,7 @@ import {
 } from "./judge-pill.js";
 import { DEGRADED_NOTICE, captionFeed, modeControl, modeForKey } from "./judge-modes.js";
 import {
-  KeyFocus, RELEASE_CONTROL, SEARCHING_PILL, abControl, isReleaseKey, personControl, personLabel,
-  savedPeople, targetLine,
+  KeyFocus, RELEASE_CONTROL, SEARCHING_PILL, abControl, targetLine,
 } from "./judge-targets.js";
 import { mountNameGuards, nameCallControl, nameCallPill, saveName, savedName } from "./name-call.js";
 import {
@@ -18,7 +18,7 @@ import {
   hqBackendInfo, packFrame, pcm16ToFloat, sessionUrl, tierInfo, unpackFrame,
 } from "./protocol.js";
 
-// Judge demo page (/judge, T-088): a huge RAW | SELECTIVE HEARING switch, the plain-language pill and
+// Judge demo page (/judge, T-088): a huge RAW | VOICELOCK switch, the plain-language pill and
 // live captions; diagnostics live in a small drawer. One control ({profile: "judge"}) locks the session
 // defaults on the server: Focus HQ, suppression 100, strict isolation, sticky attention, auto calibration.
 // Keys: Space = A/B, D = drawer; Shift+C = calibrate (backup for the automatic one), Shift+R = replay clip,
@@ -35,6 +35,7 @@ const VIDEO_BACKPRESSURE_BYTES = 256 * 1024;
 const BG_MIN_FPS = 5;  // T-138: below this while hidden the page says the camera is paused
 const RETRY_MS = [500, 1000, 2000, 4000];
 const RENDER_MS = 100;
+const MODE_GRACE_MS = 1500; // the phone companion can switch Focus/Quiet; adopt the engine's mode after our own settles
 const CALIBRATE_S = 3;
 // T-135: playback jitter buffer per mode. Focus HQ already plays ~0.6-1.5 s behind, so 120 ms more
 // buffer costs nothing audible and absorbs the GPU/ladder bursts that underran at 40; Natural keeps 40.
@@ -44,6 +45,8 @@ const JITTER_MAX_MS = { focus_hq: 240, natural: 160 };
 const SI_SDRI_CLAIM = "+11.8 dB enrolled TSE (offline, BENCHMARKS.md)";
 
 const $ = (id) => document.getElementById(id);
+/** Writes only on change: render() runs every 100 ms and the pill is an aria-live region. */
+const setText = (el, text) => { if (el.textContent !== text) el.textContent = text; };
 const now = () => (performance.timeOrigin + performance.now()) / 1000;
 
 const state = {
@@ -54,6 +57,7 @@ const state = {
   connected: false,
   ab: "processed",
   mode: "focus_hq", // T-150: the Focus / Quiet buttons (F/Q)
+  modeAt: 0, // performance.now() of this page's last mode request; telemetry may override it only after MODE_GRACE_MS
   telemetry: null,
   audio: null,
   video: null,
@@ -140,6 +144,7 @@ function connect() {
     state.connected = true;
     state.frameAt = performance.now(); // T-158: the stall clock starts again on reconnect
     sendHello();
+    state.modeAt = performance.now(); // a fresh session reports its default mode until this control lands
     sendJudgeProfile({ ab: state.ab, ...modeControl(state.mode, state) });
     if (state.nameCall) sendControl(nameCallControl(state.name));
   };
@@ -198,6 +203,7 @@ function onText(text) {
     enforceAudioOnly();
     postAb();
     setJitter(msg.effective_mode === "natural" ? "natural" : "focus_hq");
+    followMode(msg.mode);
     watchBackend(msg);
     const floorRule = !!msg.agc?.floor_rule; // T-179: the server's AGC floor rule, mirrored on the RAW side
     if (state.audio && floorRule !== !!state.agcFloorRule) {
@@ -447,11 +453,24 @@ function stopMedia() {
 
 // ------------------------------------------------------------------ A/B, keys
 
-/** T-150: Focus (focus_hq) or Quiet (captions of the target, no audio). Leaves Name Call. */
-function setMode(mode) {
+function showMode(mode) {
   state.mode = mode;
   for (const b of document.querySelectorAll("#modes button")) b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
   document.body.dataset.mode = mode;
+}
+
+/** The phone companion forwards Focus/Quiet into this session: show what the engine plays, never only our last click. */
+function followMode(mode) {
+  if (mode !== "quiet" && mode !== "focus_hq") return; // natural (camera loss) / name_call are this page's own states
+  if (mode === state.mode || state.nameCall || state.cameraNatural || performance.now() - state.modeAt < MODE_GRACE_MS) return;
+  showMode(mode);
+  note(`mode ${mode === "quiet" ? "Quiet" : "Focus"} (set from the phone)`);
+}
+
+/** T-150: Focus (focus_hq) or Quiet (captions of the target, no audio). Leaves Name Call. */
+function setMode(mode) {
+  state.modeAt = performance.now();
+  showMode(mode);
   state.cameraNatural = mode !== "quiet" && state.cameraLost && !enrolledHealthy(state.telemetry);
   if (state.nameCall) setNameCall(false); // sends the profile with this mode
   else sendControl(modeControl(mode, state));
@@ -465,7 +484,6 @@ function postAb() {
 function setAb(ab) {
   ({ ab } = abControl(state.ab, ab));
   state.ab = ab;
-  for (const b of document.querySelectorAll("#ab button")) b.setAttribute("aria-pressed", String(b.dataset.ab === ab));
   postAb();
   sendControl({ ab });
 }
@@ -483,13 +501,9 @@ function onKey(e) {
   // T-135: C/R/N act only with Shift or the drawer open (a judge leaning on the keyboard fires nothing)
   // T-150: F/Q (Focus / Quiet) are guarded the same way
   if ("crnfq".includes(key) && key.length === 1 && !(e.shiftKey || $("drawer").open)) return;
-  if (isReleaseKey(key, e.code)) { // T-177: Shift+0 (or 0 with the drawer open) = Release
-    if ((e.shiftKey || $("drawer").open) && !e.repeat) release();
-    return;
-  }
   if (key === " ") {
     e.preventDefault();
-    if (!e.repeat) setAb(abControl(state.ab).ab);
+    if (!e.repeat) toggleAutoFocus(); // Q-2010: Space is the Auto voice focus switch
   } else if (modeForKey(key)) {
     if (!e.repeat) setMode(modeForKey(key));
   } else if (key === "c") {
@@ -500,50 +514,35 @@ function onKey(e) {
     setNameCall(!state.nameCall);
   } else if (key === "d") {
     $("drawer").open = !$("drawer").open;
-  } else if ((key === "1" || key === "2") && !e.repeat) {
-    swapProfile(Number(key) - 1);
   }
+  // Q-2010: no 1/2 person keys and no Release (Shift+0): nobody chooses a name, the closest voice is isolated
 }
 
-/** Keys 1/2 (T-136): make saved voice profile 1 or 2 the target; the server keeps the old one playing
- * until the new one's embeddings are ready (prepared at hello, so about one window). */
-function swapProfile(i) {
-  const names = savedPeople(state.telemetry);
-  const msg = personControl(names, i);
-  if (!msg) {
-    note(`no saved voice profile ${i + 1}`);
-    return;
-  }
-  state.released = false; // the server turns auto-calibration back on with the profile
-  sendControl(msg);
-  note(`target: saved profile ${names[i]} (${i + 1})`);
-  render();
+/** Auto voice focus (Q-2010): flip from what the engine reports playing (telemetry ab), so a press always moves the
+ * switch the way it reads. ON = processed (isolated), OFF = raw (the whole room). */
+function toggleAutoFocus() {
+  setAb(autoFocusState(state.telemetry?.ab, state.ab).next);
+  renderAutoFocus();
 }
 
-/** Release (T-177, key Shift+0): forget the target; the server stops auto-calibrating (it would
- * re-enroll whoever talks next) until 1 or 2. The pill reads Searching. */
-function release() {
-  state.released = true;
-  sendControl(RELEASE_CONTROL);
-  note("target released (searching; 1 or 2 picks a saved person)");
-  render();
+/** The switch shows the engine's ab (telemetry), never only the click; `pending` until the engine agrees. */
+function renderAutoFocus() {
+  const a = autoFocusState(state.telemetry?.ab, state.ab);
+  const sw = $("ab");
+  sw.setAttribute("aria-checked", String(a.on));
+  sw.dataset.on = String(a.on);
+  sw.dataset.pending = String(a.pending);
+  sw.dataset.live = String(Boolean(state.audio && state.connected));
+  const word = sw.querySelector(".autofocus-word");
+  if (word.textContent !== (a.on ? "ON" : "OFF")) word.textContent = a.on ? "ON" : "OFF";
+  if ($("autofocus-line").textContent !== a.line) $("autofocus-line").textContent = a.line;
 }
 
-/** T-177: the saved-person buttons (labels from the session's profiles), Release, the target line. */
+/** T-177: the target line (Q-2010: no person buttons; under HEARING_PICK=loudest the closest voice). */
 function renderPeople(t) {
-  const names = savedPeople(t);
-  const current = t?.enrollment?.source === "profile" ? t.enrollment.profile : null;
-  for (const b of document.querySelectorAll("#people button[data-person]")) {
-    const name = names[Number(b.dataset.person)];
-    const label = name ? personLabel(name) : `Person ${Number(b.dataset.person) + 1}`;
-    const span = b.querySelector("span");
-    if (span.textContent !== label) span.textContent = label;
-    b.disabled = !name;
-    b.title = name ? `Make ${label} the target (key ${Number(b.dataset.person) + 1})` : state.connected ? "No saved voice profile" : "Waiting for connection";
-    b.setAttribute("aria-pressed", String(Boolean(name) && !state.released && name === current));
-  }
-  $("release").setAttribute("aria-pressed", String(state.released));
-  const line = targetLine(t, { released: state.released });
+  // loudest mode: the pill, the chip and the switch already say "closest voice"; a fourth line was noise
+  const line = loudestMode(t) ? "" : targetLine(t, { released: state.released });
+  $("target-line").hidden = !line;
   if ($("target-line").textContent !== line) $("target-line").textContent = line;
 }
 
@@ -568,41 +567,45 @@ function render() {
   $("namecall-release").hidden = !(state.nameCall && t?.name_call?.target);
   // T-134: the enrolled tier's pick confidence (0 = plays the mix, 1 = residual 40 dB down) + the saved profile
   const conf = t?.tse?.confidence;
-  $("d-conf").value = conf ?? 0;
+  if (Number($("d-conf").value) !== (conf ?? 0)) $("d-conf").value = conf ?? 0;
   const prof = t?.enrollment?.source === "profile" && t.enrollment.profile ? ` · profile: ${t.enrollment.profile} (saved)` : "";
   // T-178: the pick's contrast floor and cos(target, other profile); "dropped" = above SAME_VOICE 0.7, LDA off
   const pc = t?.tse?.pair_cos;
   const pair = pc == null ? "" : ` · cos(pair) ${pc.toFixed(2)}${t.tse.negative_active ? "" : " (negative dropped)"}`;
   const ctr = t?.tse?.contrast == null ? "" : ` · contrast ${t.tse.contrast}`;
-  $("d-conf-text").textContent = (conf == null ? "—" : `${Math.round(conf * 100)}%`) + prof + ctr + pair;
+  setText($("d-conf-text"), (conf == null ? "—" : `${Math.round(conf * 100)}%`) + prof + ctr + pair);
   $("namecall").hidden = !(state.nameCall || $("drawer").open); // T-135: only once N armed it (or in the drawer)
   const pill = state.pill.update(raw, performance.now()); // T-135: hysteresis, isolated instant
   $("start").hidden = Boolean(state.replaying);
-  $("pill").dataset.state = pill.state;
-  $("pill-text").textContent = pill.text;
-  $("pill-note").textContent = pill.note;
-  $("pill-note").hidden = !pill.note;
-  renderGate($("gate-pill"), t, pill.state === "isolated" && state.ab !== "raw");
+  // Q-2010: Auto voice focus off (the engine reports ab raw) plays the whole room, so the pill never says Isolated then
+  const roomPlays = pill.state === "isolated" && !autoFocusState(t?.ab, state.ab).on;
+  const pillState = roomPlays ? "raw" : pill.state;
+  if ($("pill").dataset.state !== pillState) $("pill").dataset.state = pillState;
+  setText($("pill-text"), roomPlays ? "Whole room — auto voice focus off" : pill.text);
+  setText($("pill-note"), roomPlays ? "" : pill.note);
+  $("pill-note").hidden = roomPlays || !pill.note;
+  // loudest mode: the pill already reads "Isolated — closest voice", so the gate chip would only repeat it
+  renderGate($("gate-pill"), t, pill.state === "isolated" && !roomPlays && state.ab !== "raw" && !loudestMode(t));
   const hq = hqBackendInfo(t);
   // T-109: the live backend (hq_active) and its RTT, so the presenter sees the auto switch to the GPU.
   // T-170: the GPU serving older code than this checkout cost a whole live test; say so here
   const stale = t?.remote?.rev_warning || t?.preset?.pins?.rev_warning || null;
-  $("d-backend").textContent = t
+  setText($("d-backend"), t
     ? `${hq.active === "remote" ? "iLab GPU" : `Mac (${t.device})`} · hq_active ${hq.active || "local"} · ${hq.label}${hq.reason ? ` · ${hq.reason}` : ""}${stale ? ` · ⚠ ${stale}` : ""}`
-    : "—";
+    : "—");
   const tiers = t?.tiers;
-  $("d-tier").textContent = t ? `${tierInfo(tiers?.active || t.tier).label}${tiers?.same_bucket ? " · same voice group" : ""}` : "—";
+  setText($("d-tier"), t ? `${tierInfo(tiers?.active || t.tier).label}${tiers?.same_bucket ? " · same voice group" : ""}` : "—");
   const total = state.steadyDelay.update(t?.latency_ms?.total); // T-135: EMA, 50 ms steps
-  $("d-delay").textContent = t && total != null ? `${total} ms (${t.latency_preset}, ${t.isolation})` : "—";
-  if (t?.isolation && document.activeElement !== $("isolation")) $("isolation").value = t.isolation;
+  setText($("d-delay"), t && total != null ? `${total} ms (${t.latency_preset}, ${t.isolation})` : "—");
+  if (t?.isolation && document.activeElement !== $("isolation") && $("isolation").value !== t.isolation) $("isolation").value = t.isolation;
   const rtt = t?.remote_rtt_ms ?? null;
   const pageRtt = state.steadyRtt.update(state.rttMs ?? NaN);
-  $("d-rtt").textContent = `${state.rttMs == null ? "—" : `${pageRtt} ms page↔engine`}${rtt == null ? (t?.hq_backend && t.hq_backend !== "local" ? " · GPU —" : "") : ` · GPU ${Math.round(rtt)} ms`}`;
-  $("d-claim").textContent = SI_SDRI_CLAIM;
-  renderPreset(t?.preset);
+  setText($("d-rtt"), `${state.rttMs == null ? "—" : `${pageRtt} ms page↔engine`}${rtt == null ? (t?.hq_backend && t.hq_backend !== "local" ? " · GPU —" : "") : ` · GPU ${Math.round(rtt)} ms`}`);
+  renderPreset(t?.preset); // d-claim is a constant, set once in init()
   expectDevices(t);
   renderCaptions(t);
   renderPeople(t);
+  renderAutoFocus();
   renderKeysOff();
 }
 
@@ -620,7 +623,7 @@ function renderCaptions(t) {
   $("caption-speaker").hidden = !quiet;
   if ($("caption-speaker").textContent !== feed.speaker) $("caption-speaker").textContent = feed.speaker;
   $("caption-warning").hidden = !(quiet && t && (feed.degraded || feed.paused));
-  $("caption-warning").textContent = feed.paused || DEGRADED_NOTICE;
+  setText($("caption-warning"), feed.paused || DEGRADED_NOTICE);
 }
 
 /** T-130: HEARING_DEMO_PRESET=team shows "TEAM PRESET" and every pin it holds; hidden when the preset is off. */
@@ -694,20 +697,12 @@ function init() {
     state.isolation = e.target.value;
     sendControl({ isolation: state.isolation });
   });
-  $("ab").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-ab]");
-    if (b) setAb(b.dataset.ab);
-  });
+  $("ab").addEventListener("click", () => toggleAutoFocus());
   $("modes").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-mode]");
     if (b) setMode(b.dataset.mode);
   });
 
-  $("people").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-person]");
-    if (b) swapProfile(Number(b.dataset.person));
-    else if (e.target.closest("#release")) release();
-  });
   // T-177: the banner follows window focus (another window or tab) and text fields (onKey ignores them)
   window.addEventListener("blur", () => { state.keyFocus.blur(); renderKeysOff(); });
   window.addEventListener("focus", () => { state.keyFocus.focus(); renderKeysOff(); });

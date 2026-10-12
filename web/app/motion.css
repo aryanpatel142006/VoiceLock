@@ -2,13 +2,17 @@
  * Motion system and sound scene (M14, T-349). Spec: web/app/DESIGN_SPEC.md section 6; tokens: tokens.css.
  * Linked by the shell at boot (after app.css and tokens.css: same-specificity rules here win).
  *
+ * Calm pass (Oct 11): the app is built for sensory overload, so every motion here is small, slow and the same
+ * every time. One curve (--motion-ease), three durations (--motion-fast/base/slow), transform and opacity only.
  * 1. The scene: one fixed layer behind the stage, the canvas placed per screen and width. Only its position and
- *    opacity move (transform/opacity); the canvas size changes only with the viewport.
- * 2. Screen cuts (View Transitions): hold, then dissolve; the pill and person chip glide as shared elements; the
- *    scene keeps drawing through the cut (own transition name, no snapshot animation).
- * 3. Reduced motion: a 200 ms linear cross-fade, no glide, no blur, no travel.
- * Pass B (T-389, docs/ux-review-shots/MOTION_PASS_B.md): the cut takes a direction along the scene order
- * (html[data-cut-dir], set by motion.js from transitions.js cutDirection) and the spring tokens below.
+ *    opacity move; the canvas size changes only with the viewport.
+ * 2. Screen cuts (View Transitions): every screen-to-screen change is the same cross-fade (--motion-slow), no
+ *    blur, no camera push or pull; the pill and the person chip glide as shared elements; the scene keeps drawing
+ *    through the cut (own transition name, no snapshot animation). Utility screens (SOS, About, Phone) take the
+ *    same fade.
+ * 3. Reduced motion: a short linear cross-fade, no glide, no travel; nothing else moves.
+ * html[data-cut-dir] is still set by motion.js (transitions.js cutDirection) for the tests and the review docs; the
+ * cut no longer reads it.
  */
 
 /* ---------- 0. Spring tokens (Motion spring(visualDuration, bounce) sampled to linear(); = transitions.js SPRINGS) */
@@ -22,9 +26,6 @@
   /* spring(0.45, 0.08): person cards arriving */
   --spring-reveal: linear(0, 0.0521, 0.1679, 0.3056, 0.4418, 0.5643, 0.6684, 0.7531, 0.82, 0.8713, 0.9099, 0.9382, 0.9586, 0.973, 0.983, 0.9897, 0.9941, 0.997, 0.9987, 0.9997, 1.0003, 1);
   --spring-reveal-dur: 650ms;
-  /* camera moves of a cut (scale of the outgoing / incoming snapshot) */
-  --cut-push: 1.06;  /* T-427: a deeper camera move (was 1.025 / 0.975); the live scene counter-moves (parallax) */
-  --cut-pull: 0.95;
 }
 
 /* ---------- 1. Scene ---------- */
@@ -42,7 +43,7 @@
   contain: strict;
   view-transition-name: scene;
   opacity: 1;
-  transition: opacity var(--dur-cut, 520ms) var(--ease-film, ease);
+  transition: opacity var(--motion-slow, 400ms) var(--motion-ease, ease);
 }
 .scene canvas,
 .scene-label {
@@ -50,12 +51,8 @@
   left: 0;
   top: 0;
   translate: calc(var(--scene-x) * 100vw - 50%) calc(var(--scene-y) * 100dvh - 50%);
-  transition: translate var(--dur-cut, 520ms) var(--ease-film, ease), scale var(--dur-cut, 520ms) var(--ease-film, ease);
+  transition: translate var(--motion-slow, 400ms) var(--motion-ease, ease);
 }
-/* T-427 parallax: through a cut the field behind moves a third as far as the stage, so the screens read as layers in
-   depth. Only while html[data-cut-dir] is set (motion.js, one cut); then it settles back. */
-html[data-cut-dir="forward"] .scene canvas { scale: 1.02; }
-html[data-cut-dir="back"] .scene canvas { scale: 0.983; }
 .scene canvas {
   display: block;
   width: var(--scene-box);
@@ -97,18 +94,24 @@ html.has-scene .ls-captions {
   background: color-mix(in oklab, var(--color-bg) 88%, transparent);
 }
 
-/* per screen: Welcome sits right of centre; on the setup-type screens the field is a backdrop, dimmed */
+/* per screen: Welcome sits right of centre; on the reading screens (setup, people, about, learned) the field is off:
+   it sat behind text and cards and only competed with them */
 body[data-screen="welcome"] .scene { --scene-x: 0.68; --scene-y: 0.4; }
 body[data-screen="setup"] .scene,
 body[data-screen="people"] .scene,
-body[data-screen="about"] .scene { opacity: 0.42; }
+body[data-screen="about"] .scene,
+body[data-screen="learned"] .scene { opacity: 0; }
 body[data-screen="phone"] .scene { --scene-x: 0.3; --scene-y: 0.36; }
 body[data-sheet] .scene { opacity: 0.6; }
+/* SOS and the phone companion: full-screen text over the field; it stays off, a sheet included */
+body[data-screen="sos"] .scene,
+body[data-screen="phone"] .scene { opacity: 0; }
 
-/* 390 px (phone): centred high, bleeding off both edges */
+/* 390 px (phone): centred high, bleeding off both edges; on Listen it sits behind the word and captions, so it steps back */
 @media (max-width: 720px) {
   .scene { --scene-x: 0.5; --scene-y: 0.3; --scene-size: 120vw; }
   body[data-screen="welcome"] .scene { --scene-x: 0.5; --scene-y: 0.24; }
+  body[data-screen="listen"] .scene { opacity: 0.25; }
   body[data-screen="phone"] .scene { --scene-x: 0.5; --scene-y: 0.28; }
 }
 
@@ -118,91 +121,54 @@ body[data-sheet] .scene { opacity: 0.6; }
 ::view-transition-old(scene) { display: none; }
 ::view-transition-new(scene) { animation: none; }
 
-/* film pacing: hold, then dissolve with a camera-like settle */
+/* one calm cross-fade for every screen change, in every direction, at every width: the old frame fades, the new
+   frame fades up under it (the screen's own entrance then lifts its main blocks a few px). No blur: a blurred
+   full-page snapshot is a filter over the whole viewport per frame. No scale: nothing in the room moves. */
 ::view-transition-old(stage) {
-  animation: mo-cut-out var(--dur-cut) var(--ease-film) var(--dur-hold) both;
+  animation: mo-fade-out var(--motion-slow) var(--motion-ease) both;
 }
 ::view-transition-new(stage) {
-  animation: mo-cut-in var(--dur-cut) var(--ease-film) var(--dur-hold) both;
+  animation: mo-fade-in var(--motion-slow) var(--motion-ease) both;
 }
-@keyframes mo-cut-out {
-  to { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(0.985); }
-}
-@keyframes mo-cut-in {
-  from { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(1.012); }
-}
+@keyframes mo-fade-out { to { opacity: 0; } }
+@keyframes mo-fade-in { from { opacity: 0; } }
 
-/* direction (motion.js sets html[data-cut-dir] for the cut's lifetime):
-   forward (Welcome > Setup > People > Listen) = the camera pushes in: the old frame grows past us, the new one
-   settles up from slightly small. back = the camera pulls out. dissolve (About, Phone) = no camera move. */
-html[data-cut-dir="forward"]::view-transition-old(stage) { animation-name: mo-push-out; }
-html[data-cut-dir="forward"]::view-transition-new(stage) { animation-name: mo-push-in; }
-html[data-cut-dir="back"]::view-transition-old(stage) { animation-name: mo-pull-out; }
-html[data-cut-dir="back"]::view-transition-new(stage) { animation-name: mo-pull-in; }
-html[data-cut-dir="dissolve"]::view-transition-old(stage) { animation-name: mo-dissolve-out; }
-html[data-cut-dir="dissolve"]::view-transition-new(stage) { animation-name: mo-dissolve-in; }
-@keyframes mo-push-out { to { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(var(--cut-push)); } }
-@keyframes mo-push-in { from { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(var(--cut-pull)); } }
-@keyframes mo-pull-out { to { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(var(--cut-pull)); } }
-@keyframes mo-pull-in { from { opacity: 0; filter: blur(var(--motion-blur)); transform: scale(var(--cut-push)); } }
-@keyframes mo-dissolve-out { to { opacity: 0; filter: blur(var(--motion-blur)); } }
-@keyframes mo-dissolve-in { from { opacity: 0; filter: blur(var(--motion-blur)); } }
-
-/* phone: no blur on the cut. Two full-screen snapshots blurred at DPR 3 every frame cost more GPU than the
-   dissolve is worth on a 390 px screen; opacity and scale stay on the compositor (T-379). */
-@media (max-width: 720px) {
-  ::view-transition-old(stage) { animation-name: mo-cut-out-lite; }
-  ::view-transition-new(stage) { animation-name: mo-cut-in-lite; }
-}
-@media (max-width: 720px) {
-  html[data-cut-dir="forward"]::view-transition-old(stage) { animation-name: mo-push-out-lite; }
-  html[data-cut-dir="forward"]::view-transition-new(stage) { animation-name: mo-push-in-lite; }
-  html[data-cut-dir="back"]::view-transition-old(stage) { animation-name: mo-pull-out-lite; }
-  html[data-cut-dir="back"]::view-transition-new(stage) { animation-name: mo-pull-in-lite; }
-  html[data-cut-dir="dissolve"]::view-transition-old(stage) { animation-name: mo-fade-out; }
-  html[data-cut-dir="dissolve"]::view-transition-new(stage) { animation-name: mo-fade-in; }
-}
-@keyframes mo-push-out-lite { to { opacity: 0; transform: scale(var(--cut-push)); } }
-@keyframes mo-push-in-lite { from { opacity: 0; transform: scale(var(--cut-pull)); } }
-@keyframes mo-pull-out-lite { to { opacity: 0; transform: scale(var(--cut-pull)); } }
-@keyframes mo-pull-in-lite { from { opacity: 0; transform: scale(var(--cut-push)); } }
-@keyframes mo-cut-out-lite {
-  to { opacity: 0; transform: scale(0.985); }
-}
-@keyframes mo-cut-in-lite {
-  from { opacity: 0; transform: scale(1.012); }
-}
-
-/* shared elements glide on the same clock, landing on the settle spring (no overshoot you can see: 0.25 %);
-   their content cross-fades inside the moving box */
+/* shared elements glide on the same clock and the same curve; their content cross-fades inside the moving box */
 ::view-transition-group(pill),
 ::view-transition-group(person) {
-  animation-duration: var(--dur-cut);
-  animation-timing-function: var(--spring-settle);
-  animation-delay: var(--dur-hold);
+  animation-duration: var(--motion-slow);
+  animation-timing-function: var(--motion-ease);
   z-index: 2;
 }
 ::view-transition-old(pill),
 ::view-transition-new(pill),
 ::view-transition-old(person),
 ::view-transition-new(person) {
-  animation-duration: var(--dur-cut);
-  animation-delay: var(--dur-hold);
+  animation-duration: var(--motion-slow);
   height: 100%; /* pills of different widths: keep the glyphs' aspect, do not stretch them */
 }
 
-/* ---------- 2b. Micro-interactions (T-427): every control answers a press on the press spring ---------- */
+/* ---------- 2b. Micro-interactions: every control answers a press with one small, quick settle ---------- */
 /* zero specificity (:where), so a screen's own transition list wins; the independent `scale` never fights a transform */
 :where(button:not(.wl-disc, .ls-voice), .nav-item, a.link, .ls-dial) {
-  transition: scale var(--spring-press-dur, 400ms) var(--spring-press, ease-out), background-color .3s var(--ease-out, ease),
-    color .3s var(--ease-out, ease), box-shadow .3s var(--ease-out, ease), opacity .3s var(--ease-out, ease);
+  transition: scale var(--motion-fast, 160ms) var(--motion-ease, ease-out), background-color var(--motion-fast, 160ms) var(--motion-ease, ease),
+    border-color var(--motion-fast, 160ms) var(--motion-ease, ease), color var(--motion-fast, 160ms) var(--motion-ease, ease),
+    box-shadow var(--motion-fast, 160ms) var(--motion-ease, ease), opacity var(--motion-fast, 160ms) var(--motion-ease, ease);
 }
-:where(button:not(.wl-disc, .ls-voice, :disabled), .nav-item, a.link):active { scale: 0.96; transition-duration: 90ms; }
+:where(button:not(.wl-disc, .ls-voice, :disabled), .nav-item, a.link):active { scale: 0.98; }
+
+/* ---------- 2c. Entrances: one keyframe set every panel, card and message shares (opacity + a small rise) ---------- */
+@keyframes mo-rise { from { opacity: 0; transform: translateY(var(--motion-rise, 8px)); } }
+/* a stagger for siblings: the n-th child waits n steps (a list of at most six is spaced; the rest arrive together) */
+.mo-stagger > :nth-child(2) { animation-delay: 40ms; }
+.mo-stagger > :nth-child(3) { animation-delay: 80ms; }
+.mo-stagger > :nth-child(4) { animation-delay: 120ms; }
+.mo-stagger > :nth-child(5) { animation-delay: 160ms; }
+.mo-stagger > :nth-child(n + 6) { animation-delay: 200ms; }
 
 /* ---------- 3. Reduced motion: cross-fades only ---------- */
 @media (prefers-reduced-motion: reduce) {
   .scene, .scene canvas, .scene-label { transition: none; }
-  html[data-cut-dir] .scene canvas { scale: none; }
   :where(button, .nav-item, a.link):active { scale: none; }
   ::view-transition-old(stage),
   ::view-transition-old(root) {
@@ -216,6 +182,5 @@ html[data-cut-dir="dissolve"]::view-transition-new(stage) { animation-name: mo-d
   /* no shared glide either: motion.js names no shared elements under reduced motion; this is the backstop */
   ::view-transition-group(pill),
   ::view-transition-group(person) { animation-duration: 0s !important; }
+  .mo-stagger > * { animation-delay: 0ms !important; }
 }
-@keyframes mo-fade-out { to { opacity: 0; } }
-@keyframes mo-fade-in { from { opacity: 0; } }

@@ -334,7 +334,9 @@ export function mountDevices(root, { onMicChange = () => {}, onNote = () => {}, 
     root.dataset.speakers = String(speakers);
     root.dataset.hfp = String(hfp);
     root.dataset.micLost = String(Boolean(mic.lost()));
-    banner.querySelector("span").textContent = lines.join(" · ");
+    const bannerText = banner.querySelector("span");
+    const text = lines.join(" · ");
+    if (bannerText.textContent !== text) bannerText.textContent = text; // only a change is re-announced
     banner.querySelector("button").hidden = !(mic.missing() || missing.output || mic.lost() || wrongMic);
     const pick = banner.querySelector("select");
     pick.hidden = !pickOutput;
@@ -396,19 +398,28 @@ export function mountDevices(root, { onMicChange = () => {}, onNote = () => {}, 
   navigator.mediaDevices?.addEventListener?.("devicechange", async () => { await mic.deviceChange(); refresh(); });
   const missingKinds = () => [(mic.missing() || mic.lost()) && "mic", missing.output && "output"].filter(Boolean);
 
+  // Perf: the meter paints only while it can be seen (not inside a closed <details> drawer or a hidden ancestor),
+  // moves its bar with a transform (compositor only, no layout) and writes each field only when it changed.
+  const meterEl = q("meter"), bar = meterEl.querySelector("i"), meterRole = meterEl.querySelector("[role=meter]");
+  const dbEl = q("db"), bandEl = q("band");
+  const shown = { band: "", pct: "", db: "", text: "" };
+  const visible = () => root.isConnected && !root.closest?.("[hidden]") && (root.closest?.("details")?.open ?? true);
   function paint(now) {
     const dt = lastFrame ? Math.min(0.5, (now - lastFrame) / 1000) : 0;
     lastFrame = now;
     level = Math.max(METER_FLOOR_DB, level - RELEASE_DB_PER_S * dt);
-    if (!live()) return;
+    if (!live() || !visible()) return;
     const band = levelBand(level);
-    const pct = Math.max(0, Math.min(1, (level - METER_FLOOR_DB) / -METER_FLOOR_DB));
-    const meter = q("meter");
-    meter.dataset.band = band;
-    meter.querySelector("i").style.width = `${(pct * 100).toFixed(0)}%`;
-    meter.querySelector("[role=meter]").setAttribute("aria-valuenow", level.toFixed(0));
-    q("db").textContent = `${level <= METER_FLOOR_DB ? "≤ -60" : level.toFixed(0)} dBFS`;
-    q("band").textContent = BAND_TEXT[band];
+    const pct = Math.max(0, Math.min(1, (level - METER_FLOOR_DB) / -METER_FLOOR_DB)).toFixed(2);
+    const db = level.toFixed(0);
+    if (shown.band !== band) { shown.band = band; meterEl.dataset.band = band; }
+    if (shown.pct !== pct) { shown.pct = pct; bar.style.transform = `scaleX(${pct})`; }
+    if (shown.db !== db) {
+      shown.db = db;
+      meterRole.setAttribute("aria-valuenow", db);
+      dbEl.textContent = `${level <= METER_FLOOR_DB ? "≤ -60" : db} dBFS`;
+    }
+    if (shown.text !== BAND_TEXT[band]) { shown.text = BAND_TEXT[band]; bandEl.textContent = BAND_TEXT[band]; }
   }
   setInterval(() => paint(performance.now()), 50);
 

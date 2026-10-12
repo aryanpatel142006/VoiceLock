@@ -1,4 +1,5 @@
 // Plain-language acquisition pill for the judge page (T-088): one prompt the presenter can read aloud.
+import { loudestMode } from "./gate-state.js";
 // judgePill(telemetry, {cameraLost, connected}) -> {state, text, note}; `note` is the same-voice caveat.
 const LIP_TIERS = new Set(["focus_hq", "av"]); // AV-TSE: separates similar voices by the lips
 
@@ -21,6 +22,8 @@ export function judgePill(t, { cameraLost = false, connected = true } = {}) {
     return { state: "isolated", text: "Camera lost — voice profile still isolating", note: "" };
   }
   if (cameraLost) return { state: "fallback", text: "Camera lost — noise suppression only", note: "" };
+  // HEARING_PICK=loudest: no profile and no acquisition ladder; the loudest voice plays, so the pill says isolated
+  if (loudestMode(t)) return { state: "isolated", text: "Isolated \u2014 closest voice", note: "" };
   if (!t?.acquisition) return { state: "idle", text: "Press Start", note: "" };
   const { state, detail = "" } = t.acquisition;
   const cal = /^calibrating ([\d.]+)\/([\d.]+) s/.exec(detail);

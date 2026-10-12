@@ -18,14 +18,31 @@ export const title = "Setup";
 export const METER_MIN_DB = -60;
 export const STALL_MS = 600; // no level event for this long while started: "no frames"
 const HEALTH_EVERY_MS = 5000;
-const BAND_WORD = { idle: "Mic off", quiet: "Too quiet", good: "Good", clipping: "Clipping", stalled: "No frames" };
+const BAND_WORD = { idle: "Mic off", quiet: "Too quiet", good: "Good", clipping: "Too loud", stalled: "No sound" };
+// plain words on screen; the dBFS thresholds and frame facts sit in the closed Details disclosure
 const BAND_NOTE = {
-  idle: "Start the mic to read the room. Nothing is measured until frames are sent.",
-  quiet: `Peak under ${TOO_QUIET_DB} dBFS: move the mic closer or raise its gain.`,
-  good: "Speech reaches the engine at a level it can use.",
-  clipping: `Peak at or above ${CLIPPING_DB} dBFS: lower the input gain.`,
-  stalled: "The mic is open but no frames reach the engine. Pick the mic again or press Start mic.",
+  idle: "Press Start mic. Nothing is measured until the mic is on.",
+  quiet: "Move the mic closer or turn its volume up.",
+  good: "Your voice comes through clearly.",
+  clipping: "Turn the mic volume down a little.",
+  stalled: "The mic is on but no sound comes through. Choose the mic again or press Start mic.",
 };
+const MIC_PLAIN = { idle: "off", quiet: "too quiet", good: "ok", clipping: "too loud", stalled: "no sound" };
+
+/**
+ * The plain lines Setup shows by default: Microphone, Sound output, and Ready. `band` is meterBand's, `output` the
+ * output device's name (devices.js label), `checks` setupChecks'. Ready needs a good mic level and every check ok.
+ */
+export function setupPlain({ band, output, checks }) {
+  const fail = checks.some((c) => c.status === "fail");
+  const ready = band === "good" && checks.every((c) => c.status === "ok");
+  return [
+    { id: "mic", label: "Microphone", value: MIC_PLAIN[band] || "off", status: band === "good" ? "ok" : band === "idle" ? "wait" : "warn" },
+    { id: "output", label: "Sound output", value: output || "this device", status: "ok" },
+    { id: "ready", label: ready ? "Ready" : fail ? "Not ready: something needs fixing (see Details)" : "Not ready yet", value: "",
+      status: ready ? "ok" : fail ? "fail" : "wait" },
+  ];
+}
 
 /** The app's one session, shared by every screen (Listen, Setup, People): created and connected on first use. */
 export function sharedSession(app) {
@@ -97,21 +114,21 @@ export function setupChecks({ secure, worklet, health, connection, truth }) {
 
   let e;
   if (!health) e = { status: "wait", value: "Checking", detail: "Asking /health." };
-  else if (health.error) e = { status: "fail", value: "Unreachable", detail: `/health: ${health.error}` };
+  else if (health.error) e = { status: "fail", value: "Offline", detail: "Not reachable." };
   else {
     const warm = health.warm || "off";
     const socket = connection === "open" ? "session open" : connection === "reconnecting" ? "session reconnecting" : "session connecting";
     const status = connection !== "open" || warm === "warming" ? "warn" : "ok";
     const models = { ready: "models loaded", warming: "models loading", off: "models load on first use" }[warm] || `warm-up ${warm}`;
     e = { status, value: warm === "warming" ? "Warming" : connection === "open" ? "Connected" : "Reachable",
-      detail: [`version ${health.version || "?"}`, models, socket].join(", ") };
+      detail: [health.version ? `version ${health.version}` : null, models, socket].filter(Boolean).join(", ") };
   }
   checks.push({ id: "engine", label: "Engine", ...e });
 
   let b;
   if (!health || health.error) b = { status: health?.error ? "fail" : "wait", value: "—", detail: "Needs the engine." };
   else {
-    const device = String(health.device || "?");
+    const device = health.device ? String(health.device) : ""; // unknown: no "?" on screen
     const where = device === "mps" ? "Mac (Apple GPU)" : device === "cuda" ? "CUDA GPU" : device === "cpu" ? "CPU" : device;
     const plays = truth?.backend; // what plays now, from telemetry hq_active; null before the first telemetry
     // T-463: the GPU's rev against this checkout only matters while the GPU plays; on the Mac (the decided stage
@@ -119,10 +136,10 @@ export function setupChecks({ secure, worklet, health, connection, truth }) {
     const rev = plays === "GPU" ? health.remote_rev_warning || truth?.revWarning : null;
     let detail;
     if (plays === "GPU") detail = `Focus plays on the GPU${truth.gpuRttMs != null ? `, network round trip ${truth.gpuRttMs} ms` : ""}`;
-    else if (plays === "Mac") detail = truth.fallback ? `The GPU is not answering, so ${where} plays` : `Focus plays on this ${where}`;
-    else detail = `Engine on ${where}; waiting for it to say what plays`;
+    else if (plays === "Mac") detail = truth.fallback ? `The GPU is not answering, so ${where || "the laptop"} plays` : `Focus plays on this ${where || "laptop"}`;
+    else detail = where ? `Engine on ${where}; waiting for it to say what plays` : "Waiting for the engine to say what plays";
     if (rev) detail += `. The GPU runs older code than this laptop (details in Diagnostics)`;
-    b = { status: rev || truth?.fallback ? "warn" : plays ? "ok" : "wait", value: plays || device.toUpperCase(), detail: `${detail}.` };
+    b = { status: rev || truth?.fallback ? "warn" : plays ? "ok" : "wait", value: plays || (device ? device.toUpperCase() : "—"), detail: `${detail}.` };
   }
   checks.push({ id: "backend", label: "Backend", ...b });
   return checks;
@@ -155,7 +172,7 @@ export function delayNowCopy(truth, steady = truth?.delaySteady) {
   const measured = truth?.delayMs;
   if (measured == null) return "The engine's delay shows here once sound flows.";
   if (steady !== "steady") return `Engine delay now: ${SETTLING} (the number shows once it holds for 2 s).`;
-  return `Engine delay now: ${fmtDelay(measured)} (${truth.latencyPreset || "preset unknown"}), before device buffers.`;
+  return `Engine delay now: ${fmtDelay(measured)}${truth.latencyPreset ? ` (${truth.latencyPreset})` : ""}, before device buffers.`;
 }
 
 export function mount(root, { app, signal }) {
@@ -167,7 +184,7 @@ export function mount(root, { app, signal }) {
   const stageRig = isStageRig({ touch });
 
   // ---- meter (the one moving thing on this screen; only real frames move it)
-  const word = h("p", { class: "su-word", "aria-live": "polite" });
+  const word = h("p", { class: "su-word" });
   const reading = h("p", { class: "su-reading" }, h("span", { class: "su-db" }), h("span", { class: "su-unit", text: "dBFS peak" }));
   const fill = h("i", { class: "su-fill" });
   const scale = h("div", { class: "su-scale", role: "meter", "aria-label": "Input level", "aria-valuemin": "-60", "aria-valuemax": "0",
@@ -187,23 +204,33 @@ export function mount(root, { app, signal }) {
   const saved = h("p", { class: "su-saved" });
   const warnList = h("ul", { class: "su-warnings", "aria-live": "polite" });
 
-  // ---- checks
+  // ---- plain status lines (visible), then the checks and numbers in a closed Details disclosure
+  const plainList = h("ul", { class: "su-plain" });
   const checkList = h("ol", { class: "su-checks" });
   const delay = h("p", { class: "su-delay" });
+  const delayNow = h("p", { class: "su-delay-now" });
+  const details = h("details", { class: "disclose su-details" },
+    h("summary", { text: "Details" }),
+    h("div", { class: "su-details-body" },
+      reading,
+      h("p", { class: "su-thresholds", text: `Too quiet under ${TOO_QUIET_DB} dBFS peak; too loud (clipping) at ${CLIPPING_DB} dBFS or above. `
+        + `No sound means no audio frames reached the engine for ${STALL_MS} ms.` }),
+      devFacts ? checkList : null,
+      delayNow));
 
   root.append(h("section", { class: "setup", "aria-labelledby": "setup-title" },
     h("header", { class: "su-head" },
       h("h1", { id: "setup-title", class: "su-title", text: "Set up the sound" }),
       h("p", { class: "su-lede", text: setupLede(touch) })),
     h("div", { class: "su-grid" },
-      h("section", { class: "su-meter", "aria-label": "Microphone level" }, word, reading, scale, bandNote,
+      h("section", { class: "su-meter", "aria-label": "Microphone level" }, word, scale, bandNote,
         h("div", { class: "su-mic-row" }, micBtn, micBanner)),
       h("section", { class: "su-devices", "aria-labelledby": "su-devices-title" },
         h("h2", { id: "su-devices-title", class: "su-h2", text: "Microphone and output" }), pickers, saved, warnList),
-      h("section", { class: "su-check-panel", "aria-labelledby": devFacts ? "su-checks-title" : null, "aria-label": devFacts ? null : "Delay" },
-        devFacts ? h("h2", { id: "su-checks-title", class: "su-h2", text: "Before you go on stage" }) : null, devFacts ? checkList : null, delay)),
+      h("section", { class: "su-check-panel", "aria-labelledby": "su-checks-title" },
+        h("h2", { id: "su-checks-title", class: "su-h2", text: "Status" }), plainList, delay, details)),
     h("footer", { class: "su-foot" },
-      h("a", { href: "#people", class: "su-next" }, h("span", { text: "Choose who to hear" })))));
+      h("a", { href: "#listen", class: "su-next" }, h("span", { text: "Start listening" })))));
 
   // ---- live state
   let level = { db: METER_MIN_DB, band: "idle", at: 0 };
@@ -212,7 +239,21 @@ export function mount(root, { app, signal }) {
   let raf = 0;
   let warnSig = "";
   let checkSig = "";
+  let plainSig = "";
+  let shownBand = "idle";
+  let shownChecks = [];
   const now = () => performance.now();
+
+  // the plain lines change only when the band, the output or a check status does (not every meter frame)
+  function paintPlain() {
+    const lines = setupPlain({ band: shownBand, output: store.state.mic?.output || "", checks: shownChecks });
+    const sig = JSON.stringify(lines);
+    if (sig === plainSig) return;
+    plainSig = sig;
+    plainList.replaceChildren(...lines.map((l) => h("li", { class: "su-plain-row", "data-status": l.status, "data-line": l.id },
+      h("span", { class: "su-plain-label", text: l.value ? `${l.label}:` : l.label }),
+      l.value ? h("span", { class: "su-plain-value", text: l.value }) : null)));
+  }
 
   function paintMeter() {
     raf = 0;
@@ -221,13 +262,15 @@ export function mount(root, { app, signal }) {
     const live = band !== "idle" && band !== "stalled";
     const db = live ? level.db : null;
     root.querySelector(".setup").dataset.band = band;
-    word.textContent = s.replaying ? "Replay" : BAND_WORD[band];
+    const wordText = s.replaying ? "Replay" : BAND_WORD[band];
+    if (word.textContent !== wordText) word.textContent = wordText;
     reading.querySelector(".su-db").textContent = db == null ? "—" : db <= METER_MIN_DB ? "≤ −60" : db.toFixed(0).replace("-", "−");
     fill.style.transform = `scaleX(${db == null ? 0 : meterPos(db).toFixed(4)})`;
     scale.setAttribute("aria-valuenow", db == null ? "-60" : db.toFixed(0));
     scale.setAttribute("aria-valuetext", db == null ? BAND_WORD[band] : `${db.toFixed(0)} dBFS, ${BAND_WORD[band]}`);
-    bandNote.textContent = s.replaying ? "The server's replay clip is playing; this meter shows the replayed room, not your mic."
-      : BAND_NOTE[band];
+    const note = s.replaying ? "A recording is playing; this meter shows the recording, not your mic." : BAND_NOTE[band];
+    if (bandNote.textContent !== note) bandNote.textContent = note;
+    if (band !== shownBand) { shownBand = band; paintPlain(); }
   }
   const schedule = () => { if (!raf) raf = requestAnimationFrame(paintMeter); };
 
@@ -241,7 +284,7 @@ export function mount(root, { app, signal }) {
     const w = setupWarnings(s.mic, s.telemetry, s.started && !s.replaying);
     root.querySelector(".setup").dataset.hfp = String(w.hfp);
     const items = w.lines.map((l) => h("li", { class: "su-warn", "data-kind": l.kind }, h("span", { class: "su-warn-tag", text:
-      { hfp: "HFP", speakers: "Feedback", missing: "Missing", output: "Wrong output", mic: "Wrong mic", other: "Check" }[l.kind] }),
+      { hfp: "Bluetooth mic", speakers: "Echo", missing: "Missing", output: "Wrong output", mic: "Wrong mic", other: "Check" }[l.kind] }),
     h("span", { text: l.text })));
     if (w.bluetoothOut && !w.lines.length && stageRig) {
       items.push(h("li", { class: "su-warn", "data-kind": "info" }, h("span", { class: "su-warn-tag", text: "Bluetooth" }),
@@ -254,6 +297,7 @@ export function mount(root, { app, signal }) {
     const out = loadChoice(SINK_LABEL_KEY) || (loadChoice(SINK_KEY) ? "a saved device" : "");
     saved.textContent = mic || out ? `Remembered on this browser: mic ${mic || "system default"}, output ${out || "system default"}.`
       : "Your choices are remembered on this browser.";
+    paintPlain();
   }
 
   function paintChecks() {
@@ -270,9 +314,11 @@ export function mount(root, { app, signal }) {
         h("span", { class: "su-check-detail", text: c.detail }))));
     }
     root.querySelector(".setup").dataset.ready = String(checks.every((c) => c.status === "ok"));
+    shownChecks = checks;
+    paintPlain();
     // T-463: the expected delay is the server's (/health tse_window, T-419), not a fixed "1.5 s"
-    delay.replaceChildren(h("span", { class: "su-delay-big", text: `${expectedDelayCopy(health && !health.error ? health : null)}, like live captions.` }),
-      h("span", { class: "su-delay-now", text: delayNowCopy(s.truth) }));
+    delay.replaceChildren(h("span", { class: "su-delay-big", text: `${expectedDelayCopy(health && !health.error ? health : null)}, like live captions.` }));
+    delayNow.textContent = delayNowCopy(s.truth);
   }
 
   async function poll() {
@@ -301,7 +347,7 @@ export function mount(root, { app, signal }) {
     // inside the click: session.start() creates the AudioContext synchronously (iOS wants the gesture)
     const p = store.state.started && !store.state.replaying ? (session.stop(), null) : session.start();
     paintMic();
-    p?.then(() => { paintMic(); paintChecks(); });
+    p?.catch(() => false).then(() => { paintMic(); paintChecks(); }); // a rejected start (a replay that would not stop) is no unhandled rejection
   }, { signal });
 
   const offs = [

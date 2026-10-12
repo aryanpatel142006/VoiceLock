@@ -126,21 +126,28 @@
   --glow-focus: 0 0 0 1px rgb(75 240 142 / 0.6);
   --grain-opacity: 0.06;
 
-  /* ---- Motion ---- */
-  --ease-film: cubic-bezier(0.7, 0, 0.2, 1);     /* screen cuts: hold, then cut */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);     /* things arriving */
-  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);     /* things leaving */
-  --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121 24.3%, 1.137 27%, 1.128 30.5%, 1.063 39.2%, 1.017 48.9%, 0.996 58.4%, 1.001 79.8%, 1);
+  /* ---- Motion: one small set (calm, slow, predictable; no overshoot, no blur, nothing loops) ----
+     Three durations and one curve carry every transition and animation in the app. The legacy names below
+     (--dur-*, --ease-*) are aliases kept for the screens that still read them. */
+  --motion-fast: 160ms;     /* a press, a hover colour, a pill word */
+  --motion-base: 240ms;     /* entrances, state changes, sheets, switch thumbs */
+  --motion-slow: 400ms;     /* a screen cut, the one slow move on a screen */
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);   /* calm ease-out: starts gently, settles, never overshoots */
+  --motion-rise: 8px;       /* the small rise of an entrance (the largest travel anything may use) */
+  --ease-film: var(--motion-ease);
+  --ease-out: var(--motion-ease);
+  --ease-in: var(--motion-ease);
+  --ease-spring: var(--motion-ease);           /* no springs: the disc settles on the calm curve */
   --dur-instant: 80ms;      /* key press acknowledgement */
-  --dur-wash: 140ms;        /* A/B colour wash: follows the audible flip, never lags it by more */
-  --dur-quick: 180ms;       /* hover, pill text change inside a state */
-  --dur-ui: 260ms;          /* sheets, banners in/out */
-  --dur-cut: 520ms;         /* View-Transition screen cut (400-600 ms) */
-  --dur-hold: 240ms;        /* stillness before a cut starts */
+  --dur-wash: var(--motion-fast);   /* A/B colour wash: follows the audible flip, never lags it by more */
+  --dur-quick: var(--motion-fast);  /* hover, pill text change inside a state */
+  --dur-ui: var(--motion-base);     /* sheets, banners in/out */
+  --dur-cut: var(--motion-slow);    /* View-Transition screen cut */
+  --dur-hold: 0ms;          /* no stillness before a cut: the screen answers at once */
   --dur-hold-to-start: 900ms; /* Welcome's press-and-hold ring fill */
   --dur-pill-hold: 500ms;   /* = PILL_HOLD_MS in web/console/judge-pill.js; documented, not a timer */
-  --motion-distance: 24px;  /* largest translate an entrance may use */
-  --motion-blur: 10px;      /* blur-fade start */
+  --motion-distance: var(--motion-rise);  /* largest translate an entrance may use */
+  --motion-blur: 0px;       /* no blur anywhere: a blurred snapshot costs a full-page filter per frame */
 
   /* ---- Sound scene contract (read by scene.js via getComputedStyle; numbers, no units) ---- */
   --scene-release-db-per-s: 24;   /* same meter release as web/console/devices.js */
@@ -160,18 +167,17 @@
   --z-toast: 50;
 }
 
-/* Reduced motion: cross-fades only, no travel, no blur, a static field. Durations stay non-zero so
-   transitionend/animationend handlers still fire. */
+/* Reduced motion: short cross-fades only, nothing travels, nothing scales, a static field. Durations stay non-zero
+   so transitionend/animationend handlers still fire. */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --dur-cut: 200ms;
+    --motion-fast: 100ms;
+    --motion-base: 160ms;
+    --motion-slow: 200ms;
+    --motion-ease: linear;
+    --motion-rise: 0px;
     --dur-hold: 0ms;
-    --dur-ui: 160ms;
-    --dur-quick: 120ms;
-    --dur-wash: 120ms;
     --dur-hold-to-start: 600ms;
-    --ease-film: linear;
-    --ease-spring: var(--ease-out);
     --motion-distance: 0px;
     --motion-blur: 0px;
     --scene-animate: 0;

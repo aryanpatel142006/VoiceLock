@@ -1,0 +1,37 @@
+/* Contextual controls legend (Comfort Companion): a slim, muted key hint, "← Not helpful · → Helpful · ↑ Quiet ·
+   ↓ Focus · Esc Stop". The big on-screen buttons are the touch path, so this is small text, not a second button row;
+   each item is still a (quiet) button for a mouse. Hidden under 600 px, where there is no keyboard or remote.
+   Motion: one --motion-fast colour change on press; none under prefers-reduced-motion. */
+.cl-legend {
+  --cl-fg: var(--sos-soft, var(--color-dim, #c9d6ec));
+  --cl-hi: var(--sos-fg, var(--color-fg, #f3f4f1));
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 4px;
+  box-sizing: border-box; width: 100%; max-width: 44rem; margin-inline: auto; padding: 0;
+  background: transparent; border: 0;
+  color: var(--cl-fg); font-family: var(--font-ui, system-ui, sans-serif); font-size: 13px; line-height: 1.3;
+}
+/* the group's aria-label already says "Keyboard / remote"; on screen the arrows say it */
+.cl-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cl-items { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0; }
+.cl-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 24px; padding: 2px 6px; box-sizing: border-box;
+  background: transparent; color: inherit; border: 0; border-radius: 6px;
+  font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion-fast, 160ms) var(--motion-ease, linear), background-color var(--motion-fast, 160ms) var(--motion-ease, linear), scale var(--motion-fast, 160ms) var(--motion-ease, linear);
+}
+.cl-btn + .cl-btn::before { content: "·"; margin-right: 6px; color: var(--cl-fg); opacity: 0.6; }
+.cl-btn:hover { color: var(--cl-hi); }
+.cl-btn:focus-visible { outline: 2px solid var(--cl-hi); outline-offset: 1px; }
+.cl-btn[data-flash="1"], .cl-btn:active { color: var(--cl-hi); background: rgb(255 255 255 / 0.1); }
+.cl-glyph { font-weight: 700; color: var(--cl-hi); }
+.cl-status { padding-inline: 4px; color: var(--cl-fg); font-size: 12px; opacity: 0; }
+.cl-status:empty { display: none; }
+.cl-status[data-on="1"] { opacity: 1; }
+
+@media (max-width: 599px) {
+  .cl-legend, .cf-legend, .cf-legend-out { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-btn { transition: none; }
+}

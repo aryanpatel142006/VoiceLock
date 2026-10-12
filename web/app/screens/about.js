@@ -19,8 +19,8 @@ function el(tag, attrs = {}, ...children) {
 /** The delay row from /health (T-419 window + hop): "~1.5 s", or "—" while the server has not said. */
 export function delayClaim(health) {
   const ms = expectedDelayMs(health);
-  return ms == null ? { value: "—", condition: "Waiting for the engine to report its window." }
-    : { value: `~${fmtDelay(ms)}`, condition: "This engine's balanced preset: its window plus hop, by design. A delay, not real-time." };
+  return ms == null ? { value: "—", condition: "Waiting for the app to report its delay." }
+    : { value: `~${fmtDelay(ms)}`, condition: "The normal setting on this engine. A short delay on purpose, not instant." };
 }
 
 function claimList(items, offset = 0) {
@@ -34,7 +34,6 @@ function claimList(items, offset = 0) {
 export function mount(root, { signal } = {}) {
   const c = ABOUT;
   const article = el("article", { class: "about", "aria-labelledby": "about-title" },
-    el("p", { class: "eyebrow", text: c.eyebrow }),
     el("h1", { id: "about-title", class: "about-title", text: c.title }),
     el("p", { class: "about-lede", text: c.lede(expectedDelayCopy(null, { capital: false })) }),
     el("section", { class: "about-claims", "aria-labelledby": "about-works-h" },
@@ -46,6 +45,9 @@ export function mount(root, { signal } = {}) {
       claimList(c.breaks, c.works.length),
       el("aside", { class: "about-honesty", "aria-label": "Far-field honesty" },
         el("p", { class: "about-honesty-text", text: c.farField }))),
+    el("details", { class: "disclose about-measured" },
+      el("summary", { text: c.measuredHeading }),
+      el("ul", { class: "about-measured-list" }, ...c.measured.map((line) => el("li", { text: line })))),
     el("p", { class: "about-note", text: c.logged }),
     el("p", { class: "about-note", text: c.footer }),
     el("p", {}, el("a", { href: "#sos", class: "link", text: "SOS: pair the band" })), // T-461

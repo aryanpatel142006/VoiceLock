@@ -14,6 +14,10 @@ Build stamp (T-452): ``sw.js`` and ``index.html`` are served with :func:`build_s
 new build (git rev, or any file under ``web/app/`` changing) gives the service worker a new
 ``VERSION`` (old caches are dropped on activate) and the shell's entry module a new ``?v=`` URL.
 Safari otherwise kept serving modules from the old cache after a merge.
+
+Companion: ``/app/?watch=...`` (the phone page) links ``companion.webmanifest`` instead of the app's manifest, so
+Add to Home Screen installs the companion (start_url ``/app/?watch=latest``) even before its JS swaps the link
+(``web/app/install.js``).
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ import re
 import subprocess
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from fastapi import FastAPI
 from fastapi.responses import (
@@ -93,6 +98,18 @@ def stamp_index(text: str, stamp: str) -> str:
     return _ENTRY.sub(rf"\g<1>?v={stamp}\g<2>", text, count=1)
 
 
+_MANIFEST_LINK = re.compile(r'(<link rel="manifest" href=")manifest\.webmanifest(")')
+
+
+def companion_index(text: str) -> str:
+    """The shell for a ``?watch=`` load: its manifest is the companion's."""
+    return _MANIFEST_LINK.sub(r"\g<1>companion.webmanifest\g<2>", text, count=1)
+
+
+def _is_companion(scope: Scope) -> bool:
+    return "watch" in parse_qs(scope.get("query_string", b"").decode("latin-1"), keep_blank_values=True)
+
+
 # the StaticFiles path (``.`` is ``/app/``) -> (file, how to stamp it, media type)
 _STAMPED = {"sw.js": ("sw.js", stamp_sw, "text/javascript; charset=utf-8"),
             ".": ("index.html", stamp_index, "text/html; charset=utf-8"),
@@ -108,7 +125,10 @@ class AppFiles(ConsoleFiles):
         file = Path(str(self.directory)) / name
         if not file.is_file():
             return None
-        body = stamp(file.read_text(encoding="utf-8"), build_stamp(file.parent)).encode()
+        text = stamp(file.read_text(encoding="utf-8"), build_stamp(file.parent))
+        if name == "index.html" and _is_companion(scope):
+            text = companion_index(text)
+        body = text.encode()
         # the ETag follows the stamped body, not the file: sw.js must change when another file does
         etag = f'"{hashlib.sha1(body).hexdigest()[:16]}"'
         headers = {"ETag": etag, "Cache-Control": "no-cache"}
@@ -166,12 +186,12 @@ def mount_app(app: FastAPI, app_dir: Path) -> None:
 def mount_console(app: FastAPI, console_dir: Path, app_dir: Path | None = None) -> None:
     """Mount the console at ``/``; call after every other route so they take precedence.
 
-    ``/simple`` and ``/judge`` serve ``simple.html`` / ``judge.html`` from the same directory, so their
+    ``/simple``, ``/judge`` and ``/who`` serve ``simple.html`` / ``judge.html`` / ``who.html`` from the same directory, so their
     relative imports (``simple.js``, ``judge.js``, ``protocol.js``, ``audio-worklet.js``) resolve to the
     console's files. The app (``web/app/``, or ``HEARING_APP_DIR``) goes at ``/app/`` first.
     """
     mount_app(app, Path(app_dir or os.environ.get("HEARING_APP_DIR") or APP_DIR))
-    for name in ("simple", "judge"):  # /judge: the judge demo page (T-088)
+    for name in ("simple", "judge", "who"):  # /judge: the judge demo page (T-088); /who: Who's speaking (hearing.who)
         page = console_dir / f"{name}.html"
         if page.is_file():
             app.add_api_route(f"/{name}", _page(page), include_in_schema=False)

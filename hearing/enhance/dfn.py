@@ -483,6 +483,7 @@ class DFN:
         )
         self._model_state = None
         self.lsnr_db = math.nan
+        self.lsnr_hops = np.zeros(0, np.float32)
         self._mix: float | None = None  # mix-back in effect, ramped toward the slider's
 
     def _backend_ready(self) -> Backend:
@@ -553,10 +554,11 @@ class DFN:
         backend = self._backend_ready()
         upsampled = self._up.process(x)
         hop = self.cfg.hop_size
-        frames = [
-            self._frame(upsampled[i : i + hop], self._ramp_mix(mix))
-            for i in range(0, len(upsampled), hop)
-        ]
+        frames, trace = [], []
+        for i in range(0, len(upsampled), hop):
+            frames.append(self._frame(upsampled[i : i + hop], self._ramp_mix(mix)))
+            trace.append(self.lsnr_db)
+        self.lsnr_hops = np.asarray(trace, dtype=np.float32)  # the model's local SNR estimate per hop of this chunk
         out = self._down.process(np.concatenate(frames))
         ctx.telemetry.extras[self.name] = {
             "device": backend.device,

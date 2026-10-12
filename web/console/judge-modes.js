@@ -1,3 +1,5 @@
+import { loudestMode } from "./gate-state.js";
+
 // T-150: the two big /judge modes. Focus plays the isolated voice; Quiet plays nothing and captions
 // the target. Pure helpers (no DOM) so node --test covers them; judge.js wires them to buttons and F/Q.
 
@@ -25,8 +27,9 @@ export function modeForKey(key) {
 
 /** Quiet's caption header: who is captioned and whether the feed fell back to the mixture. */
 export function captionFeed(t) {
+  // HEARING_PICK=loudest captions the closest voice, not the profile the preset loaded (that name would be a guess)
   return {
-    speaker: t?.enrollment?.profile || "Target",
+    speaker: loudestMode(t) ? "Closest voice" : t?.enrollment?.profile || "Target",
     degraded: t?.synth_feed === "mixture",
     paused: t?.quiet?.feed === "paused" ? t.quiet.reason || "captions paused" : "",
   };

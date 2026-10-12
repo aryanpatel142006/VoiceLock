@@ -1,4 +1,6 @@
-// Phone link (M14, T-351): the laptop shows a QR code that opens the companion, `/app/?watch=<session>`.
+// Phone link (M14, T-351): the laptop shows a QR code that opens the companion at its stable URL,
+// `/app/?watch=latest` (install.js): it joins whatever stage session the laptop has live and follows the next one, so
+// the code (and the home-screen app it installs) survives a reconnect or a server restart.
 // The code and the URLs come from the server's `/connect?page=` (hearing/server/connect.py): it knows the LAN
 // addresses `hearing serve --tls` printed (a laptop tab on https://localhost would otherwise encode "localhost",
 // which a phone cannot reach). No QR library in the page; the server draws the SVG.
@@ -6,13 +8,15 @@
 // mountPhoneLink(host, store) adds a small "Phone" toggle; the code is only fetched for a real session id and
 // redrawn when the id changes (reconnect = new session = new code). Without a session it says so.
 
-/** The origin-relative companion path for a session id. */
-export function companionPath(sessionId) {
-  return `/app/?watch=${encodeURIComponent(sessionId)}`;
+import { COMPANION_URL } from "./install.js";
+
+/** The origin-relative companion path the QR encodes: the stable one; a session id only for `?watch=<id>`. */
+export function companionPath(sessionId = null) {
+  return sessionId ? `/app/?watch=${encodeURIComponent(sessionId)}` : COMPANION_URL;
 }
 
-/** `/connect?page=...` for a session id. */
-export function connectUrl(sessionId) {
+/** `/connect?page=...` for the stable companion URL (or one session's). */
+export function connectUrl(sessionId = null) {
   return `/connect?page=${encodeURIComponent(companionPath(sessionId))}`;
 }
 
@@ -25,9 +29,9 @@ export function parseConnect(html, parser = new DOMParser()) {
   return { svg: svg ? svg.outerHTML : "", urls, tls };
 }
 
-/** Fetch the QR for a session; rejects when the server cannot draw one. */
-export async function fetchPhoneLink(sessionId, fetchImpl = globalThis.fetch) {
-  const res = await fetchImpl(connectUrl(sessionId), { cache: "no-store" });
+/** Fetch the QR for the stable companion URL; rejects when the server cannot draw one. */
+export async function fetchPhoneLink(fetchImpl = globalThis.fetch) {
+  const res = await fetchImpl(connectUrl(), { cache: "no-store" });
   if (!res.ok) throw new Error(`/connect answered ${res.status}`);
   const out = parseConnect(await res.text());
   if (!out.svg || !out.urls.length) throw new Error("/connect returned no code");
@@ -89,12 +93,12 @@ export function mountPhoneLink(host, store, { signal } = {}) {
     }
     status.textContent = "Drawing the code…";
     try {
-      const out = await fetchPhoneLink(id);
+      const out = await fetchPhoneLink();
       if (mine !== token) return;
       code.innerHTML = out.svg; // the server's own SVG (hearing.server.tls.qr_svg), no user input in it
       link.href = out.urls[0];
       link.title = out.urls[0];
-      link.textContent = new URL(out.urls[0]).host; // the session id is on the status line above
+      link.textContent = new URL(out.urls[0]).host; // the session the phone joins now is on the status line above
       linkRow.hidden = false;
       status.textContent = out.tls ? `Session ${id.slice(0, 8)}` : `Session ${id.slice(0, 8)} · plain http: a phone needs --tls`;
     } catch (err) {

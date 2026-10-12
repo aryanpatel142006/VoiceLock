@@ -35,6 +35,7 @@ eval = ["datasets>=3.0", "faster-whisper>=1.1", "imageio-ffmpeg>=0.5"]
 # does not stop it. 1.28 has no telemetry client.
 ml = [
   "onnxruntime>=1.20,<1.29",
+  "silero-vad>=5.1",  # foreground-speech gate in loudest mode (hearing.enhance.loudest_denoise.ForegroundVad)
   "onnx>=1.16",  # DFN3 graph surgery (hearing/enhance/dfn_graphs.py)
   "kokoro-onnx>=0.4",
   "torch>=2.3",

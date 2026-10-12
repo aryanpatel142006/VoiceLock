@@ -29,11 +29,11 @@
 .su-meter::before { /* the band's light, behind the word; transparent while idle */
   content: ""; position: absolute; z-index: -1; inset: -20% -10% -10% -30%; pointer-events: none;
   background: radial-gradient(50% 60% at 30% 40%, color-mix(in oklab, var(--su-band) 16%, transparent), transparent 70%);
-  opacity: 0; transition: opacity .5s var(--ease-out), background .5s var(--ease-out);
+  opacity: 0; transition: opacity var(--motion-slow) var(--motion-ease), background var(--motion-slow) var(--motion-ease);
 }
 .su-meter::before { display: none; } /* no coloured light leaking from the meter (T-365 anti-glow) */
 .su-word { margin: 0; font: 700 clamp(64px, 10vw, 168px)/.86 var(--font-display); letter-spacing: -.045em;
-  color: var(--su-band); transition: color .3s var(--ease-out); }
+  color: var(--su-band); transition: color var(--motion-base) var(--motion-ease); }
 .setup[data-band="idle"] .su-word { color: var(--color-faint); }
 .su-reading { margin: 0; display: flex; align-items: baseline; gap: 12px; }
 .su-db { font: 500 clamp(28px, 3vw, 44px)/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 4ch; }
@@ -60,8 +60,7 @@
 .su-mic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 6px; }
 .su-mic-btn { font: 600 16px/1 var(--font-ui); padding: 16px 28px; min-height: 52px; border-radius: var(--radius-control, 4px); cursor: pointer;
   border: 1px solid var(--color-fg); background: var(--color-fg); color: var(--color-bg);
-  transition: background-color .25s var(--ease-out), color .25s var(--ease-out), transform .3s var(--ease-out); }
-@media (hover: hover) { .su-mic-btn:hover { transform: translateY(-1px); } }
+  transition: background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease); }
 .su-mic-btn:active { transform: scale(.98); }
 .su-mic-btn[data-on="true"] { background: transparent; color: var(--color-fg); border-color: var(--color-faint); }
 .su-mic-btn:disabled { opacity: .6; cursor: progress; transform: none; }
@@ -70,19 +69,19 @@
 
 /* ---------- pickers: devices.js markup, restyled. Its own meter, note and badge are replaced by this screen. */
 .su-pickers .devices { display: grid; gap: 14px; margin: 0; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.su-pickers .devices label { display: grid; gap: 8px; font: 500 13px/1.2 var(--font-ui); color: var(--color-dim); }
+.su-pickers .devices label { display: grid; gap: 8px; font: 500 16px/1.2 var(--font-ui); color: var(--color-dim); }
 .su-pickers .devices select {
   appearance: none; -webkit-appearance: none; width: 100%; min-height: 52px; padding: 14px 44px 14px 16px;
   font: 500 16px/1.2 var(--font-ui); color: var(--color-fg); border-radius: 12px; cursor: pointer;
   border: 1px solid var(--su-line); background-color: var(--color-bg-raise);
   background-image: linear-gradient(45deg, transparent 50%, var(--color-dim) 50%), linear-gradient(-45deg, transparent 50%, var(--color-dim) 50%);
   background-size: 6px 6px; background-position: calc(100% - 22px) 52%, calc(100% - 16px) 52%; background-repeat: no-repeat;
-  transition: border-color .2s var(--ease-out);
+  transition: border-color var(--motion-fast) var(--motion-ease);
 }
 @media (hover: hover) { .su-pickers .devices select:hover { border-color: var(--color-dim); } }
 .su-pickers .devices select:disabled { opacity: .5; cursor: not-allowed; }
 .su-pickers .dev-meter, .su-pickers .dev-missing, .su-pickers .dev-bt { display: none; }
-.su-muted, .su-saved { margin: 14px 0 0; color: var(--color-faint); font-size: 13px; }
+.su-muted, .su-saved { margin: 14px 0 0; color: var(--color-faint); font-size: 16px; }
 /* this screen lists the same lines inline, next to the pickers: the page-level banner would repeat them */
 body[data-screen="setup"] [data-dev-banner] { display: none !important; }
 
@@ -116,25 +115,25 @@ body[data-screen="setup"] [data-dev-banner] { display: none !important; }
 .su-check[data-status="fail"] .su-check-mark::after { content: "×"; color: var(--color-bad); font-size: 14px; }
 .su-check[data-status="wait"] .su-check-mark { border-style: dashed; }
 .su-check-label { font: 600 17px/1.25 var(--font-ui); }
-.su-check-value { font: 500 14px/1.25 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-dim); text-align: right; }
+.su-check-value { font: 500 16px/1.25 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-dim); text-align: right; }
 .su-check[data-status="ok"] .su-check-value { color: var(--color-fg); }
 .su-check[data-status="warn"] .su-check-value { color: var(--color-warn); }
 .su-check[data-status="fail"] .su-check-value { color: var(--color-bad); }
-.su-check-detail { grid-column: 2 / -1; color: var(--color-dim); font-size: 14px; line-height: 1.45; }
+.su-check-detail { grid-column: 2 / -1; color: var(--color-dim); font-size: 16px; line-height: 1.45; }
 
-.su-delay { margin: 28px 0 0; padding-top: 24px; border-top: 1px solid var(--su-line); display: grid; gap: 8px; }
+.su-delay { margin: 24px 0 0; display: grid; gap: 8px; }
 .su-delay-big { font: 600 clamp(20px, 1.8vw, 26px)/1.2 var(--font-display); letter-spacing: -.01em; }
 .su-delay-now { color: var(--color-dim); font-size: 14px; }
 
 .su-foot { display: flex; justify-content: flex-end; }
 .su-next { display: inline-flex; align-items: center; gap: 14px; text-decoration: none; padding: 18px 30px; min-height: 56px; border-radius: var(--radius-control, 4px);
   font: 600 17px/1 var(--font-ui); color: var(--color-fg); border: 1px solid var(--color-faint);
-  transition: border-color .25s var(--ease-out), background-color .25s var(--ease-out); }
+  transition: border-color var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease); }
 .su-next::after { content: ""; width: 9px; height: 9px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; rotate: 45deg;
-  transition: translate .3s var(--ease-out); }
+  transition: translate var(--motion-base) var(--motion-ease); }
 @media (hover: hover) {
   .su-next:hover { border-color: var(--color-fg); }
-  .su-next:hover::after { translate: 3px 0; }
+  .su-next:hover::after { translate: 2px 0; }
 }
 .su-mic-btn, .su-next { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .setup[data-ready="true"] .su-next { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
@@ -159,7 +158,6 @@ body[data-screen="setup"] [data-dev-banner] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .su-fill { transition: none; }
 }
-.su-check-panel:not(:has(.su-checks)) .su-delay { border-top: 0; margin-top: 0; padding-top: 0; } /* T-458: a phone without the stage checklist */
 
 /* T-463 (laptop review #4): the next step never sits below the fold. On a laptop the foot sticks to the bottom of the
    window over a short fade of the page colour, and the meter word is capped by the window's height so the panel fits
@@ -171,3 +169,18 @@ body[data-screen="setup"] [data-dev-banner] { display: none !important; }
 }
 :root:not([data-touch]) .su-foot > * { pointer-events: auto; }
 :root:not([data-touch]) .su-word { font-size: min(clamp(64px, 10vw, 168px), max(64px, 14dvh)); }
+
+/* Plain-language pass: three plain lines (Microphone, Sound output, Ready) stay visible; the dBFS reading, thresholds,
+   the numbered checks and the engine delay sit in a closed Details disclosure under them. */
+.su-plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.su-plain-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font: 600 18px/1.3 var(--font-ui); }
+.su-plain-value { font-weight: 500; color: var(--color-dim); overflow-wrap: anywhere; }
+.su-plain-row[data-status="ok"] .su-plain-value { color: var(--color-fg); }
+.su-plain-row[data-status="warn"] .su-plain-value { color: var(--color-warn); }
+.su-plain-row[data-line="ready"][data-status="wait"] { color: var(--color-dim); }
+.su-plain-row[data-line="ready"][data-status="fail"] { color: var(--color-bad); }
+.su-details { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--su-line); }
+.su-details > summary { margin-left: -4px; }
+.su-details-body { display: grid; gap: 14px; padding-top: 12px; }
+.su-details .su-db { font-size: 22px; }
+.su-thresholds, .su-delay-now { margin: 0; color: var(--color-dim); font-size: 14px; line-height: 1.45; }

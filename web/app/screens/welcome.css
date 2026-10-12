@@ -2,7 +2,7 @@
    the press-and-hold disc beside three plain facts, and behind everything the grain field (welcome.js draws it on a
    full-frame canvas: the room's noise as chaos, pulled into one clear ring by the hold). Classes are wl-* because
    app.css still styles the shell's built-in welcome (.hold, .field, .welcome). Layout follows DESIGN_SPEC 5.1;
-   the storyboard is docs/ux-review-shots/WELCOME_WOW.md. Motion is transform/opacity/filter only; every cold-open
+   the storyboard is docs/ux-review-shots/WELCOME_WOW.md. Motion is transform/opacity only (no blur); every cold-open
    delay here is a COLD_OPEN number in welcome.js (one timeline, two owners). */
 
 /* the ring's progress is a registered number so letting go can drain it with a transition */
@@ -12,8 +12,6 @@
 
 .wl {
   --disc: 168px;
-  --wl-px: 0;
-  --wl-py: 0;
   --wl-c: 0; /* the field's collapse 0..1 (welcome.js writes it each drawn frame): the world turns down */
   position: relative;
   isolation: isolate;
@@ -48,13 +46,12 @@
   opacity: var(--grain-opacity, 0.06);
   background-repeat: repeat;
   background-size: 128px 128px;
-  will-change: translate;
 }
 /* the grain only steps while something is happening: the cold open and the hold (nothing loops at rest) */
 .wl[data-cold="play"] .wl-grain,
 .wl[data-phase="holding"] .wl-grain,
 .wl[data-phase="full"] .wl-grain,
-.wl[data-phase="starting"] .wl-grain { animation: wl-grain 480ms steps(6) infinite; }
+.wl[data-phase="starting"] .wl-grain { animation: wl-grain 960ms steps(6) infinite; will-change: translate; } /* promoted only while it steps */
 @keyframes wl-grain {
   0% { translate: 0 0; }
   20% { translate: -36px -48px; }
@@ -110,9 +107,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   gap: clamp(32px, 6vh, 64px);
   position: relative;
   z-index: var(--z-content, 10);
-  /* depth: the type sits a layer in front of the field, so the pointer moves it a few px the other way */
-  translate: calc(var(--wl-px) * -6px) calc(var(--wl-py) * -4px);
-  transition: translate 500ms var(--ease-out);
+  /* the type holds still: no pointer parallax (the field behind it answers the pointer on its own canvas) */
 }
 .wl-hero {
   margin: 0;
@@ -137,11 +132,10 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   vertical-align: top;
 }
 .wl-wi { display: inline-block; transform-origin: 0 100%; }
-.wl[data-cold="play"] .wl-wi { animation: wl-word 720ms var(--ease-out) var(--wl-d, 0ms) backwards; }
+.wl[data-cold="play"] .wl-wi { animation: wl-word var(--motion-slow, 400ms) var(--motion-ease) var(--wl-d, 0ms) backwards; }
 @keyframes wl-word {
-  from { translate: 0 112%; rotate: 3deg; opacity: 0.001; filter: blur(5px); }
-  60% { filter: blur(0); }
-  to { translate: 0 0; rotate: 0deg; opacity: 1; filter: blur(0); }
+  from { translate: 0 40%; opacity: 0.001; }
+  to { translate: 0 0; opacity: 1; }
 }
 
 .wl-row {
@@ -150,8 +144,8 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   align-items: center;
   gap: var(--space-6, 32px) var(--space-8, 64px);
 }
-.wl[data-cold="play"] .wl-row { animation: wl-arrive 640ms var(--ease-out) calc(4400ms * var(--wl-k, 1)) backwards; } /* --wl-k: 0.6 on a phone (T-458) */
-.wl[data-cold="play"] .wl-key { animation: wl-arrive 640ms var(--ease-out) calc(4640ms * var(--wl-k, 1)) backwards; }
+.wl[data-cold="play"] .wl-row { animation: wl-arrive var(--motion-slow, 400ms) var(--motion-ease) calc(4400ms * var(--wl-k, 1)) backwards; } /* --wl-k: 0.6 on a phone (T-458) */
+.wl[data-cold="play"] .wl-key { animation: wl-arrive var(--motion-slow, 400ms) var(--motion-ease) calc(4640ms * var(--wl-k, 1)) backwards; }
 /* T-480: the sound toggle is in the frame early (with Skip), so the score can be muted while it plays */
 .wl[data-cold="play"] .wl-sound { animation: wl-fade-in 400ms linear calc(900ms * var(--wl-k, 1)) backwards; }
 .wl-start { display: grid; justify-items: center; gap: var(--space-3, 12px); padding-left: 12px; } /* room for the ring */
@@ -164,6 +158,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   color: var(--color-fg);
 }
 @media (pointer: coarse), (max-width: 720px) { .wl-key { display: none; } }
+.wl-at { margin: 0; max-width: 22ch; text-align: center; font-size: var(--text-body, 16px); color: var(--color-dim); }
 
 /* sound on/off: a real button, 44 px tall though it reads as text; pressed = the neutral fill (T-356).
    Wide screens: a quiet corner control above the field label, so the composition stays the comp's. */
@@ -229,7 +224,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   /* letting go: the disc springs back (overshoot), the ring drains */
-  transition: scale 620ms var(--ease-spring), --wl-p var(--dur-quick, 180ms) var(--ease-in);
+  transition: scale var(--motion-base, 240ms) var(--motion-ease), --wl-p var(--motion-fast, 160ms) var(--motion-ease);
 }
 .wl-disc-label { font-weight: var(--weight-strong, 600); font-size: var(--text-lead, 20px); line-height: 1.08; text-wrap: balance; }
 .wl-disc-sub { font-size: var(--text-micro, 12px); opacity: 0.72; }
@@ -254,9 +249,9 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
 @media (hover: hover) { .wl-disc[data-phase="idle"]:hover, .wl-disc[data-phase="failed"]:hover { scale: 1.02; } }
 /* pressed: the disc sinks at once, then gives further as the ring fills (the real hold time, --wl-p, T-427), like a key
    travelling down; the ring follows the press frame by frame (no easing on top of real time) */
-.wl-disc[data-phase="holding"] { scale: calc(0.94 - var(--wl-p) * 0.03); transition: scale 220ms var(--ease-out); }
-.wl-disc[data-phase="holding"] .wl-ring { scale: calc(1 + var(--wl-p) * 0.06); } /* the ring widens with the hold: scale, not inset, so no layout per frame */
-.wl-disc[data-phase="armed"] { scale: 0.91; }
+.wl-disc[data-phase="holding"] { scale: calc(0.96 - var(--wl-p) * 0.02); transition: scale var(--motion-base, 240ms) var(--motion-ease); }
+.wl-disc[data-phase="holding"] .wl-ring { scale: calc(1 + var(--wl-p) * 0.04); } /* the ring widens with the hold: scale, not inset, so no layout per frame */
+.wl-disc[data-phase="armed"] { scale: 0.94; }
 .wl-disc[data-phase="starting"], .wl-disc[data-phase="full"] { cursor: progress; }
 .wl-disc[data-phase="failed"] .wl-ring { background: conic-gradient(var(--color-bad) 0 1turn); opacity: 0.6; }
 .wl-disc:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 16px; border-radius: 50%; }
@@ -265,7 +260,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
 .wl[data-phase="done"] .wl-facts, .wl[data-phase="done"] .wl-key, .wl[data-phase="done"] .wl-sound { opacity: 0.4; transition: opacity var(--dur-hold, 240ms) var(--ease-out); }
 
 @keyframes wl-arrive {
-  from { opacity: 0; filter: blur(var(--motion-blur, 10px)); translate: 0 var(--motion-distance, 24px); }
+  from { opacity: 0; translate: 0 var(--motion-rise, 8px); }
 }
 @keyframes wl-fade-in { from { opacity: 0; } }
 
@@ -276,7 +271,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   .wl-disc-label { font-size: var(--text-body, 16px); }
   .wl-facts { font-size: var(--text-body, 16px); }
   .wl-field-label { bottom: auto; top: calc(var(--safe-t, 0px) + 66px); }
-  .wl-sound { position: static; justify-self: start; margin: var(--space-2, 8px) 0 0 -12px; }
+  .wl-sound { position: static; justify-self: start; margin: var(--space-2, 8px) 0 0; }
   .wl-skip { top: calc(var(--safe-t, 0px) + 10px); }
   .wl-vignette { background: radial-gradient(ellipse 80% 60% at 50% 40%, transparent 40%, rgb(0 0 0 / 0.6) 100%); }
 }
@@ -305,7 +300,7 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   color: var(--color-fg);
   text-align: center;
   /* the door: the words go first (blur out), then the black lifts into the cold open's own black frame */
-  transition: opacity 520ms var(--ease-out) 180ms, visibility 0s linear 700ms;
+  transition: opacity var(--motion-slow, 400ms) var(--motion-ease) 120ms, visibility 0s linear 520ms;
 }
 .wl-curtain[data-state="out"] { opacity: 0; visibility: hidden; pointer-events: none; }
 .wl-curtain-in {
@@ -313,10 +308,10 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   justify-items: center;
   gap: clamp(20px, 3.4vh, 32px);
   max-width: 40rem;
-  animation: wl-fade-in 900ms linear 120ms backwards;
-  transition: opacity 240ms var(--ease-out), filter 240ms var(--ease-out), scale 240ms var(--ease-out);
+  animation: wl-fade-in 600ms linear 120ms backwards;
+  transition: opacity var(--motion-base, 240ms) var(--motion-ease);
 }
-.wl-curtain[data-state="out"] .wl-curtain-in { opacity: 0; filter: blur(6px); scale: 0.985; }
+.wl-curtain[data-state="out"] .wl-curtain-in { opacity: 0; }
 /* a short hairline: the first thing the film will draw */
 .wl-curtain-line { width: 56px; height: 1px; background: var(--color-fg); opacity: 0.55; }
 .wl-curtain-title {
@@ -331,7 +326,8 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   text-wrap: balance;
 }
 .wl-curtain-acts { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 24px; }
-.wl-enter {
+/* the two doors weigh the same: silence is an equal choice, not a fine-print link */
+.wl-enter, .wl-enter-quiet {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -346,22 +342,9 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   touch-action: manipulation;
   transition: background-color var(--dur-quick, 180ms) var(--ease-out);
 }
-.wl-enter:hover, .wl-enter:focus-visible { background: rgb(255 255 255 / 0.16); }
+.wl-enter-quiet { padding: 0 22px; }
+.wl-enter:hover, .wl-enter:focus-visible, .wl-enter-quiet:hover, .wl-enter-quiet:focus-visible { background: rgb(255 255 255 / 0.16); }
 .wl-enter .wl-ico { width: 20px; height: 20px; }
-.wl-enter-quiet {
-  min-height: 44px;
-  padding: 0 8px;
-  border: 0;
-  background: none;
-  color: var(--color-dim);
-  font: 500 var(--text-body, 16px)/1 var(--font-ui);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
-  text-underline-offset: 5px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.wl-enter-quiet:hover { color: var(--color-fg); }
 .wl-enter:focus-visible, .wl-enter-quiet:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 4px; }
 .wl-curtain-key { margin: 0; color: var(--color-faint); font-size: var(--text-small, 14px); }
 .wl-curtain-key kbd {
@@ -396,16 +379,15 @@ body[data-wl-cold] .chrome { opacity: 0; pointer-events: none; }
   .wl { animation: wl-fade-in 200ms linear; }
   .wl-wi, .wl-row, .wl-key, .wl-sound, .wl-field-label, .wl-skip, .wl-grain, .wl-curtain-in { animation: none !important; }
   .wl-curtain, .wl-curtain-in { transition: none; }
-  .wl-main { translate: none; transition: none; }
   .wl-disc, .wl-disc[data-phase="holding"], .wl-disc[data-phase="armed"] { scale: none; transition: --wl-p 0ms; }
   .wl-hero, .wl-facts { transition: none; }
   .wl-ripple { display: none; }
 }
 
 /* ================= T-458 phone fixes (touch review, docs/ux-review-shots/PHONE_FIXES.md) ================= */
-/* a quick tap on the disc: a small shake while the label says to keep holding (welcome.js nudge) */
-.wl-disc.wl-nudge { animation: wl-nudge 240ms var(--ease-out, ease) 1; }
-@keyframes wl-nudge { 25% { translate: -4px 0; } 75% { translate: 4px 0; } }
+/* a quick tap on the disc: one soft dip while the label says to keep holding (welcome.js nudge); a dip, not a shake */
+.wl-disc.wl-nudge { animation: wl-nudge var(--motion-slow, 400ms) var(--motion-ease, ease) 1; }
+@keyframes wl-nudge { 50% { opacity: 0.55; } }
 /* Android: Chrome's install prompt as a real button (beforeinstallprompt) */
 .wl-install-btn {
   justify-self: start; min-height: 44px; padding: 0 16px; border: 1px solid var(--color-line); border-radius: var(--radius-control, 4px);

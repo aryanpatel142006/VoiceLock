@@ -50,6 +50,7 @@ def main() -> None:
     draw(192, rounded=True).save(HERE / "icon-192.png", optimize=True)
     draw(512, rounded=True).save(HERE / "icon-512.png", optimize=True)
     draw(512, safe=0.8).save(HERE / "maskable-512.png", optimize=True)
+    draw(192, safe=0.8).save(HERE / "maskable-192.png", optimize=True)  # the companion's manifest
     draw(180).save(HERE / "apple-touch-icon.png", optimize=True)  # iOS rounds it itself; no alpha
     draw(32, rounded=True).save(HERE / "favicon-32.png", optimize=True)
 

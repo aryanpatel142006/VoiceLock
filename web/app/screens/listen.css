@@ -24,7 +24,7 @@
 .ls-wash { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 .ls-wash::before, .ls-wash::after {
   content: ""; position: absolute; inset: 0;
-  transition: opacity .55s var(--ease-film, ease);
+  transition: opacity var(--motion-slow, 400ms) var(--motion-ease, ease);
 }
 .ls-wash::before {
   background:
@@ -69,7 +69,7 @@ body[data-screen="listen"]::before { opacity: .35; }
   font: 600 clamp(15px, 1.15vw, 22px)/1.3 var(--font-ui);
   background: var(--color-bg-raise, #15181c); color: var(--color-fg);
   border: 1px solid color-mix(in oklab, var(--bn) 60%, transparent);
-  animation: ls-drop .35s var(--ease-out, ease) backwards;
+  animation: ls-drop var(--motion-base, 240ms) var(--motion-ease, ease) backwards;
 }
 .ls-banner[hidden] { display: none; }
 .ls-banner[data-kind="keys"], .ls-banner[data-kind="busy"] { --bn: var(--color-warn, #ffbb55); }
@@ -79,7 +79,7 @@ body[data-screen="listen"]::before { opacity: .35; }
 .ls-banner select { min-height: 44px; max-width: 100%; padding: 0 12px; border-radius: var(--radius-control, 4px); font: 600 15px/1 var(--font-ui);
   color: var(--color-fg); background: var(--color-bg); border: 1px solid color-mix(in oklab, var(--color-fg) 22%, transparent); }
 @media (max-width: 600px) { .ls-banner { flex-direction: column; align-items: stretch; } .ls-banner-action { width: 100%; } }
-@keyframes ls-drop { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes ls-drop { from { opacity: 0; transform: translateY(calc(var(--motion-rise, 8px) * -1)); } }
 
 .ls-replay {
   margin: 0 0 0 auto; display: inline-flex; align-items: center; gap: 10px;
@@ -97,7 +97,8 @@ body[data-screen="listen"]::before { opacity: .35; }
   align-items: center; gap: clamp(16px, 3vw, 64px);
 }
 .ls-hero { display: grid; align-content: center; gap: clamp(6px, 1.2vh, 16px); min-width: 0; z-index: 1; container-type: inline-size; }
-.ls-hear { margin: 0; font: 500 clamp(15px, 1.25vw, 26px)/1.25 var(--font-ui); color: var(--color-dim); }
+.ls-hear { margin: 0; font: 500 clamp(16px, 1.25vw, 26px)/1.25 var(--font-ui); color: var(--color-dim); }
+.ls-hear[hidden] { display: none; }
 .listen[data-live="true"] .ls-hear { color: color-mix(in oklab, var(--ab) 70%, var(--color-fg)); }
 
 /* The state word: >= 96 px at 1920 (here ~137 px), ~52 px at 390. Capped at 15 % of the hero's width: the longest
@@ -108,7 +109,7 @@ body[data-screen="listen"]::before { opacity: .35; }
   letter-spacing: -.045em;
   color: var(--tone);
   text-wrap: balance;
-  transition: color .45s var(--ease-out, ease);
+  transition: color var(--motion-slow, 400ms) var(--motion-ease, ease);
 }
 .listen[data-tone="focus"] { --tone: var(--wash-focus); }
 .listen[data-tone="raw"] { --tone: var(--wash-raw); }
@@ -116,10 +117,11 @@ body[data-screen="listen"]::before { opacity: .35; }
 .listen[data-tone="warn"] { --tone: var(--color-warn, #ffbb55); }
 .listen[data-tone="bad"] { --tone: var(--color-bad, #ff6b6b); }
 .listen[data-tone="idle"] { --tone: color-mix(in oklab, var(--color-fg) 46%, var(--color-bg)); }
+.listen[data-tone="dim"] { --tone: var(--color-dim); } /* connecting: grey, not an alarm */
 
 .ls-who { margin: 0; font: 700 clamp(30px, calc(2.6vw + 14px), 96px)/1 var(--font-display); letter-spacing: -.03em; color: var(--color-fg); }
 .ls-who[hidden] { display: none; }
-.ls-gate { margin: clamp(6px, 1vh, 14px) 0 0; padding: 4px 12px; border-radius: var(--radius-pill, 4px); font: 700 clamp(12px, .9vw, 16px)/1.2 var(--font-ui); letter-spacing: .08em; justify-self: start; align-self: start; display: inline-block; }
+.ls-gate { margin: clamp(6px, 1vh, 14px) 0 0; padding: 4px 12px; border-radius: var(--radius-pill, 4px); font: 700 clamp(16px, .9vw, 18px)/1.2 var(--font-ui); letter-spacing: .08em; justify-self: start; align-self: start; display: inline-block; }
 .ls-gate[hidden] { display: none; }
 /* T-382's gate pill in the app's colours (T-356): an outline, no fill; green only for SOLO (shown only while
    Selective plays the isolated person), warn-yellow for ducked (amber means Raw), bad-red for unsure */
@@ -138,7 +140,7 @@ body[data-screen="listen"]::before { opacity: .35; }
 .ls-halo {
   --lvl: 0; --conf: 0;
   position: relative; justify-self: center; display: grid; place-items: center;
-  width: min(100%, 38vw, 560px); aspect-ratio: 1; pointer-events: none;
+  width: min(100%, 38vw, 560px, max(240px, calc(100dvh - 480px))); aspect-ratio: 1; pointer-events: none; /* never taller than the screen has room for: a 547 px cell pushed Listen 90 px past a 900 px window */
 }
 .ls-halo-ring, .ls-halo-core { grid-area: 1 / 1; border-radius: 50%; will-change: transform; }
 .ls-halo-ring {
@@ -168,7 +170,7 @@ html.has-scene .ls-halo { visibility: hidden; }
 .listen[data-captions="true"] .ls-halo { grid-column: 2; grid-row: 1; opacity: .35; }
 .ls-cap-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .ls-cap-speaker { font: 700 clamp(18px, 1.5vw, 30px)/1 var(--font-display); color: var(--wash-focus); }
-.ls-cap-source { font: 500 13px/1.2 var(--font-ui); color: var(--color-dim); }
+.ls-cap-source { font: 500 16px/1.2 var(--font-ui); color: var(--color-dim); }
 .ls-cap-warn { margin: 0; font: 600 clamp(15px, 1.1vw, 21px)/1.3 var(--font-ui); color: var(--color-warn, #ffbb55); }
 /* paused / last-session lines step back by colour, not opacity (T-404: opacity .45 put them at 2.0-4.2:1) */
 .ls-cap-lines:is([data-paused="true"], [data-stale="true"]) .ls-cap { color: var(--color-dim); }
@@ -180,7 +182,6 @@ html.has-scene .ls-halo { visibility: hidden; }
 .ls-cap:not(:last-child) { color: color-mix(in oklab, var(--color-fg) 55%, transparent); }
 .ls-cap.partial { color: color-mix(in oklab, var(--color-fg) 72%, transparent); }
 .ls-cap.empty { font: 500 clamp(16px, 1.2vw, 22px)/1.35 var(--font-ui); color: var(--color-dim); animation: none; }
-@keyframes ls-rise { from { opacity: 0; transform: translateY(6px); filter: blur(6px); } } /* blur-fade, the newest line only */
 /* Quiet: the frame belongs to the captions; the word steps down but stays >= 96 px at 1920 */
 .listen[data-mode="quiet"] .ls-word { font-size: clamp(44px, calc(4vw + 20px), 160px); }
 .listen[data-mode="quiet"] .ls-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
@@ -192,12 +193,17 @@ html.has-scene .ls-halo { visibility: hidden; }
 .listen[data-mode="quiet"] .ls-wash::before, .listen[data-mode="quiet"] .ls-wash::after { opacity: 0; }
 .listen[data-mode="quiet"] .ls-cap-speaker { color: var(--color-fg); }
 html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
+/* Oct 11: the scene orb (scene.js, fixed at 64 % / 42 %) sat right behind the caption column and its ring and dot
+   read through the bare caption type. While captions show (Quiet only) the orb fades out: Quiet plays nothing, so
+   the sound field has nothing to draw, and the lines stand on the plain background at every width. */
+body:has(.listen[data-captions="true"]) .scene { opacity: 0; }
+.ls-captions { position: relative; isolation: isolate; }
 
 /* ---------- the rail: A/B, mode, person, Start ---------- */
 .ls-rail { display: flex; flex-wrap: wrap; align-items: flex-end; gap: clamp(14px, 1.8vw, 32px); }
 .ls-rail-cell { display: grid; gap: 8px; min-width: 0; }
 .ls-rail-start { margin-left: auto; }
-.ls-rail-label { font: 500 13px/1 var(--font-ui); color: var(--color-dim); }
+.ls-rail-label { font: 500 16px/1 var(--font-ui); color: var(--color-dim); }
 .ls-group { display: flex; gap: 4px; padding: 4px; border-radius: calc(var(--radius-control, 4px) + 2px);
   background: color-mix(in oklab, var(--color-bg) 70%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-fg) 12%, transparent); }
@@ -206,10 +212,10 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   min-height: var(--rail-h); padding: 0 clamp(16px, 1.5vw, 28px); border: 0; border-radius: var(--radius-control, 4px); cursor: pointer;
   font: 700 clamp(17px, 1.3vw, 26px)/1 var(--font-display); letter-spacing: -.01em;
   color: var(--color-fg); background: transparent;
-  transition: background-color .3s var(--ease-out, ease), color .3s var(--ease-out, ease), transform var(--spring-press-dur, 400ms) var(--spring-press, ease-out);
+  transition: background-color var(--motion-fast, 160ms) var(--motion-ease, ease), color var(--motion-fast, 160ms) var(--motion-ease, ease), transform var(--motion-fast, 160ms) var(--motion-ease, ease-out);
 }
 @media (hover: hover) { .ls-seg:hover:not(:disabled) { background: color-mix(in oklab, var(--color-fg) 8%, transparent); } }
-.ls-seg:active:not(:disabled) { transform: scale(.95); transition-duration: .3s, .3s, 90ms; } /* T-427: down fast, back on the spring */
+.ls-seg:active:not(:disabled) { transform: scale(.98); }
 .ls-seg:disabled { cursor: not-allowed; color: var(--color-faint); }
 /* Pressed is a neutral fill; colour is a promise about the sound, so it only appears when it is true: amber while the
    room plays (Raw, live), green while the chosen person is isolated and Selective plays (T-365 P0-3, P1-5). */
@@ -220,16 +226,16 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   background: var(--wash-focus); color: #04140e; box-shadow: none; }
 .ls-mode-note { margin: 0; max-width: 40ch; font: 500 14px/1.35 var(--font-ui); color: var(--color-dim); }
 .ls-kbd { font: 600 11px/1 var(--font-mono); padding: 5px 7px; border-radius: 6px; white-space: nowrap;
-  background: color-mix(in oklab, currentColor 12%, transparent); color: var(--color-dim); }
+  background: color-mix(in oklab, currentColor 12%, transparent); color: var(--color-fg); }
 
 .ls-start {
   min-height: calc(var(--rail-h) + 10px); padding: 0 clamp(22px, 2vw, 40px); border: 0; border-radius: var(--radius-control, 4px); cursor: pointer;
   font: 800 clamp(18px, 1.4vw, 28px)/1 var(--font-display); letter-spacing: -.01em;
   color: var(--color-bg); background: var(--color-fg);
-  transition: transform .2s var(--ease-out, ease), background-color .3s;
+  transition: transform var(--motion-fast, 160ms) var(--motion-ease, ease), background-color var(--motion-fast, 160ms);
 }
 .ls-start[hidden] { display: none; }
-@media (hover: hover) { .ls-start:hover:not(:disabled) { transform: scale(1.03); } }
+@media (hover: hover) { .ls-start:hover:not(:disabled) { transform: scale(1.02); } }
 .ls-start:disabled { opacity: .6; cursor: progress; }
 .ls-start[data-kind="stop"] { background: transparent; color: var(--color-fg); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--color-fg) 40%, transparent); }
 
@@ -239,12 +245,17 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   padding-top: clamp(10px, 1.4vh, 16px);
   border-top: 1px solid color-mix(in oklab, var(--color-fg) 10%, transparent);
 }
+.ls-details { min-width: 0; } /* closed: only "Details"; open: the numbers wrap under it */
+.ls-details > summary { margin-left: -4px; }
+.ls-facts { margin: 0; padding: 4px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px clamp(16px, 2.2vw, 40px); }
 .ls-fact { display: inline-flex; align-items: baseline; gap: 8px; }
-.ls-fact dt { font: 500 12px/1 var(--font-ui); color: var(--color-dim); }
-.ls-fact dd { margin: 0; font: 600 clamp(13px, .9vw, 17px)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-fg); }
-.ls-fact-diag { margin-left: auto; }
+.ls-fact dt { font: 500 16px/1 var(--font-ui); color: var(--color-fg); }
+.ls-fact dd { margin: 0; font: 600 clamp(16px, .9vw, 18px)/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-fg); }
+.ls-fact-diag { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ls-fact-diag[hidden] { display: none; }
+a.ls-diag { text-decoration: none; }
 .ls-diag { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-control, 4px); cursor: pointer;
-  font: 600 13px/1 var(--font-ui); color: var(--color-dim); background: none; border: 1px solid color-mix(in oklab, var(--color-fg) 14%, transparent); }
+  font: 600 13px/1 var(--font-ui); color: var(--color-fg); background: none; border: 1px solid color-mix(in oklab, var(--color-fg) 14%, transparent); }
 @media (hover: hover) { .ls-diag:hover { color: var(--color-fg); } }
 /* touch: no double-tap zoom wait, no text selection or callout on a long press of a stage control */
 .ls-seg, .ls-start, .ls-diag, .ls-banner-action { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -286,7 +297,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   .ls-word, .listen[data-mode="quiet"] .ls-word { font-size: min(clamp(40px, 15dvh, 72px), 15cqi); }
   .ls-who { font-size: clamp(22px, 7dvh, 32px); }
   .ls-sentence { font-size: 16px; }
-  .ls-hear, .ls-note, .ls-target { font-size: 14px; }
+  .ls-hear, .ls-note, .ls-target { font-size: 16px; }
   .ls-halo { position: absolute; z-index: 0; top: 50%; right: -8%; width: min(64dvh, 46vw); transform: translateY(-50%); opacity: .5; }
   .listen[data-captions="true"] .ls-halo { display: none; }
   /* Quiet: captions take the body; the word steps back to a line */
@@ -304,7 +315,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   .ls-group .ls-seg { flex: 1 1 0; justify-content: center; padding: 0 8px; font-size: 16px; }
   .ls-kbd { display: none; }
   .ls-truth { grid-area: truth; gap: 4px 16px; padding-top: 8px; }
-  .ls-fact dd { font-size: 12px; }
+  .ls-fact dd { font-size: 16px; }
   .ls-fact-diag { margin-left: auto; }
 }
 
@@ -342,8 +353,8 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
 
 /* ---- captions: words arrive as the recogniser sends them (delight.js captionWords), never ahead of it */
 .ls-w { display: inline-block; }
-.ls-w.is-new { animation: ls-word-in .46s var(--ease-out, ease) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
-@keyframes ls-word-in { from { opacity: 0; filter: blur(8px); transform: translateY(.22em); } }
+.ls-w.is-new { animation: ls-word-in var(--motion-base, 240ms) var(--motion-ease, ease) backwards; animation-delay: calc(var(--i, 0) * 30ms); }
+@keyframes ls-word-in { from { opacity: 0; transform: translateY(.12em); } } /* opacity and a small rise only: no blur on a line of type */
 /* Quiet is the captions' moment: the newest line is the display line, the ones before it step back by size and colour */
 .listen[data-mode="quiet"] .ls-cap { font-size: clamp(24px, 2.2vw, 48px); transition: color .5s var(--ease-out, ease); }
 .listen[data-mode="quiet"] .ls-cap:last-child:not(.empty) { font-size: clamp(30px, 3.1vw, 68px); line-height: 1.12; letter-spacing: -.022em; }
@@ -351,7 +362,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
 
 /* ---- the room dial: a custom slider (role=slider) so the stage keys stay live while it has focus */
 .ls-rail-room .ls-rail-label { display: flex; gap: 8px; align-items: baseline; }
-.ls-dial-value { font: 600 13px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-fg); }
+.ls-dial-value { font: 600 16px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--color-fg); }
 .ls-dial {
   --v: 1;
   position: relative; display: grid; align-items: center; width: clamp(180px, 15vw, 280px); height: var(--rail-h, 56px);
@@ -364,13 +375,13 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
 @media (hover: hover) { .ls-dial:hover { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-fg) 30%, transparent); } }
 .ls-dial-track { position: relative; container-type: inline-size; height: 6px; border-radius: 3px; background: color-mix(in oklab, var(--color-fg) 16%, transparent); }
 .ls-dial-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--color-fg); transform-origin: left center;
-  transform: scaleX(var(--v)); transition: transform .32s var(--spring-press, ease-out); }
+  transform: scaleX(var(--v)); transition: transform var(--motion-base, 240ms) var(--motion-ease, ease-out); }
 .ls-dial-thumb { position: absolute; top: 50%; left: 0; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
   background: var(--color-fg); box-shadow: 0 2px 8px rgb(0 0 0 / .45);
   translate: calc(var(--v) * 100cqi) 0;
-  transition: translate .32s var(--spring-press, ease-out), scale .4s var(--spring-settle, ease-out); }
-.ls-dial[data-dragging] .ls-dial-fill, .ls-dial[data-dragging] .ls-dial-thumb { transition-duration: 0s, .4s; }
-.ls-dial[data-dragging] .ls-dial-thumb, .ls-dial:active .ls-dial-thumb { scale: 1.18; }
+  transition: translate var(--motion-base, 240ms) var(--motion-ease, ease-out), scale var(--motion-fast, 160ms) var(--motion-ease, ease-out); }
+.ls-dial[data-dragging] .ls-dial-fill, .ls-dial[data-dragging] .ls-dial-thumb { transition-duration: 0s, var(--motion-fast, 160ms); }
+.ls-dial[data-dragging] .ls-dial-thumb, .ls-dial:active .ls-dial-thumb { scale: 1.1; }
 
 /* ---- the saved voices in the sound scene: fixed on the scene's centre (motion.css --scene-x/y/size) */
 .ls-voices {
@@ -379,7 +390,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
   width: 0; height: 0; pointer-events: none;
 }
 .ls-voices[data-has="0"], .listen[data-captions="true"] .ls-voices, .listen[data-loudest="true"] .ls-voices { display: none; }
-.listen[data-loudest="true"] .ls-rail-people { display: none; } /* loudest mode: nobody is chosen, the person at the mic plays */
+.listen[data-loudest="true"] .ls-rail-people { display: none; } /* loudest mode: nobody is chosen, the closest voice plays */
 .ls-voices-ring { position: absolute; left: 0; top: 0; width: calc(var(--s) * .26); aspect-ratio: 1; translate: -50% -50%;
   border-radius: 50%; box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .3s var(--ease-out, ease), scale .5s var(--spring-settle, ease-out); }
 .ls-voices[data-over="choose"] .ls-voices-ring { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--color-fg) 70%, transparent); scale: 1.08; }
@@ -458,7 +469,7 @@ html.has-scene .listen[data-mode="quiet"] .ls-captions { background: none; }
     background: linear-gradient(transparent, color-mix(in oklab, var(--color-bg) 94%, transparent) 22px);
   }
   .ls-rail-cell { gap: 6px; }
-  .ls-rail-label { font-size: 12px; }
+  .ls-rail-label { font-size: 16px; }
   .ls-rail > .ls-rail-cell:first-child, .ls-rail-people, .ls-rail-room { grid-column: 1 / -1; }
   .ls-rail-start { order: 0; align-self: end; }
   .ls-rail:has(.ls-start[data-kind="start"], .ls-start[data-kind="starting"]) .ls-rail-start { grid-column: 1 / -1; order: -1; }
@@ -511,3 +522,64 @@ html.has-scene .listen:not([data-mode="quiet"]) .ls-captions {
 @media (min-width: 761px) and (min-height: 961px) {
   :root:not([data-touch]) .ls-dial-ends { display: flex; justify-content: space-between; margin: 0; font: 500 12px/1 var(--font-ui); color: var(--color-dim); }
 }
+
+/* ================= Auto voice focus (board Q-2010): the one stage control =================
+   Nobody chooses a name. A single switch: ON = the closest voice isolated (green only while the engine says
+   Isolated), OFF = the whole room (amber while it plays). aria-checked follows the engine's telemetry (listen.js). */
+.ls-voices, .ls-rail-people { display: none !important; } /* the person picker and the drag-a-voice scene are gone */
+.ls-switch {
+  --sw: var(--color-fg);
+  display: inline-flex; align-items: center; gap: clamp(16px, 1.6vw, 28px);
+  min-height: calc(var(--rail-h) + 10px); width: clamp(340px, 27vw, 440px); max-width: 100%; padding: 10px 12px 10px clamp(18px, 1.6vw, 26px);
+  border: 0; border-radius: calc(var(--radius-control, 4px) + 2px); cursor: pointer; text-align: left;
+  color: var(--color-fg); background: color-mix(in oklab, var(--color-bg) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sw) 28%, transparent);
+  transition: box-shadow var(--motion-fast, 160ms) var(--motion-ease, ease), transform var(--motion-fast, 160ms) var(--motion-ease, ease-out);
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.ls-switch:active { transform: scale(.98); }
+.ls-switch:focus-visible { outline: 3px solid var(--color-fg); outline-offset: 3px; }
+@media (hover: hover) { .ls-switch:hover { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--sw) 55%, transparent); } }
+/* colour is a promise about the sound: green only while isolated plays, amber only while the room plays */
+.listen[data-live="true"][data-tone="focus"]:not([data-mode="quiet"]) .ls-switch[data-on="true"] { --sw: var(--wash-focus); }
+.listen[data-live="true"][data-tone="raw"] .ls-switch[data-on="false"] { --sw: var(--wash-raw); }
+.ls-switch-text { display: grid; gap: 6px; flex: 1 1 auto; min-width: 0; }
+.ls-switch-label { font: 800 clamp(19px, 1.5vw, 28px)/1 var(--font-display); letter-spacing: -.01em; }
+.ls-switch-line { font: 500 clamp(16px, .95vw, 18px)/1.25 var(--font-ui); color: var(--color-dim); }
+.listen[data-live="true"] .ls-switch-line { color: color-mix(in oklab, var(--sw) 80%, var(--color-fg)); }
+.ls-switch-track {
+  position: relative; flex: none; display: inline-flex; align-items: center;
+  width: clamp(92px, 7vw, 120px); height: clamp(46px, 3.6vw, 58px); border-radius: 999px;
+  background: color-mix(in oklab, var(--sw) 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--sw) 55%, transparent);
+  transition: background-color var(--motion-base, 240ms) var(--motion-ease, ease), box-shadow var(--motion-base, 240ms) var(--motion-ease, ease);
+}
+.ls-switch[data-on="true"] .ls-switch-track { background: var(--sw); box-shadow: none; }
+.ls-switch-word { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 14px;
+  font: 800 clamp(13px, 1vw, 16px)/1 var(--font-mono); letter-spacing: .06em; color: var(--color-fg); justify-content: flex-end; transition: color var(--motion-base, 240ms) var(--motion-ease, ease); }
+.ls-switch[data-on="true"] .ls-switch-word { justify-content: flex-start; color: var(--color-bg); }
+.ls-switch-knob {
+  position: absolute; top: 5px; bottom: 5px; left: 5px; aspect-ratio: 1; border-radius: 50%;
+  background: var(--color-fg); box-shadow: 0 2px 8px rgb(0 0 0 / .4);
+  transition: translate var(--motion-base, 240ms) var(--motion-ease, ease), background-color var(--motion-base, 240ms) var(--motion-ease, ease), opacity var(--motion-base, 240ms) var(--motion-ease, ease);
+}
+.ls-switch[data-on="true"] .ls-switch-knob { translate: calc(clamp(92px, 7vw, 120px) - 100% - 10px) 0; background: var(--color-bg); }
+/* asked, the engine has not confirmed yet: the knob waits where the sound is, dimmed (no pulse) */
+.ls-switch[data-pending="true"] .ls-switch-knob { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .ls-switch, .ls-switch-knob, .ls-switch-track { transition: none; } }
+@media (max-width: 760px) {
+  .ls-rail-switch { grid-column: 1 / -1; }
+  .ls-switch { width: 100%; min-height: var(--tap-stage, 72px); }
+}
+@media (orientation: landscape) and (max-height: 540px) { .ls-switch { width: 100%; min-height: 60px; } }
+
+/* the comfort keys legend (comfort.css .cf-legend-out) is fixed at the bottom centre on wide screens: keep the
+   measured-numbers row and Diagnostics above it instead of under it (it covered Tier and the round trip at 1440) */
+@media (min-width: 900px) and (min-height: 600px) {
+  body[data-screen="listen"]:not([data-sos="on"]):has(.cf-legend-out:not([hidden])) .listen {
+    padding-bottom: calc(var(--safe-b, 0px) + 92px);
+  }
+}
+
+/* SOS (sos.css) floats at the right edge, half-way down, on wide screens: the body leaves it a lane so the captions never run under it */
+@media (min-width: 900px) and (min-height: 600px) { .ls-body { padding-right: 140px; } }

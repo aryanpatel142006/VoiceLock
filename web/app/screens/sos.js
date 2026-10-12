@@ -6,6 +6,8 @@
 // repeats ignored). Escape is refused (it exits full screen); F5 / B / "." get a toggle warning.
 // The pure parts (classifyKey, matchesBand, loadSos, saveSos, labelFor, pairWarning) are covered by node --test.
 
+import { loadComfort, saveComfort } from "../comfort.js";
+
 export const title = "Pair the band";
 
 export const STORAGE_KEY = "hearing.sos";
@@ -174,6 +176,11 @@ export function mount(root, ctx = {}) {
     return b;
   });
   const $kindNote = el("p", { class: "sos-kind-note" });
+  // Comfort Companion (PR #402): off by default; on, the calm frame asks "What's too much right now?" after a press
+  let comfort = loadComfort(storage);
+  const $comfort = el("button", { type: "button", class: "sos-kind sos-comfort-toggle", role: "switch", "aria-checked": "false", text: "Comfort choices" });
+  const $comfortNote = el("p", { class: "sos-kind-note" });
+  $comfort.addEventListener("click", () => { comfort = saveComfort(storage, { on: !comfort.on }); renderComfort(); }, { signal });
   const sounds = SOUNDS.map((s) => {
     const input = el("input", { type: "radio", name: "sos-sound", value: s.id, id: `sos-sound-${s.id}` });
     input.checked = s.id === noiseColour(storage);
@@ -195,6 +202,10 @@ export function mount(root, ctx = {}) {
       $kindNote,
       el("fieldset", { class: "sos-colours" },
         el("legend", { class: "sos-colours-h", text: "Noise colour" }), ...sounds)),
+    el("section", { class: "sos-sounds", "aria-labelledby": "sos-comfort-h" },
+      el("h2", { class: "sos-h", id: "sos-comfort-h", text: "After the press" }),
+      el("div", { class: "sos-kinds" }, $comfort),
+      $comfortNote),
     el("p", { class: "sos-note", text: "Plug the remote in before you start: macOS may show Keyboard Setup Assistant the first time (close it). The band only works while this browser tab has focus." }),
     el("p", {}, el("a", { href: "#about", class: "link", text: "Back to About" }))));
 
@@ -218,6 +229,13 @@ export function mount(root, ctx = {}) {
       ? "Slow, soft chords with a few quiet bell notes. Made in this browser: no file, no network."
       : "Steady noise. Pick its colour below.";
     root.querySelector(".sos-colours").hidden = kind === "music";
+  }
+
+  function renderComfort() {
+    $comfort.setAttribute("aria-checked", String(comfort.on));
+    $comfortNote.textContent = comfort.on
+      ? "On: SOS cuts this app's audio, puts the engine in Quiet (captions only) and offers three choices: Stay Quiet, Play My Sounds, Talk to Me. Nothing plays or speaks on its own. Talk to Me is labelled Gemini only when Gemini answered; otherwise Default."
+      : "Off: the calm frame is just the calm sound and the hold, as before.";
   }
 
   function show($node, text) {
@@ -282,6 +300,7 @@ export function mount(root, ctx = {}) {
   if (!waiting) show($warn, pairWarning(saved.key, saved.code));
   render();
   renderKind();
+  renderComfort();
   queueMicrotask(() => $pad.focus({ preventScroll: true }));
   return () => clearTimeout(lightTimer);
 }

@@ -36,7 +36,8 @@ const DROPS = new Set(["reacquiring", "fallback", "look", "lost", "nomic", "conn
 
 /**
  * Which pulse an attribute change plays, or null. `kind`:
- *   "listen"  Listen's data-state (the pill state): into "isolated" = "lock"; out of it into a drop state = "drop"
+ *   "listen"  Listen's data-state (the pill state): into "isolated" = "lock"; out of it into a drop state = "drop";
+ *             any other change between two states = "change" (the state word cross-fades to its new text)
  *   "card"    a People card's data-playing: "false" -> "true" = "lock" (the chosen person is now isolated and plays)
  *   "hold"    the Welcome disc's data-phase: "full" (the hold completed) = "commit"; "failed" = "drop"
  */
@@ -45,7 +46,7 @@ export function pulseFor(kind, prev, next) {
   if (kind === "listen") {
     if (next === "isolated") return prev == null ? null : "lock"; // first render of a live screen is not an event
     if (prev === "isolated" && DROPS.has(next)) return "drop";
-    return null;
+    return prev == null ? null : "change";
   }
   if (kind === "card") return next === "true" && prev === "false" ? "lock" : null;
   if (kind === "hold") {
@@ -62,13 +63,17 @@ export function pulseKeyframes(name, { reduced = false } = {}) {
     return reduced
       ? { keyframes: { opacity: [0.6, 1] }, ms: 160, ease: "linear" }
       // numeric `scale`, not transform strings: a spring from "scale(0.97)" to "none" committed scale(0) and the Listen
-      // word vanished (h = 0) after every state change (T-403)
-      : { keyframes: { scale: [0.97, 1], opacity: [0.7, 1] }, ...SPRINGS.settle };
+      // word vanished (h = 0) after every state change (T-403). Calm pass: a small settle, no spring.
+      : { keyframes: { scale: [0.98, 1], opacity: [0.5, 1] }, ms: 400, ease: "linear(0, 0.4, 0.68, 0.84, 0.93, 0.97, 0.99, 1)" };
   }
   if (name === "commit") {
     return reduced
       ? { keyframes: { opacity: [0.7, 1] }, ms: 160, ease: "linear" }
-      : { keyframes: { scale: [0.94, 1] }, ...SPRINGS.press };
+      : { keyframes: { scale: [0.96, 1] }, ...SPRINGS.press };
+  }
+  if (name === "change") {
+    // the word already shows its new text: it fades up from a third, no scale (a cross-fade, not an accent)
+    return { keyframes: { opacity: [0.35, 1] }, ms: reduced ? 160 : 240, ease: "linear" };
   }
   if (name === "drop") {
     // a dip, not a shake: losing the voice is information, not an error to punish

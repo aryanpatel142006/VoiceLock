@@ -257,7 +257,7 @@ export function initialState() {
     starting: false,
     replaying: false,
     replayClip: null,
-    mic: { label: null, output: null, banner: "", level: METER_FLOOR_DB, band: "idle", missing: [] },
+    mic: { label: null, output: null, banner: "", band: "idle", missing: [] }, // the level is on the "level" event only
     ab: "processed",
     abDelayMs: 0,
     mode: "focus_hq",

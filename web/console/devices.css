@@ -5,7 +5,7 @@
 .devices select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid #2c3540; background: #1b2028; color: #e8ecf1; max-width: 100%; }
 .dev-meter { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--dev-dim); }
 .dev-bar { flex: 1 1 140px; height: 10px; border-radius: 5px; background: #222a33; overflow: hidden; }
-.dev-bar i { display: block; height: 100%; width: 0; background: var(--dev-dim); }
+.dev-bar i { display: block; height: 100%; width: 100%; transform: scaleX(0); transform-origin: left; background: var(--dev-dim); } /* devices.js moves it with a transform */
 .dev-meter[data-band="good"] .dev-bar i { background: var(--dev-good); }
 .dev-meter[data-band="quiet"] .dev-bar i { background: var(--dev-warn); }
 .dev-meter[data-band="clipping"] .dev-bar i { background: var(--dev-bad); }

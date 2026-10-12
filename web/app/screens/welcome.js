@@ -43,7 +43,7 @@ import { sharedSession } from "./setup.js";
 import { haptic } from "../delight.js";
 import { expectedDelayCopy, fetchHealth } from "../store.js";
 import { installHint as platformInstallHint, platformOf, touchDevice } from "../platform.js";
-import { ROOM_BED, holdMix, makeLiveSound, roomLevelAt } from "../welcome-audio.js";
+import { ROOM_BED, holdMix, makeLiveSound, prepareWelcomeSound, roomLevelAt } from "../welcome-audio.js";
 
 export const title = "Welcome";
 
@@ -97,7 +97,8 @@ export function holdInit() {
 
 /**
  * Next hold state for `ev`. Events: {type:"press", source, at} · {type:"tick", at, durationMs} ·
- * {type:"release", source} · {type:"cancel"} · {type:"arm"} · {type:"start"} · {type:"started", ok, error}.
+ * {type:"release", source} · {type:"cancel"} · {type:"arm"} · {type:"start"} · {type:"started", ok, error} ·
+ * {type:"activate"} (a screen reader or switch clicked the disc: no pointer to hold, so the ring is full at once).
  * `source` names the input that pressed ("pointer:<id>" or "key:<key>") so a second finger or another key cannot
  * end someone else's hold. Unknown or out-of-phase events return the same object.
  */
@@ -118,6 +119,9 @@ export function holdReduce(s, ev) {
       if (s.phase === "armed") return { ...s, phase: "starting", source: null };
       if (s.phase === "full") return { ...s, source: null }; // let go in the same frame the ring filled
       return s;
+    case "activate":
+      if (s.phase !== "idle" && s.phase !== "failed") return s;
+      return { ...s, phase: "full", source: "activate", progress: 1, error: "" };
     case "cancel":
       if (s.phase === "holding" || s.phase === "armed") return { ...s, phase: "idle", source: null, progress: 0 };
       return s;
@@ -394,7 +398,9 @@ export function mount(root, { app, signal }) {
   const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
   // the stage laptop needs no install line (T-365 P2-1); iPhone steps on iPhone only, Android gets a button (T-458)
   const hint = platform === "ios" || touch ? installHint({ standalone, platform }) : null;
-  const curtainUp = !coldOpenPlayed && !document.hidden; // the Enter curtain: once per page load, reduced motion too
+  // the Enter curtain: once per page load, reduced motion too, and only when Welcome is the page's first screen with no
+  // session playing (the brand link mid-demo used to raise the curtain and the loud-room soundtrack over a live session)
+  const curtainUp = !coldOpenPlayed && !document.hidden && !app?.previous && !store.state.started && !store.state.replaying;
   const playCold = curtainUp && !reduced.matches;
   const coldK = touch ? TOUCH_COLD_SCALE : 1;
   const plan = scalePlan(COLD_OPEN, coldK);
@@ -403,7 +409,7 @@ export function mount(root, { app, signal }) {
   const label = h("span", { class: "wl-disc-label" });
   const sub = h("span", { class: "wl-disc-sub" });
   const ripple = h("span", { class: "wl-ripple", "aria-hidden": "true" });
-  const disc = h("button", { type: "button", class: "wl-disc", id: "start", "data-phase": "idle", "aria-describedby": "wl-facts wl-problem" },
+  const disc = h("button", { type: "button", class: "wl-disc", id: "start", "data-phase": "idle", "aria-describedby": "wl-at wl-facts wl-problem" },
     h("span", { class: "wl-ring", "aria-hidden": "true" }), ripple, label, sub);
   const problem = h("p", { class: "wl-problem", id: "wl-problem", role: "alert" });
   const status = h("p", { class: "wl-sr", role: "status" });
@@ -449,9 +455,10 @@ export function mount(root, { app, signal }) {
       hero,
       h("div", { class: "wl-row" },
         h("div", { class: "wl-start" }, disc,
-          h("p", { class: "wl-key" }, "or hold ", h("kbd", { text: "Space" }))),
+          h("p", { class: "wl-key" }, "or hold ", h("kbd", { text: "Space" })),
+          h("p", { class: "wl-at", id: "wl-at", text: "Screen reader or switch: press Enter." })),
         h("div", { class: "wl-facts", id: "wl-facts" },
-          h("p", { text: "Pick one voice. The room goes quiet around it." }),
+          h("p", { text: "The voice closest to you comes through. Everything else goes quiet." }),
           h("p", {}, h("strong", { class: "wl-delay", text: expectedDelayCopy(null) }), ", like live captions."),
           hint ? h("p", { class: "wl-install", text: hint }) : null,
           installBtn,
@@ -517,7 +524,8 @@ export function mount(root, { app, signal }) {
     if (s.phase === "holding" && prev.phase !== "holding") haptic("press", { reduced: reduced.matches });
     if (wasTap(prev, s)) nudge();
     if (s.phase === "full") haptic("start", { reduced: reduced.matches });
-    if (s.phase === "full") dispatch({ type: activationLive() ? "start" : "arm" });
+    // a click from a screen reader or switch is itself the user activation: start now, there is no release to wait for
+    if (s.phase === "full") dispatch({ type: activationLive() || s.source === "activate" ? "start" : "arm" });
     else if (s.phase === "starting" && prev.phase !== "starting") begin();
     else if (s.phase === "done" && prev.phase !== "done") cut();
   };
@@ -580,7 +588,16 @@ export function mount(root, { app, signal }) {
   disc.addEventListener("pointerup", pointerEnd, { signal });
   disc.addEventListener("pointercancel", () => dispatch({ type: "cancel" }), { signal });
   disc.addEventListener("lostpointercapture", (e) => { if (s.source === `pointer:${e.pointerId}`) dispatch({ type: "cancel" }); }, { signal });
-  disc.addEventListener("click", (e) => e.preventDefault(), { signal }); // a click is not a hold
+  // a mouse click is not a hold; a click with no pointer behind it (detail 0: a screen reader, a switch, voice control)
+  // cannot hold, so it starts exactly as a completed hold does
+  disc.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (e.detail !== 0 || (s.phase !== "idle" && s.phase !== "failed")) return;
+    skipCold();
+    ensureSound(false);
+    app.emit("start-gesture");
+    dispatch({ type: "activate" });
+  }, { signal });
   disc.addEventListener("contextmenu", (e) => e.preventDefault(), { signal }); // long-press menu on touch
 
   // keys: on the disc, or on the page when nothing focusable has focus (the judge can just hold Space)
@@ -631,6 +648,10 @@ export function mount(root, { app, signal }) {
 
   // ---- the curtain: the click (or Enter/Space/Esc) chooses sound, creates the context and starts the film
   let curtainOpen = Boolean(curtain);
+  if (curtain) { // Perf: the soundtrack's sampled envelopes render in idle slices while the person reads the curtain
+    const idle = window.requestIdleCallback ? (f) => window.requestIdleCallback(f, { timeout: 400 }) : (f) => setTimeout(f, 30);
+    prepareWelcomeSound({ idle: (f) => idle(() => { if (!signal.aborted) f(); }) });
+  }
   function enter(withSound, { bypass = false } = {}) {
     if (!curtainOpen) return;
     curtainOpen = false;
@@ -900,9 +921,7 @@ function makeField({ canvas, disc, section, grain, labelEl, store, reduced, cold
     addEventListener("pointermove", (e) => {
       rt.px = (e.clientX / innerWidth) * 2 - 1;
       rt.py = (e.clientY / innerHeight) * 2 - 1;
-      section.style.setProperty("--wl-px", rt.px.toFixed(3));
-      section.style.setProperty("--wl-py", rt.py.toFixed(3));
-      schedule();
+      schedule(); // the field canvas reads rt.px/py on its next frame; the type holds still (no style recalc per move)
     }, { signal, passive: true });
   }
   if (!reduced.matches && "DeviceOrientationEvent" in globalThis && !fine) {
@@ -910,8 +929,6 @@ function makeField({ canvas, disc, section, grain, labelEl, store, reduced, cold
       if (e.gamma == null || e.beta == null) return;
       rt.px = Math.max(-1, Math.min(1, e.gamma / 30));
       rt.py = Math.max(-1, Math.min(1, (e.beta - 40) / 30));
-      section.style.setProperty("--wl-px", rt.px.toFixed(3));
-      section.style.setProperty("--wl-py", rt.py.toFixed(3));
       schedule();
     }, { signal, passive: true });
   }

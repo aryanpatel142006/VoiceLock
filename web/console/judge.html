@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0d10">
-  <title>Selective hearing · judge demo</title>
+  <title>VoiceLock · judge demo</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="judge.css">
   <link rel="stylesheet" href="devices.css">
   <script type="module" src="judge.js"></script>
@@ -13,7 +14,9 @@
 <body>
   <!-- T-088: A/B switch, acquisition pill, captions + a diagnostics drawer. No sliders or presets.
        T-150: two modes, Focus and Quiet (Shift+F / Shift+Q); every other mode stays on /simple.
-       T-177: the saved people (keys 1/2) and Release (Shift+0) as buttons, the target line, a "Keys off" banner. -->
+       T-177: the target line, a "Keys off" banner.
+       Board Q-2010: nobody chooses a name (no 1/2 person buttons, no Release). One switch, Auto voice focus:
+       ON = the closest (loudest) voice isolated, OFF = the whole room. It is the A/B switch (Space). -->
   <p class="keys-off" id="keys-off" role="alert" hidden>Keys off: click the page</p>
   <main class="stage">
     <div class="modes" id="modes" role="group" aria-label="Mode (Shift+F / Shift+Q)">
@@ -26,18 +29,14 @@
         <small>stay connected without listening</small>
       </button>
     </div>
-    <div class="ab" id="ab" role="group" aria-label="What you hear (Space)">
-      <button type="button" data-ab="raw" aria-pressed="false">RAW</button>
-      <button type="button" data-ab="processed" aria-pressed="true">SELECTIVE HEARING</button>
-    </div>
-    <section class="people" id="people" aria-labelledby="people-heading">
-      <h2 id="people-heading">Choose saved person</h2>
-      <div class="people-buttons">
-        <button type="button" data-person="0" aria-pressed="false" disabled><kbd>1</kbd> <span>Person 1</span></button>
-        <button type="button" data-person="1" aria-pressed="false" disabled><kbd>2</kbd> <span>Person 2</span></button>
-        <button type="button" id="release" aria-pressed="false">Release</button>
-      </div>
-    </section>
+    <button type="button" class="autofocus" id="ab" role="switch" aria-checked="true" data-on="true"
+            aria-label="Auto voice focus" aria-describedby="autofocus-line" aria-keyshortcuts="Space">
+      <span class="autofocus-text">
+        <strong>Auto voice focus</strong>
+        <small id="autofocus-line">Isolated · closest voice</small>
+      </span>
+      <span class="autofocus-track" aria-hidden="true"><span class="autofocus-word">ON</span><span class="autofocus-knob"></span></span>
+    </button>
 
     <!-- T-158: Start failed (mic denied, missing or hung): one red line outside the drawer -->
     <p class="mic-banner" id="mic-banner" role="alert" hidden></p>
@@ -86,7 +85,8 @@
       <dt id="d-preset-label" hidden>TEAM PRESET</dt><dd id="d-preset" hidden>—</dd>
     </dl>
     <div id="devices" aria-label="Audio devices"></div>
-    <p class="keys"><kbd>Space</kbd> raw / selective · <kbd>Shift</kbd>+<kbd>C</kbd> calibrate · <kbd>Shift</kbd>+<kbd>R</kbd> replay clip · <kbd>Shift</kbd>+<kbd>N</kbd> Name Call (C/R/N alone while this drawer is open) · <kbd>1</kbd>/<kbd>2</kbd> saved person · <kbd>Shift</kbd>+<kbd>0</kbd> release</p>
+    <p class="keys"><kbd>Space</kbd> Auto voice focus on / off · <kbd>Shift</kbd>+<kbd>C</kbd> calibrate · <kbd>Shift</kbd>+<kbd>R</kbd> replay clip · <kbd>Shift</kbd>+<kbd>N</kbd> Name Call (C/R/N alone while this drawer is open)</p>
+    <p class="keys"><a href="/who" style="color: inherit">Who's speaking →</a> the fine-tuned speaker ID on its own (research part 2; mic in, no audio out)</p>
     <p class="drawer-buttons">
       <button type="button" id="replay">Replay clip</button>
       <!-- the clip that opens with the target alone (the live flow); replay.js keeps it when the server lists it -->
