@@ -59,3 +59,6 @@ eval/augmented/**/*.wav
 
 # Playwright MCP session logs written by worker browser checks
 .playwright-mcp/
+
+# macOS Finder metadata
+.DS_Store
