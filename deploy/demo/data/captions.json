@@ -1,0 +1,52 @@
+[
+ {
+  "t0": 0.0,
+  "t1": 2.14,
+  "text": "Last summer I went to the beach with my friends."
+ },
+ {
+  "t0": 2.14,
+  "t1": 4.46,
+  "text": "We left really early to beat the traffic,"
+ },
+ {
+  "t0": 4.46,
+  "t1": 5.92,
+  "text": "but still got stuck for an hour."
+ },
+ {
+  "t0": 7.46,
+  "t1": 10.86,
+  "text": "When we finally got there, the water was cold,"
+ },
+ {
+  "t0": 13.3,
+  "t1": 15.28,
+  "text": "but the sun was out and it was a great day."
+ },
+ {
+  "t0": 15.28,
+  "t1": 21.38,
+  "text": "My favorite place to study in the library"
+ },
+ {
+  "t0": 21.38,
+  "t1": 23.26,
+  "text": "is the library on the third floor."
+ },
+ {
+  "t0": 23.26,
+  "t1": 23.9,
+  "text": "It's quiet."
+ },
+ {
+  "t0": 23.9,
+  "t1": 26.02,
+  "text": "There is a big window"
+ },
+ {
+  "t0": 26.02,
+  "t1": 27.48,
+  "text": "and you can see the trains go by."
+ }
+]

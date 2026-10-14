@@ -62,3 +62,8 @@ eval/augmented/**/*.wav
 
 # macOS Finder metadata
 .DS_Store
+
+# web demo build output and the recorded clips it ships (deploy/README.md)
+deploy/site/
+deploy/media/
+.vercel/

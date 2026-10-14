@@ -1,0 +1,1 @@
+{"loaded": true, "checkpoint": "models/T-374/v2_t387.pt", "names": ["aryan", "joseph"], "method": "fixed-slot energy share (fine-tuned T-387 separator) + ECAPA cosine to the saved profiles, averaged", "sessions_active": 0}
